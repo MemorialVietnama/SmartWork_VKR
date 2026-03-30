@@ -1,0 +1,42 @@
+.page {
+  max-width: 34rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.lead {
+  color: var(--p-text-muted-color, #64748b);
+  margin-bottom: 1rem;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.links {
+  margin-top: 0.75rem;
+}
+
+.links a {
+  color: var(--p-primary-color, #2563eb);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.spinner {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
+}
+

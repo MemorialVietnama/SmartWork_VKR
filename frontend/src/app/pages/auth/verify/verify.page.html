@@ -1,0 +1,32 @@
+<div class="page">
+  <p-card header="Подтверждение регистрации">
+    <div class="lead">Введите код из письма, отправленного на вашу почту.</div>
+
+    @if (error) {
+      <p-message severity="error" [text]="error" [closable]="false" />
+    }
+    @if (message) {
+      <p-message severity="success" [text]="message" [closable]="false" />
+    }
+
+    <form class="form" (ngSubmit)="confirm()">
+      <div class="field">
+        <label for="login">Почта</label>
+        <input id="login" pInputText name="login" required [(ngModel)]="login" />
+      </div>
+      <div class="field">
+        <label for="code">Код подтверждения</label>
+        <input id="code" pInputText name="code" required maxlength="6" [(ngModel)]="code" />
+      </div>
+      <div class="actions">
+        <p-button type="submit" label="Подтвердить" icon="pi pi-check" [loading]="loading" />
+        <p-button type="button" label="Отправить код снова" icon="pi pi-refresh" styleClass="p-button-outlined" (onClick)="resend()" [loading]="loading" />
+      </div>
+    </form>
+
+    <div class="links">
+      <a routerLink="/auth/login">Назад ко входу</a>
+    </div>
+  </p-card>
+</div>
+

@@ -1,0 +1,37 @@
+.page {
+  max-width: 46rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.spinner {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.welcome {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.note {
+  color: var(--p-text-muted-color, #64748b);
+  margin-top: 1rem;
+  line-height: 1.5;
+}
+

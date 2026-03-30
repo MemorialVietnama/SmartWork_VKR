@@ -1,0 +1,80 @@
+<div class="page">
+  <p-card header="Регистрация">
+    <div class="lead">Заполните данные и получите код подтверждения на email.</div>
+
+    @if (error) {
+      <p-message severity="error" [text]="error" [closable]="false" />
+    }
+    @if (message) {
+      <p-message severity="success" [text]="message" [closable]="false" />
+    }
+
+    <form class="form" (ngSubmit)="onRegister()">
+      <div class="field">
+        <label for="firstName">Имя</label>
+        <input id="firstName" pInputText name="firstName" required [(ngModel)]="firstName" />
+      </div>
+
+      <div class="field">
+        <label for="lastName">Фамилия</label>
+        <input id="lastName" pInputText name="lastName" required [(ngModel)]="lastName" />
+      </div>
+
+      <div class="field">
+        <label for="login">Логин (email)</label>
+        <input
+          id="login"
+          type="email"
+          pInputText
+          name="login"
+          required
+          [(ngModel)]="login"
+        />
+      </div>
+
+      <div class="field">
+        <label for="password">Пароль</label>
+        <p-password
+          id="password"
+          name="password"
+          required
+          [(ngModel)]="password"
+          [toggleMask]="true"
+          [feedback]="false"
+          styleClass="w-full"
+        />
+        <small class="hint">Мин. 8 символов, заглавная, строчная, цифра и спецсимвол.</small>
+      </div>
+
+      <div class="field">
+        <label for="role">Роль</label>
+        <select id="role" name="role" [(ngModel)]="role">
+          <option value="owner">Владелец</option>
+          <option value="staff">Сотрудник</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="confirmPassword">Повтор пароля</label>
+        <p-password
+          id="confirmPassword"
+          name="confirmPassword"
+          required
+          [(ngModel)]="confirmPassword"
+          [toggleMask]="true"
+          [feedback]="false"
+          styleClass="w-full"
+        />
+      </div>
+
+      <div class="actions">
+        <p-button type="submit" label="Отправить код" icon="pi pi-send" [loading]="loading" />
+      </div>
+
+      <div class="links">
+        <a routerLink="/auth/login">Уже есть аккаунт? Вход</a>
+      </div>
+    </form>
+  </p-card>
+</div>
+

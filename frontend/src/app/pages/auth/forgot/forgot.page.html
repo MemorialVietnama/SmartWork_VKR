@@ -1,0 +1,42 @@
+<div class="page">
+  <p-card header="Забыли пароль">
+    <div class="lead">Введите ваш логин (email). Мы отправим письмо с инструкциями.</div>
+
+    @if (message) {
+      <p-message severity="success" [text]="message" [closable]="false" />
+    }
+
+    @if (error) {
+      <p-message severity="error" [text]="error" [closable]="false" />
+    }
+
+    <form class="form" (ngSubmit)="onSubmit()">
+      <div class="field">
+        <label for="login">Логин (email)</label>
+        <input
+          id="login"
+          type="email"
+          pInputText
+          name="login"
+          required
+          [(ngModel)]="login"
+        />
+      </div>
+
+      <div class="actions">
+        <p-button type="submit" label="Отправить" icon="pi pi-envelope" [loading]="loading" />
+      </div>
+
+      @if (loading) {
+        <div class="spinner">
+          <p-progressSpinner strokeWidth="4" ariaLabel="Отправка" />
+        </div>
+      }
+    </form>
+
+    <div class="links">
+      <a (click)="back(); $event.preventDefault()" href="">Назад к входу</a>
+    </div>
+  </p-card>
+</div>
+

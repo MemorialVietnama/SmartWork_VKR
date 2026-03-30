@@ -1,0 +1,91 @@
+<div class="status-page">
+  <p-card header="SmartWork — статус подключений">
+    <p class="intro">
+      Проверка связи бэкенда с <strong>PostgreSQL</strong> и <strong>Redis</strong> (ответ
+      <code>/api/v1/system/status</code>).
+    </p>
+
+    <div class="meta">
+      <span>API: <code>{{ apiUrl }}</code></span>
+      @if (lastCheckedAt) {
+        <span>Последняя проверка: {{ lastCheckedAt | date: 'dd.MM.yyyy HH:mm:ss' }}</span>
+      }
+    </div>
+
+    <p-button label="Обновить" icon="pi pi-refresh" [loading]="loading" (onClick)="reload()" styleClass="mb-3" />
+
+    @if (loadError) {
+      <p-message severity="error" [text]="loadError" [closable]="false" />
+    } @else if (loading && !data) {
+      <div class="spinner-wrap">
+        <p-progressSpinner strokeWidth="4" ariaLabel="Загрузка" />
+      </div>
+    } @else if (data) {
+      <p-message
+        [severity]="overallOk ? 'success' : 'warn'"
+        [text]="overallOk
+          ? 'Все сервисы подключены и отвечают.'
+          : 'Обнаружены проблемы: проверьте контейнеры и переменные окружения.'"
+        [closable]="false"
+      />
+
+      <div class="summary">
+        <p-card styleClass="summary-card" header="Общий статус">
+          <div class="row">
+            <p-tag
+              [severity]="overallOk ? 'success' : 'danger'"
+              [value]="overallOk ? 'OK' : 'ERROR'"
+            />
+            <span class="hint">Подключено сервисов: {{ connectedCount() }}/2</span>
+          </div>
+        </p-card>
+      </div>
+
+      <div class="grid">
+        <p-card styleClass="conn-card" header="PostgreSQL">
+          <div class="row">
+            <p-tag
+              [severity]="data.postgres.connected ? 'success' : 'danger'"
+              [value]="data.postgres.connected ? 'Подключено' : 'Нет связи'"
+            />
+            @if (data.postgres.latency_ms != null) {
+              <span class="latency">
+                {{ data.postgres.latency_ms }} ms ({{ latencyLabel(data.postgres.latency_ms) }})
+              </span>
+            }
+          </div>
+          <p class="hint">Проверка через SQL-запрос <code>SELECT 1</code>.</p>
+          @if (data.postgres.error) {
+            <p class="err">{{ data.postgres.error }}</p>
+          }
+        </p-card>
+
+        <p-card styleClass="conn-card" header="Redis">
+          <div class="row">
+            <p-tag
+              [severity]="data.redis.connected ? 'success' : 'danger'"
+              [value]="data.redis.connected ? 'Подключено' : 'Нет связи'"
+            />
+            @if (data.redis.latency_ms != null) {
+              <span class="latency">
+                {{ data.redis.latency_ms }} ms ({{ latencyLabel(data.redis.latency_ms) }})
+              </span>
+            }
+          </div>
+          <p class="hint">Проверка через команду <code>PING</code>.</p>
+          @if (data.redis.error) {
+            <p class="err">{{ data.redis.error }}</p>
+          }
+        </p-card>
+      </div>
+
+      <p-card styleClass="diag-card" header="Быстрая диагностика">
+        <ul>
+          <li>Проверьте контейнеры: <code>docker compose ps</code></li>
+          <li>Посмотрите логи API: <code>docker compose logs api</code></li>
+          <li>Проверьте URL в <code>.env</code>: <code>DATABASE_URL</code> и <code>REDIS_URL</code></li>
+        </ul>
+      </p-card>
+    }
+  </p-card>
+</div>

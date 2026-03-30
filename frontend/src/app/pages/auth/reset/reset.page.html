@@ -1,0 +1,53 @@
+<div class="page">
+  <p-card header="Сброс пароля">
+    <div class="lead">Установите новый пароль по токену из письма.</div>
+
+    @if (message) {
+      <p-message severity="success" [text]="message" [closable]="false" />
+    }
+    @if (error) {
+      <p-message severity="error" [text]="error" [closable]="false" />
+    }
+
+    <form class="form" (ngSubmit)="onSubmit()">
+      <div class="field">
+        <label for="token">Токен</label>
+        <input
+          id="token"
+          pInputText
+          name="token"
+          [value]="token || ''"
+          disabled
+        />
+      </div>
+
+      <div class="field">
+        <label for="newPassword">Новый пароль</label>
+        <p-password
+          id="newPassword"
+          name="newPassword"
+          [(ngModel)]="newPassword"
+          [toggleMask]="true"
+          [feedback]="false"
+          styleClass="w-full"
+          required
+        />
+      </div>
+
+      <div class="actions">
+        <p-button type="submit" label="Сохранить пароль" [loading]="loading" icon="pi pi-save" />
+      </div>
+
+      @if (loading) {
+        <div class="spinner">
+          <p-progressSpinner strokeWidth="4" ariaLabel="Сохранение" />
+        </div>
+      }
+    </form>
+
+    <div class="links">
+      <a (click)="back(); $event.preventDefault()" href="">Назад к входу</a>
+    </div>
+  </p-card>
+</div>
+

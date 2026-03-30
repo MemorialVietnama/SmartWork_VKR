@@ -1,0 +1,84 @@
+<div class="page">
+  <p-card header="Авторизация">
+    <div class="lead">
+      Введите логин (email) и пароль. Пароль скрыт во время ввода и отправляется на сервер только для проверки.
+    </div>
+
+    @if (error) {
+      <p-message severity="error" [text]="error" [closable]="false" />
+    }
+
+    <form
+      class="form"
+      (ngSubmit)="onLogin()"
+      #f="ngForm"
+    >
+      <div class="field">
+        <label for="login">Логин (email)</label>
+        <input
+          id="login"
+          type="email"
+          pInputText
+          name="login"
+          [(ngModel)]="login"
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label for="password">Пароль</label>
+        <p-password
+          id="password"
+          name="password"
+          [(ngModel)]="password"
+          [toggleMask]="true"
+          [feedback]="false"
+          styleClass="w-full"
+        />
+      </div>
+
+      <div class="actions">
+        <p-button type="submit" label="Вход" icon="pi pi-sign-in" [loading]="loading" />
+      </div>
+
+      <div class="links">
+        <a routerLink="/auth/register">Регистрация</a>
+        <a (click)="forgot(); $event.preventDefault()">Забыли пароль?</a>
+      </div>
+    </form>
+
+    <div class="divider"></div>
+
+    <div class="social-title">Вход через соцсети:</div>
+    <div class="social-grid">
+      <p-button
+        label="VK"
+        (onClick)="onSocial('vk')"
+        [loading]="loading"
+        styleClass="p-button-outlined"
+      />
+      <p-button
+        label="YANDEX"
+        (onClick)="onSocial('yandex')"
+        [loading]="loading"
+        styleClass="p-button-outlined"
+      />
+      <p-button
+        label="MAIL.RU"
+        (onClick)="onSocial('mailru')"
+        [loading]="loading"
+        styleClass="p-button-outlined"
+      />
+      <p-button
+        label="GOOGLE"
+        (onClick)="onSocial('google')"
+        [loading]="loading"
+        styleClass="p-button-outlined"
+      />
+    </div>
+    <div class="note">
+      Социальный вход в демо-режиме работает как прототип (без реального OAuth).
+    </div>
+  </p-card>
+</div>
+

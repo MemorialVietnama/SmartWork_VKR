@@ -1,0 +1,80 @@
+.status-page {
+  max-width: 44rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.intro {
+  line-height: 1.5;
+  margin-top: 0;
+  color: var(--p-text-muted-color, #64748b);
+}
+
+.intro code {
+  font-size: 0.85em;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  color: var(--p-text-muted-color, #64748b);
+  font-size: 0.9rem;
+}
+
+.spinner-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.summary {
+  margin: 1rem 0;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.latency {
+  font-size: 0.9rem;
+  color: var(--p-text-muted-color, #64748b);
+}
+
+.hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.88rem;
+  color: var(--p-text-muted-color, #64748b);
+}
+
+.err {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--p-red-500, #dc2626);
+  word-break: break-word;
+}
+
+.diag-card {
+  margin-top: 1rem;
+}
+
+.diag-card ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.4rem;
+}

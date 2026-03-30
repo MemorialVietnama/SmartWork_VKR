@@ -1,0 +1,47 @@
+.page {
+  max-width: 34rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.lead {
+  color: var(--p-text-muted-color, #64748b);
+  margin-bottom: 1rem;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field select {
+  height: 2.5rem;
+  border: 1px solid var(--p-border-color, #d1d5db);
+  border-radius: 6px;
+  padding: 0 0.75rem;
+}
+
+.hint {
+  color: var(--p-text-muted-color, #64748b);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.links {
+  margin-top: 0.5rem;
+}
+
+.links a {
+  color: var(--p-primary-color, #2563eb);
+  cursor: pointer;
+  text-decoration: none;
+}
+

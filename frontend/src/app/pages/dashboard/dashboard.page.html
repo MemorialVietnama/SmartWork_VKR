@@ -1,0 +1,30 @@
+<div class="page">
+  <p-card header="Главное меню (дашборд)">
+    @if (loading) {
+      <div class="spinner">
+        <p-progressSpinner strokeWidth="4" ariaLabel="Загрузка" />
+      </div>
+    }
+
+    @if (error) {
+      <p-message severity="error" [text]="error" [closable]="false" />
+    }
+
+    @if (!loading && user) {
+      <div class="top">
+        <p-tag [severity]="'info'" [value]="user.role" />
+        <h2 class="welcome">Добро пожаловать, {{ user.login }}</h2>
+      </div>
+
+      <div class="actions">
+        <p-button routerLink="/status" label="Статус подключения" icon="pi pi-server" />
+        <p-button label="Выйти" icon="pi pi-sign-out" (onClick)="logout()" styleClass="p-button-outlined" />
+      </div>
+
+      <div class="note">
+        Здесь будет рабочее пространство: календарь, записи, задачи и учёт времени.
+      </div>
+    }
+  </p-card>
+</div>
+
