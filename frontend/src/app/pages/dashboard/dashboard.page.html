@@ -1,30 +1,1016 @@
-<div class="page">
-  <p-card header="Главное меню (дашборд)">
-    @if (loading) {
+<div class="dashboard-page">
+  @if (loading) {
+    <div class="state-card">
       <div class="spinner">
         <p-progressSpinner strokeWidth="4" ariaLabel="Загрузка" />
       </div>
-    }
+    </div>
+  }
 
-    @if (error) {
+  @if (error) {
+    <div class="state-card">
       <p-message severity="error" [text]="error" [closable]="false" />
-    }
-
-    @if (!loading && user) {
-      <div class="top">
-        <p-tag [severity]="'info'" [value]="user.role" />
-        <h2 class="welcome">Добро пожаловать, {{ user.login }}</h2>
+      <div class="state-actions">
+        <p-button label="Повторить" icon="pi pi-refresh" (onClick)="load()" />
       </div>
+    </div>
+  }
 
-      <div class="actions">
-        <p-button routerLink="/status" label="Статус подключения" icon="pi pi-server" />
-        <p-button label="Выйти" icon="pi pi-sign-out" (onClick)="logout()" styleClass="p-button-outlined" />
-      </div>
+  @if (!loading && user) {
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <p-tag [severity]="'info'" [value]="isOwner ? 'owner' : 'staff'" />
+          <h3>{{ user.last_name }} {{ user.first_name }}</h3>
+          <small>{{ user.login }}</small>
+        </div>
 
-      <div class="note">
-        Здесь будет рабочее пространство: календарь, записи, задачи и учёт времени.
-      </div>
-    }
-  </p-card>
+        <nav class="menu">
+          @for (category of sidebarCategories; track category.id) {
+            <button
+              type="button"
+              class="menu-item"
+              [class.active]="selectedCategory === category.id"
+              [class.logout-item]="category.id === 'logout'"
+              (click)="selectCategory(category.id)"
+            >
+              <i [class]="category.icon"></i>
+              <span>{{ category.label }}</span>
+            </button>
+          }
+        </nav>
+      </aside>
+
+      <section class="content">
+        @if (selectedCategory === 'tables') {
+          <div class="content-head">
+            <h2>Столы</h2>
+            <p>Рабочие пространства, в которых состоит ваш аккаунт.</p>
+          </div>
+
+          @if (isOwner) {
+            @if (!hasOwnerTables) {
+              <div class="owner-empty-actions">
+                <button type="button" class="square-action" (click)="openCreateTableDialog()">
+                  <i class="pi pi-plus-circle"></i>
+                  <span>Создать стол</span>
+                </button>
+                <button type="button" class="square-action">
+                  <i class="pi pi-sign-in"></i>
+                  <span>Присоединиться к столу</span>
+                </button>
+              </div>
+            } @else {
+              <div class="table-toolbar">
+                <p-button label="Создать стол" icon="pi pi-plus" (onClick)="openCreateTableDialog()" />
+                <p-button label="Присоединиться к столу" icon="pi pi-sign-in" styleClass="p-button-outlined" />
+                <p-button label="Пригласить сотрудника" icon="pi pi-send" styleClass="p-button-outlined" (onClick)="showInviteDialog()" />
+              </div>
+
+              <div class="table-grid">
+                @for (table of ownerTables; track table.id) {
+                  <p-card class="table-card">
+                    <div class="table-menu-wrap">
+                      <button type="button" class="dots-btn" (click)="toggleTableMenu(table.id)">
+                        <i class="pi pi-ellipsis-v"></i>
+                      </button>
+                      @if (isTableMenuOpen(table.id)) {
+                        <div class="table-menu-dropdown">
+                          <button type="button" (click)="openTableSettings(table.id)">Настройка</button>
+                          <button type="button" (click)="openTableMembers(table.id)">Добавление сотрудников</button>
+                          <div class="menu-row">
+                            <button type="button" [disabled]="!ownerCanOpenTasks(table.id)" (click)="openTableTasks(table.id)">Просмотр задач</button>
+                            @if (!ownerCanOpenTasks(table.id)) {
+                              <button type="button" class="mini-dollar-btn" (click)="openSubscriptionForBonus(table.id, 'unlock_tasks')">$</button>
+                            }
+                          </div>
+                          <div class="menu-row">
+                            <button type="button" [disabled]="!ownerCanOpenAnalytics(table.id)" (click)="openTableAnalytics(table.id)">Просмотр аналитики</button>
+                            @if (!ownerCanOpenAnalytics(table.id)) {
+                              <button type="button" class="mini-dollar-btn" (click)="openSubscriptionForBonus(table.id, 'unlock_analytics')">$</button>
+                            }
+                          </div>
+                          <button type="button" (click)="selectCategory('subscription')">Купить бонусы</button>
+                        </div>
+                      }
+                    </div>
+                    <div class="stats-block">
+                      <div class="stats-row">
+                        <span>Активные сотрудники</span>
+                        <strong>{{ table.stats.activeEmployees }}</strong>
+                      </div>
+                      <div class="stats-row">
+                        <span>Заказов в очереди</span>
+                        <strong>{{ table.stats.queuedOrders }}</strong>
+                      </div>
+                      <div class="task-bars">
+                        <div class="task-bars-head">
+                          <span>Задачи</span>
+                          <strong>{{ getTaskProgress(table.stats) }}%</strong>
+                        </div>
+                        <div class="bars">
+                          <div class="bar done" [style.flex]="table.stats.tasksDone"></div>
+                          <div class="bar waiting" [style.flex]="table.stats.tasksWaiting"></div>
+                          <div class="bar new" [style.flex]="table.stats.tasksNew"></div>
+                        </div>
+                        <small>
+                          Сделано: {{ table.stats.tasksDone }} | В ожидании: {{ table.stats.tasksWaiting }} | Новые:
+                          {{ table.stats.tasksNew }}
+                        </small>
+                      </div>
+                    </div>
+
+                    <div class="table-meta">
+                      <h3>{{ table.title }}</h3>
+                      <p>Всего участников: <strong>{{ table.totalParticipants }}</strong></p>
+                      <p>Владелец: <strong>{{ table.ownerShortName }}</strong></p>
+                    </div>
+                  </p-card>
+                }
+              </div>
+            }
+          } @else {
+            @if (!hasOwnerTables) {
+              <p-card>
+                <p>Вы пока не приглашены ни в один стол.</p>
+              </p-card>
+            } @else {
+              <div class="table-grid">
+                @for (table of ownerTables; track table.id) {
+                  <p-card class="table-card">
+                    <div class="table-menu-wrap">
+                      <button type="button" class="dots-btn" (click)="toggleTableMenu(table.id)">
+                        <i class="pi pi-ellipsis-v"></i>
+                      </button>
+                      @if (isTableMenuOpen(table.id)) {
+                        <div class="table-menu-dropdown">
+                          <button type="button" (click)="openTableSettings(table.id)">Просмотр настроек стола</button>
+                          <button type="button" class="danger" (click)="requestDetachFromTable(table.id)">Заявка на открепление от стола</button>
+                        </div>
+                      }
+                    </div>
+                    <div class="table-meta">
+                      <h3>{{ table.title }}</h3>
+                      <p>Всего участников: <strong>{{ table.totalParticipants }}</strong></p>
+                      <p>Владелец: <strong>{{ table.ownerShortName }}</strong></p>
+                    </div>
+                  </p-card>
+                }
+              </div>
+            }
+          }
+        } @else if (selectedCategory === 'employees') {
+          <div class="content-head">
+            <h2>Сотрудники</h2>
+            <p>Управление сотрудниками владельца: добавление, приглашение, редактирование и открепление.</p>
+          </div>
+
+          @if (isOwner) {
+            @if (!hasOwnerEmployees) {
+              <div class="owner-empty-actions">
+                <button type="button" class="square-action" (click)="openCreateEmployeeDialog()">
+                  <i class="pi pi-user-plus"></i>
+                  <span>Добавить сотрудника</span>
+                </button>
+              </div>
+            } @else {
+              <div class="table-toolbar">
+                <p-button label="Добавить сотрудника" icon="pi pi-user-plus" (onClick)="openCreateEmployeeDialog()" />
+              </div>
+
+              <div class="meta-line">
+                <small>Откреплено аккаунтов: {{ detachedEmployeesCount }}</small>
+              </div>
+
+              <div class="employee-grid">
+                @for (employee of ownerEmployees; track employee.id) {
+                  <p-card class="employee-card">
+                    <div class="employee-head">
+                      <div class="avatar-wrap">
+                        @if (employee.avatarDataUrl) {
+                          <img [src]="employee.avatarDataUrl" alt="avatar" class="avatar" />
+                        } @else {
+                          <div class="avatar avatar-fallback">{{ employee.lastName[0] }}{{ employee.firstName[0] }}</div>
+                        }
+                      </div>
+                      <div class="employee-title">
+                        <h3>{{ employee.lastName }} {{ employee.firstName }} {{ employee.middleName ?? '' }}</h3>
+                        <small>{{ employee.position }}</small>
+                      </div>
+                    </div>
+
+                    <div class="employee-meta">
+                      <p><strong>Дата рождения:</strong> {{ employee.birthDate }}</p>
+                      <p><strong>Телефон:</strong> {{ employee.phone }}</p>
+                      <p><strong>Email:</strong> {{ employee.email || 'не указан' }}</p>
+                      @if (employee.note) {
+                        <p><strong>Примечание:</strong> {{ employee.note }}</p>
+                      }
+                    </div>
+
+                    @if (employee.tempCredentials) {
+                      <div class="temp-credentials">
+                        <div class="temp-head">
+                          <strong>Временные данные входа</strong>
+                          <p-tag
+                            [severity]="isTempCredentialsActive(employee.tempCredentials.expiresAt) ? 'success' : 'danger'"
+                            [value]="
+                              isTempCredentialsActive(employee.tempCredentials.expiresAt)
+                                ? 'действуют'
+                                : 'истекли'
+                            "
+                          />
+                        </div>
+                        <p>Логин: <code>{{ employee.tempCredentials.login }}</code></p>
+                        <p>Пароль: <code>{{ employee.tempCredentials.password }}</code></p>
+                        <p>До: {{ formatDateTime(employee.tempCredentials.expiresAt) }}</p>
+                      </div>
+                    }
+
+                    <div class="employee-table-binding">
+                      <div class="binding-head">
+                        <strong>Привязка к столам</strong>
+                        <button
+                          type="button"
+                          class="key-edit-btn"
+                          [class.active]="employeeTableEditMode[employee.id]"
+                          (click)="toggleEmployeeTableBindingEdit(employee.id)"
+                          [title]="employeeTableEditMode[employee.id] ? 'Заблокировать' : 'Изменить привязку'"
+                        >
+                          <i class="pi pi-key"></i>
+                        </button>
+                      </div>
+                      <select
+                        multiple
+                        class="employee-tables-select"
+                        [disabled]="!employeeTableEditMode[employee.id]"
+                        [ngModel]="employeeTableSelections[employee.id]"
+                        (change)="onEmployeeTablesSelectChange(employee.id, $event)"
+                      >
+                        @for (table of ownerTables; track table.id) {
+                          <option [value]="table.id">{{ table.title }}</option>
+                        }
+                      </select>
+                      <div class="binding-actions">
+                        <p-button
+                          size="small"
+                          label="Сохранить"
+                          icon="pi pi-save"
+                          [disabled]="!employeeTableEditMode[employee.id]"
+                          (onClick)="saveEmployeeTableBindings(employee.id)"
+                        />
+                        @if (employeeTableBindingMessage[employee.id]) {
+                          <small>{{ employeeTableBindingMessage[employee.id] }}</small>
+                        }
+                      </div>
+                    </div>
+
+                    <div class="employee-actions">
+                      <p-button label="Редактировать" icon="pi pi-pencil" (onClick)="openEditEmployeeDialog(employee)" />
+                      <p-button
+                        label="Открепить"
+                        icon="pi pi-times"
+                        severity="danger"
+                        styleClass="p-button-outlined"
+                        (onClick)="detachEmployee(employee.id)"
+                      />
+                    </div>
+                  </p-card>
+                }
+              </div>
+            }
+          } @else {
+            <p-card>
+              <p>Сотрудник может принять приглашение к столу и привязаться к владельцу.</p>
+              <div class="employee-form-grid">
+                <label class="full">
+                  <span>Код приглашения</span>
+                  <input type="text" pInputText [(ngModel)]="staffInviteCode" />
+                </label>
+              </div>
+              <div class="dialog-actions">
+                <p-button label="Принять приглашение" icon="pi pi-check" (onClick)="acceptInviteAsStaff()" />
+              </div>
+              @if (staffInviteMessage) {
+                <small>{{ staffInviteMessage }}</small>
+              }
+            </p-card>
+          }
+        } @else if (selectedCategory === 'analytics') {
+          <div class="content-head">
+            <h2>Аналитика</h2>
+            <p>Аналитика по всем столам, где аккаунт является владельцем.</p>
+          </div>
+
+          @if (isOwner) {
+            @if (!hasAnalyticsTables) {
+              <p-card>
+                <p>Пока нет столов для аналитики.</p>
+                <div class="table-toolbar">
+                  <p-button label="Создать стол" icon="pi pi-plus" (onClick)="openCreateTableDialog()" />
+                </div>
+              </p-card>
+            } @else {
+              <div class="analytics-list">
+                @for (table of analyticsTables; track table.tableId) {
+                  @if (hasAnalyticsAccess(table.tableId)) {
+                    <details class="analytics-accordion">
+                      <summary>
+                        <div class="accordion-summary">
+                          <div>
+                            <h3>{{ table.tableName }}</h3>
+                            <small>Участников: {{ table.participants }} | Активных сотрудников: {{ table.activeEmployees }}</small>
+                          </div>
+                          <p-tag severity="success" value="Доступ активен"></p-tag>
+                        </div>
+                      </summary>
+
+                      <div class="mini-charts-grid">
+                        @for (chart of table.charts; track chart.title) {
+                          <div class="mini-chart-card">
+                            <div class="mini-chart-head">
+                              <strong>{{ chart.title }}</strong>
+                              <small>{{ chart.subtitle }}</small>
+                            </div>
+
+                            <div class="mini-bars">
+                              @for (value of chart.values; track $index) {
+                                <div class="mini-bar-wrap">
+                                  <div
+                                    class="mini-bar"
+                                    [style.height.%]="(value / chartMax(chart.values)) * 100"
+                                    [title]="value"
+                                  ></div>
+                                </div>
+                              }
+                            </div>
+
+                            <div class="mini-chart-meta">
+                              <span>Ср: {{ chartAverage(chart.values) }}</span>
+                              <span>Пик: {{ chartMax(chart.values) }}</span>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </details>
+                  } @else {
+                    <div class="analytics-locked" [class.show-hint]="isFirstLockedAnalyticsTable(table.tableId)">
+                      <div class="locked-title">
+                        <h3>{{ table.tableName }}</h3>
+                        <small>Доступ к аналитике не активирован</small>
+                      </div>
+                      <div class="locked-preview">
+                        <div class="locked-chart-row">
+                          <span class="bar h45"></span>
+                          <span class="bar h70"></span>
+                          <span class="bar h52"></span>
+                          <span class="bar h82"></span>
+                          <span class="bar h64"></span>
+                          <span class="bar h76"></span>
+                          <span class="bar h58"></span>
+                        </div>
+                        <div class="locked-chart-row">
+                          <span class="bar h38"></span>
+                          <span class="bar h56"></span>
+                          <span class="bar h48"></span>
+                          <span class="bar h66"></span>
+                          <span class="bar h60"></span>
+                          <span class="bar h73"></span>
+                          <span class="bar h51"></span>
+                        </div>
+                      </div>
+
+                      @if (isFirstLockedAnalyticsTable(table.tableId)) {
+                        <div class="locked-overlay">
+                          <p>Чтобы открыть аналитику для стола, подключите бонус.</p>
+                          <p-button
+                            [label]="'Приобрести: ' + formatRub(analyticsUnlockMonthlyAmount(table.tableId)) + ' / мес'"
+                            icon="pi pi-wallet"
+                            (onClick)="goToSubscriptionForAnalytics(table.tableId)"
+                          />
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            }
+          } @else {
+            <div class="analytics-skeleton-wrap" [class.locked]="!hasStaffAnalyticsAccess()">
+              <div class="analytics-skeleton-head">
+                <div class="line w40"></div>
+                <div class="line w60"></div>
+              </div>
+              <div class="analytics-skeleton-grid">
+                <div class="sk-card">
+                  <div class="sk-bars">
+                    <span class="bar h35"></span><span class="bar h50"></span><span class="bar h42"></span><span class="bar h63"></span><span class="bar h48"></span><span class="bar h67"></span>
+                  </div>
+                </div>
+                <div class="sk-card">
+                  <div class="sk-bars">
+                    <span class="bar h28"></span><span class="bar h44"></span><span class="bar h37"></span><span class="bar h59"></span><span class="bar h41"></span><span class="bar h61"></span>
+                  </div>
+                </div>
+                <div class="sk-card">
+                  <div class="sk-bars">
+                    <span class="bar h32"></span><span class="bar h46"></span><span class="bar h39"></span><span class="bar h54"></span><span class="bar h47"></span><span class="bar h64"></span>
+                  </div>
+                </div>
+              </div>
+              @if (!hasStaffAnalyticsAccess()) {
+                <div class="analytics-skeleton-overlay">
+                  <p>Аналитика аккаунта не активирована.</p>
+                  <p-button label="Приобрести подписку" icon="pi pi-wallet" (onClick)="openStaffAnalyticsSubscription()" />
+                </div>
+              }
+            </div>
+
+            <div class="analytics-list staff-list">
+              @for (table of analyticsTables; track table.tableId) {
+                @if (hasStaffAnalyticsAccess()) {
+                  <details class="analytics-accordion">
+                    <summary>
+                      <div class="accordion-summary">
+                        <div>
+                          <h3>{{ table.tableName }}</h3>
+                          <small>Участников: {{ table.participants }} | Активных сотрудников: {{ table.activeEmployees }}</small>
+                        </div>
+                        <p-tag severity="success" value="Доступ активен"></p-tag>
+                      </div>
+                    </summary>
+                    <div class="mini-charts-grid">
+                      @for (chart of table.charts; track chart.title) {
+                        <div class="mini-chart-card">
+                          <div class="mini-chart-head">
+                            <strong>{{ chart.title }}</strong>
+                            <small>{{ chart.subtitle }}</small>
+                          </div>
+                          <div class="mini-bars">
+                            @for (value of chart.values; track $index) {
+                              <div class="mini-bar-wrap">
+                                <div class="mini-bar" [style.height.%]="(value / chartMax(chart.values)) * 100" [title]="value"></div>
+                              </div>
+                            }
+                          </div>
+                          <div class="mini-chart-meta">
+                            <span>Ср: {{ chartAverage(chart.values) }}</span>
+                            <span>Пик: {{ chartMax(chart.values) }}</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </details>
+                } @else {
+                  <div class="analytics-locked">
+                    <div class="locked-title">
+                      <h3>{{ table.tableName }}</h3>
+                    </div>
+                    <div class="locked-preview"></div>
+                  </div>
+                }
+              }
+            </div>
+          }
+        } @else if (selectedCategory === 'settings') {
+          <div class="content-head">
+            <h2>Настройки</h2>
+            <p>Управление личными параметрами аккаунта и рабочими настройками.</p>
+          </div>
+
+          <div class="settings-layout">
+            <aside class="settings-nav">
+              @for (tab of settingsTabs; track tab.id) {
+                <button
+                  type="button"
+                  class="settings-tab-btn"
+                  [class.active]="selectedSettingsTab === tab.id"
+                  (click)="selectSettingsTab(tab.id)"
+                >
+                  <i [class]="tab.icon"></i>
+                  <span>{{ tab.label }}</span>
+                </button>
+              }
+            </aside>
+
+            <div class="settings-content">
+              @if (selectedSettingsTab === 'account') {
+                <p-card>
+                  <div class="settings-section-head">
+                    <h3>Аккаунт</h3>
+                    <p>Безопасность и управление уведомлениями.</p>
+                  </div>
+
+                  <div class="settings-form-grid">
+                    <label class="full">
+                      <span>Профиль</span>
+                      <input type="text" pInputText [ngModel]="accountForm.fullName" disabled />
+                    </label>
+                    <label class="full">
+                      <span>Логин</span>
+                      <input type="text" pInputText [ngModel]="accountForm.login" disabled />
+                    </label>
+                  </div>
+
+                  <div class="settings-section-head section-gap">
+                    <h3>Безопасность</h3>
+                    <p>Часть данных скрыта. Поля недоступны для прямого редактирования.</p>
+                  </div>
+
+                  <div class="settings-form-grid">
+                    <label class="full">
+                      <span>Email</span>
+                      <div class="inline-control">
+                        <input type="text" pInputText [ngModel]="accountForm.emailMasked" disabled />
+                        <p-button label="Изменить" icon="pi pi-pencil" size="small" (onClick)="requestEmailChange()" />
+                      </div>
+                    </label>
+
+                    <label class="full">
+                      <span>Пароль</span>
+                      <div class="inline-control">
+                        <input type="text" pInputText [ngModel]="accountForm.passwordMasked" disabled />
+                        <p-button label="Изменить" icon="pi pi-key" size="small" (onClick)="requestPasswordChange()" />
+                      </div>
+                    </label>
+                  </div>
+
+                  <div class="settings-section-head section-gap">
+                    <h3>Уведомления</h3>
+                    <p>Выберите, откуда принимать уведомления и куда их доставлять.</p>
+                  </div>
+
+                  <div class="notify-grid">
+                    <div class="notify-col">
+                      <h4>Откуда принимать</h4>
+                      <label class="switch-row">
+                        <span>Системные</span>
+                        <p-inputSwitch [(ngModel)]="notificationsSettings.sources.system" />
+                      </label>
+                      <label class="switch-row">
+                        <span>По столам</span>
+                        <p-inputSwitch [(ngModel)]="notificationsSettings.sources.tables" />
+                      </label>
+                      <label class="switch-row">
+                        <span>По сотрудникам</span>
+                        <p-inputSwitch [(ngModel)]="notificationsSettings.sources.employees" />
+                      </label>
+                    </div>
+                    <div class="notify-col">
+                      <h4>Куда принимать</h4>
+                      <label class="switch-row">
+                        <span>ПК (desktop)</span>
+                        <p-inputSwitch [(ngModel)]="notificationsSettings.targets.desktop" />
+                      </label>
+                      <label class="switch-row">
+                        <span>Телефон</span>
+                        <p-inputSwitch [(ngModel)]="notificationsSettings.targets.mobile" />
+                      </label>
+                      <label class="switch-row">
+                        <span>Email</span>
+                        <p-inputSwitch [(ngModel)]="notificationsSettings.targets.email" />
+                      </label>
+                    </div>
+                  </div>
+
+                  @if (settingsError) {
+                    <p-message severity="error" [text]="settingsError" [closable]="false" />
+                  }
+                  @if (settingsSaved) {
+                    <p-message severity="success" text="Настройки сохранены." [closable]="false" />
+                  }
+                  <div class="dialog-actions">
+                    <p-button label="Сохранить настройки" icon="pi pi-check" [loading]="settingsLoading" (onClick)="saveAccountSettings()" />
+                  </div>
+                </p-card>
+              }
+
+              @if (selectedSettingsTab === 'appearance') {
+                <p-card>
+                  <div class="settings-section-head">
+                    <h3>Оформление</h3>
+                    <p>Персональные настройки отображения интерфейса.</p>
+                  </div>
+                  <div class="settings-form-grid">
+                    <label>
+                      <span>Тема</span>
+                      <select [(ngModel)]="appearanceSettings.theme">
+                        <option value="light">Светлая</option>
+                        <option value="dark">Тёмная</option>
+                        <option value="auto">Авто</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Плотность интерфейса</span>
+                      <select [(ngModel)]="appearanceSettings.density">
+                        <option value="compact">Компактная</option>
+                        <option value="comfortable">Стандартная</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Размер карточек</span>
+                      <select [(ngModel)]="appearanceSettings.cardSize">
+                        <option value="small">Маленькие</option>
+                        <option value="medium">Средние</option>
+                        <option value="large">Крупные</option>
+                      </select>
+                    </label>
+                  </div>
+                  @if (settingsError) {
+                    <p-message severity="error" [text]="settingsError" [closable]="false" />
+                  }
+                  @if (settingsSaved) {
+                    <p-message severity="success" text="Оформление сохранено." [closable]="false" />
+                  }
+                  <div class="dialog-actions">
+                    <p-button label="Применить оформление" icon="pi pi-check" [loading]="settingsLoading" (onClick)="saveAppearanceSettings()" />
+                  </div>
+                </p-card>
+              }
+            </div>
+          </div>
+        } @else if (selectedCategory === 'subscription') {
+          <div class="content-head">
+            <h2>Подписка для столов</h2>
+            <p>Покупка бонусов по каждому столу отдельно. Сумма рассчитывается за месяц.</p>
+          </div>
+
+          @if (!isOwner) {
+            <p-card>
+              <div class="settings-section-head">
+                <h3>Подписка аккаунта</h3>
+                <p>Управление доступом к аналитике и задачам в аккаунте сотрудника.</p>
+              </div>
+              <div class="sub-bonus-grid">
+                @for (plan of accountSubscriptionPlans; track plan.key) {
+                  <div class="sub-bonus-card">
+                    <div>
+                      <strong>{{ plan.title }}</strong>
+                      <small>{{ plan.description }}</small>
+                      <small>{{ formatRub(plan.price) }} / мес</small>
+                    </div>
+                    <p-inputSwitch
+                      [ngModel]="accountSubscriptionEnabled(plan.key)"
+                      (ngModelChange)="setAccountSubscriptionEnabled(plan.key, $event)"
+                    />
+                  </div>
+                }
+              </div>
+              <p class="monthly-total">Итого к оплате в месяц: <strong>{{ formatRub(accountSubscriptionMonthlyTotal()) }}</strong></p>
+            </p-card>
+          } @else if (!hasSubscriptionTables) {
+            <p-card>
+              <p>У вас пока нет столов для подключения бонусов.</p>
+              <div class="table-toolbar">
+                <p-button label="Создать стол" icon="pi pi-plus" (onClick)="openCreateTableDialog()" />
+              </div>
+            </p-card>
+          } @else {
+            <div class="sub-accordion-list">
+              @for (table of ownerTables; track table.id) {
+                <details class="sub-accordion">
+                  <summary>
+                    <div class="sub-accordion-summary">
+                      <div>
+                        <h3>{{ table.title }}</h3>
+                        <small>Участников: {{ table.totalParticipants }} | Владелец: {{ table.ownerShortName }}</small>
+                      </div>
+                      <p-tag severity="success" [value]="'К оплате: ' + formatRub(tableMonthlyTotal(table.id)) + ' / мес'"></p-tag>
+                    </div>
+                  </summary>
+
+                  <div class="sub-body">
+                    <div class="sub-active">
+                      <strong>Активированные бонусы:</strong>
+                      @if (activeBonusLabels(table.id).length === 0) {
+                        <p>Пока ничего не выбрано.</p>
+                      } @else {
+                        <ul>
+                          @for (item of activeBonusLabels(table.id); track item) {
+                            <li>{{ item }}</li>
+                          }
+                        </ul>
+                      }
+                    </div>
+
+                    <div class="sub-bonus-grid">
+                      @for (bonus of subscriptionBonuses; track bonus.key) {
+                        <div class="sub-bonus-card">
+                          <div>
+                            <strong>{{ bonus.title }}</strong>
+                            <small>{{ formatRub(bonus.price) }} / мес</small>
+                          </div>
+
+                          @if (bonus.kind === 'quantity') {
+                            <div class="qty-controls">
+                              <button type="button" (click)="changeBonusQuantity(table.id, bonus.key, bonusValue(table.id, bonus.key) - 1, bonus.maxQty ?? 0)">-</button>
+                              <span>{{ bonusValue(table.id, bonus.key) }}</span>
+                              <button type="button" (click)="changeBonusQuantity(table.id, bonus.key, bonusValue(table.id, bonus.key) + 1, bonus.maxQty ?? 0)">+</button>
+                            </div>
+                          } @else {
+                            <p-inputSwitch
+                              [ngModel]="bonusValue(table.id, bonus.key) > 0"
+                              (ngModelChange)="setBonusToggle(table.id, bonus.key, $event)"
+                            />
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <div class="promo-row">
+                      <input
+                        type="text"
+                        pInputText
+                        placeholder="Промокод"
+                        [ngModel]="getTableSubscription(table.id).promoCode"
+                        (ngModelChange)="setPromoCode(table.id, $event)"
+                      />
+                      <p-button label="Применить" size="small" (onClick)="applyPromo(table.id)" />
+                    </div>
+                    @if (getTableSubscription(table.id).promoError) {
+                      <small class="promo-error">{{ getTableSubscription(table.id).promoError }}</small>
+                    }
+
+                    <div class="sub-totals">
+                      <p>Подытог: <strong>{{ formatRub(tableSubtotal(table.id)) }}</strong></p>
+                      <p>
+                        Скидка за 3+ пункта:
+                        <strong>-{{ formatRub(tableAutoDiscount(table.id)) }}</strong>
+                        @if (selectedBonusesCount(table.id) > 3) {
+                          <span class="discount-badge">-15%</span>
+                        }
+                      </p>
+                      <p>Скидка по промокоду: <strong>-{{ formatRub(tablePromoDiscount(table.id)) }}</strong></p>
+                      <p class="monthly-total">Итого к оплате в месяц: <strong>{{ formatRub(tableMonthlyTotal(table.id)) }}</strong></p>
+                    </div>
+                  </div>
+                </details>
+              }
+            </div>
+          }
+        } @else {
+          <p-card>
+            <div class="stub">
+              <h3>Раздел «{{ selectedCategoryLabel }}»</h3>
+              <p>Этот модуль подготовим следующим шагом.</p>
+            </div>
+          </p-card>
+        }
+      </section>
+    </div>
+  }
 </div>
+
+<p-dialog
+  [(visible)]="employeeDialogVisible"
+  [modal]="true"
+  [style]="{ width: '46rem', maxWidth: '95vw' }"
+  [header]="employeeDialogMode === 'create' ? 'Добавление сотрудника' : 'Редактирование сотрудника'"
+>
+  <div class="employee-form-grid">
+    <label>
+      <span>Фамилия *</span>
+      <input type="text" pInputText [(ngModel)]="employeeForm.lastName" />
+    </label>
+
+    <label>
+      <span>Имя *</span>
+      <input type="text" pInputText [(ngModel)]="employeeForm.firstName" />
+    </label>
+
+    <label>
+      <span>Отчество</span>
+      <input type="text" pInputText [(ngModel)]="employeeForm.middleName" />
+    </label>
+
+    <label>
+      <span>Дата рождения *</span>
+      <input type="date" pInputText [(ngModel)]="employeeForm.birthDate" />
+    </label>
+
+    <label>
+      <span>Номер телефона *</span>
+      <input type="tel" pInputText [(ngModel)]="employeeForm.phone" />
+    </label>
+
+    <label>
+      <span>Email сотрудника</span>
+      <input type="email" pInputText [(ngModel)]="employeeForm.email" />
+    </label>
+
+    <label>
+      <span>Должность *</span>
+      <input type="text" pInputText [(ngModel)]="employeeForm.position" placeholder="Например: Барбер" />
+    </label>
+
+    <label class="full">
+      <span>Примечание</span>
+      <textarea rows="3" pInputText [(ngModel)]="employeeForm.note"></textarea>
+    </label>
+
+    <label class="full">
+      <span>Аватар</span>
+      <input type="file" accept="image/*" (change)="onAvatarFileSelected($event)" />
+      @if (employeeForm.avatarDataUrl) {
+        <div class="avatar-preview-row">
+          <img [src]="employeeForm.avatarDataUrl" alt="avatar preview" class="avatar avatar-preview" />
+          <p-button label="Убрать аватар" icon="pi pi-trash" size="small" styleClass="p-button-text" (onClick)="clearAvatar()" />
+        </div>
+      }
+    </label>
+  </div>
+
+  @if (formError) {
+    <p-message severity="error" [text]="formError" [closable]="false" />
+  }
+
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="employeeDialogVisible = false" />
+    <p-button
+      [label]="employeeDialogMode === 'create' ? 'Создать аккаунт' : 'Сохранить изменения'"
+      icon="pi pi-check"
+      (onClick)="submitEmployeeForm()"
+    />
+  </div>
+</p-dialog>
+
+<p-dialog [(visible)]="inviteDialogVisible" [modal]="true" [style]="{ width: '30rem', maxWidth: '95vw' }" header="Приглашение сотрудника">
+  <p>
+    Отправьте сотруднику код приглашения:
+  </p>
+  <div class="invite-link">
+    <code>{{ inviteLink }}</code>
+  </div>
+  <small>Сотрудник вводит код в разделе «Сотрудники» и принимает приглашение.</small>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="tableMembersDialogVisible"
+  [modal]="true"
+  [style]="{ width: '34rem', maxWidth: '95vw' }"
+  header="Добавление сотрудников в стол"
+>
+  @if (selectedTableForMembers) {
+    <p><strong>Стол:</strong> {{ selectedTableForMembers.title }}</p>
+  }
+  @if (ownerEmployees.length === 0) {
+    <p>Нет сотрудников для добавления.</p>
+  } @else {
+    <div class="checkbox-list">
+      @for (employee of ownerEmployees; track employee.id) {
+        <button type="button" class="member-add-btn" (click)="addEmployeeToSelectedTable(employee.id)">
+          {{ employee.lastName }} {{ employee.firstName }} <span>Добавить</span>
+        </button>
+      }
+    </div>
+  }
+  @if (tableMembersActionError) {
+    <p-message severity="error" [text]="tableMembersActionError" [closable]="false" />
+  }
+</p-dialog>
+
+<p-dialog
+  [(visible)]="logoutConfirmVisible"
+  [modal]="true"
+  [closable]="false"
+  [style]="{ width: '28rem', maxWidth: '95vw' }"
+  header="Подтверждение выхода"
+>
+  <p>Вы уверены, что хотите выйти из аккаунта?</p>
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="logoutConfirmVisible = false" />
+    <p-button label="Выйти" icon="pi pi-sign-out" severity="danger" (onClick)="confirmLogout()" />
+  </div>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="tableDialogVisible"
+  [modal]="true"
+  [style]="{ width: '44rem', maxWidth: '96vw' }"
+  header="Создание стола"
+>
+  @if (!tableCodeDialogVisible) {
+    <div class="employee-form-grid">
+      <label class="full">
+        <span>Название стола *</span>
+        <input type="text" pInputText [(ngModel)]="tableForm.title" />
+      </label>
+      <label class="full">
+        <span>Описание</span>
+        <textarea rows="3" pInputText [(ngModel)]="tableForm.description"></textarea>
+      </label>
+
+      <label>
+        <span>Предустановка *</span>
+        <select [(ngModel)]="tableForm.preset">
+          <option value="barbershop">Парикмахерская</option>
+          <option value="grooming">Грумминг</option>
+          <option value="custom">Своё</option>
+        </select>
+      </label>
+      @if (tableForm.preset === 'custom') {
+        <label>
+          <span>Название предустановки *</span>
+          <input type="text" pInputText [(ngModel)]="tableForm.customPresetName" />
+        </label>
+      }
+
+      <label>
+        <span>Формат времени *</span>
+        <select [(ngModel)]="tableForm.timeFormat">
+          <option value="us">Американский стиль (AM/PM)</option>
+          <option value="eu">Европейский стиль (24ч)</option>
+        </select>
+      </label>
+      <label>
+        <span>Начало недели *</span>
+        <select [(ngModel)]="tableForm.weekStartDay">
+          <option value="monday">Понедельник</option>
+          <option value="tuesday">Вторник</option>
+          <option value="wednesday">Среда</option>
+          <option value="thursday">Четверг</option>
+          <option value="friday">Пятница</option>
+          <option value="saturday">Суббота</option>
+          <option value="sunday">Воскресенье</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Рабочие часы: с</span>
+        <input type="time" pInputText [(ngModel)]="tableForm.workDayStart" />
+      </label>
+      <label>
+        <span>Рабочие часы: до</span>
+        <input type="time" pInputText [(ngModel)]="tableForm.workDayEnd" />
+      </label>
+    </div>
+
+    <div class="settings-section-head section-gap">
+      <h3>Выбор сотрудников</h3>
+      <p>Можно сразу прикрепить сотрудников, если они уже добавлены к аккаунту.</p>
+    </div>
+    @if (ownerEmployees.length === 0) {
+      <small>Сотрудники пока не добавлены.</small>
+    } @else {
+      <div class="checkbox-list">
+        @for (employee of ownerEmployees; track employee.id) {
+          <label>
+            <input
+              type="checkbox"
+              [checked]="tableForm.selectedEmployeeIds.includes(employee.id)"
+              (change)="toggleTableEmployee(employee.id, $any($event.target).checked)"
+            />
+            <span>{{ employee.lastName }} {{ employee.firstName }}</span>
+          </label>
+        }
+      </div>
+    }
+
+    <div class="settings-section-head section-gap">
+      <h3>Выбор бонусов</h3>
+      <p>Если ничего не выбрано, сумма будет 0 ₽ в месяц.</p>
+    </div>
+    <div class="sub-bonus-grid">
+      @for (bonus of subscriptionBonuses; track bonus.key) {
+        <div class="sub-bonus-card">
+          <div>
+            <strong>{{ bonus.title }}</strong>
+            <small>{{ formatRub(bonus.price) }} / мес</small>
+          </div>
+          @if (bonus.kind === 'quantity') {
+            <div class="qty-controls">
+              <button type="button" (click)="changeTableBonusQuantity(bonus.key, -1, bonus.maxQty ?? 0)">-</button>
+              <span>{{ tableBonusValue(bonus.key) }}</span>
+              <button type="button" (click)="changeTableBonusQuantity(bonus.key, 1, bonus.maxQty ?? 0)">+</button>
+            </div>
+          } @else {
+            <p-inputSwitch [ngModel]="tableBonusValue(bonus.key) > 0" (ngModelChange)="setTableBonusToggle(bonus.key, $event)" />
+          }
+        </div>
+      }
+    </div>
+    <p class="monthly-total">К оплате в месяц: <strong>{{ formatRub(createFormBonusMonthlyTotal()) }}</strong></p>
+
+    @if (tableFormError) {
+      <p-message severity="error" [text]="tableFormError" [closable]="false" />
+    }
+    <div class="dialog-actions">
+      <p-button label="Отмена" styleClass="p-button-text" (onClick)="tableDialogVisible = false" />
+      <p-button label="Создать (получить код)" icon="pi pi-envelope" [loading]="creatingTable" (onClick)="submitCreateTable()" />
+    </div>
+  } @else {
+    <p>На вашу почту отправлен код подтверждения. Введите его для завершения создания стола.</p>
+    <label class="full">
+      <span>Код из email</span>
+      <input type="text" pInputText [(ngModel)]="tableCreateCode" />
+    </label>
+    @if (tableFormError) {
+      <p-message severity="error" [text]="tableFormError" [closable]="false" />
+    }
+    <div class="dialog-actions">
+      <p-button label="Назад" styleClass="p-button-text" (onClick)="tableCodeDialogVisible = false" />
+      <p-button label="Подтвердить и создать" icon="pi pi-check" [loading]="creatingTable" (onClick)="confirmCreateTableByCode()" />
+    </div>
+  }
+</p-dialog>
 

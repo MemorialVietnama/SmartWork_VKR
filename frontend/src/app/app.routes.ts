@@ -12,6 +12,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/auth/register/register.page').then((m) => m.RegisterPageComponent),
   },
   {
+    path: 'auth/invite-register',
+    loadComponent: () => import('./pages/auth/invite-register/invite-register.page').then((m) => m.InviteRegisterPageComponent),
+  },
+  {
     path: 'auth/verify',
     loadComponent: () => import('./pages/auth/verify/verify.page').then((m) => m.VerifyPageComponent),
   },

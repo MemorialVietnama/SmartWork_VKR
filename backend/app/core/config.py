@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:4200,http://127.0.0.1:4200"
     API_V1_PREFIX: str = "/api/v1"
     FRONTEND_BASE_URL: str = "http://localhost"
+    ENABLE_DEV_SEED_STAFF: bool = False
+    DEV_SEED_STAFF_LOGIN: str = "superworker@smartwork.local"
+    DEV_SEED_STAFF_PASSWORD: str = ""
 
     @property
     def cors_origins_list(self) -> list[str]:

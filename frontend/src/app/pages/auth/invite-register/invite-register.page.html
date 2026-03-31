@@ -1,0 +1,58 @@
+<div class="invite-register-page">
+  <p-card>
+    <h2>Регистрация по приглашению</h2>
+
+    @if (inviteInfo) {
+      <p-message
+        severity="info"
+        [text]="'Аккаунт будет привязан к владельцу: ' + inviteInfo.owner_short_name + (inviteInfo.table_title ? ' (стол: ' + inviteInfo.table_title + ')' : '')"
+        [closable]="false"
+      />
+    }
+
+    @if (!done) {
+      <div class="form-grid">
+        <label>
+          <span>Фамилия</span>
+          <input type="text" pInputText [(ngModel)]="lastName" />
+        </label>
+        <label>
+          <span>Имя</span>
+          <input type="text" pInputText [(ngModel)]="firstName" />
+        </label>
+        <label>
+          <span>Отчество</span>
+          <input type="text" pInputText [(ngModel)]="middleName" />
+        </label>
+        <label>
+          <span>Дата рождения</span>
+          <input type="date" pInputText [(ngModel)]="birthDate" />
+        </label>
+        <label>
+          <span>Телефон</span>
+          <input type="tel" pInputText [(ngModel)]="phone" />
+        </label>
+        <label>
+          <span>Email</span>
+          <input type="email" pInputText [(ngModel)]="email" />
+        </label>
+        <label class="full">
+          <span>Аватар</span>
+          <input type="file" accept="image/*" (change)="onAvatarFileSelected($event)" />
+          @if (avatarDataUrl) {
+            <img [src]="avatarDataUrl" alt="avatar" style="width:48px;height:48px;border-radius:999px;object-fit:cover;margin-top:8px;" />
+          }
+        </label>
+      </div>
+      <div class="actions">
+        <p-button label="Зарегистрироваться и получить код" icon="pi pi-check" [loading]="loading" (onClick)="submit()" />
+      </div>
+    } @else {
+      <p-message severity="success" text="Код подтверждения отправлен на email. Переходим к подтверждению." [closable]="false" />
+    }
+
+    @if (error) {
+      <p-message severity="error" [text]="error" [closable]="false" />
+    }
+  </p-card>
+</div>

@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import create_access_token, decode_token, hash_password, verify_password
 from app.db.session import get_db
+from app.models.table_member import TableMember
 from app.models.user import User
 from app.schemas.auth import (
     AuthResponse,
@@ -218,6 +219,28 @@ async def register_confirm(req: RegisterConfirmRequest, db: AsyncSession = Depen
         await r.aclose()
 
     user.is_active = True
+
+    # Если регистрация шла по invite-ссылке, привязываем к владельцу и столу.
+    r = redis.from_url(settings.REDIS_URL, decode_responses=True)
+    try:
+        bind_raw = await r.get(f"invite_bind:{login}")
+        if bind_raw:
+            import json
+
+            bind = json.loads(bind_raw)
+            owner_id = int(bind.get("owner_id"))
+            table_id = int(bind.get("table_id"))
+            if user.owner_id is None:
+                user.owner_id = owner_id
+            member_res = await db.execute(
+                select(TableMember).where(TableMember.table_id == table_id, TableMember.user_id == user.id),
+            )
+            if not member_res.scalar_one_or_none():
+                db.add(TableMember(table_id=table_id, user_id=user.id))
+            await r.delete(f"invite_bind:{login}")
+    finally:
+        await r.aclose()
+
     db.add(user)
     await db.commit()
     await db.refresh(user)
