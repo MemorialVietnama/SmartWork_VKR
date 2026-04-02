@@ -3,9 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   inject,
-  OnInit,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
@@ -46,12 +44,11 @@ import {
   templateUrl: './workspace-calendar.tab.html',
   styleUrl: './workspace-calendar.tab.scss',
 })
-export class WorkspaceCalendarTabComponent implements OnInit {
+export class WorkspaceCalendarTabComponent {
   private readonly auth = inject(AuthService);
-  private readonly destroyRef = inject(DestroyRef);
   protected readonly state = inject(TableWorkspaceState);
 
-  protected readonly viewMode = signal<CalendarViewMode>('month');
+  protected readonly viewMode = signal<CalendarViewMode>('week');
   /** Опорная дата; при смене всегда новый объект Date */
   protected readonly anchorDate = signal<Date>(new Date());
 
@@ -109,7 +106,8 @@ export class WorkspaceCalendarTabComponent implements OnInit {
     workHoursToHourIndices(this.state.detail()?.work_hours ?? null),
   );
 
-  ngOnInit(): void {
+  constructor() {
+    // toObservable и takeUntilDestroyed() требуют контекста внедрения — не вызывать из ngOnInit (NG0203).
     toObservable(this.loadKey)
       .pipe(
         distinctUntilChanged(
@@ -132,7 +130,7 @@ export class WorkspaceCalendarTabComponent implements OnInit {
             finalize(() => this.slotsLoading.set(false)),
           );
         }),
-        takeUntilDestroyed(this.destroyRef),
+        takeUntilDestroyed(),
       )
       .subscribe((data) => this.slots.set(data));
   }
