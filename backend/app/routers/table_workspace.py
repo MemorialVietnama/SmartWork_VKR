@@ -45,6 +45,14 @@ async def _bonus_qty(db: AsyncSession, table_id: int, key: str) -> int:
     return row.qty if row else 0
 
 
+# Минимум слотов справочников без покупки бонуса (вкладка доступна по умолчанию).
+DEFAULT_DIRECTORY_SLOTS = 1
+
+
+async def _directory_slot_limit(db: AsyncSession, table_id: int) -> int:
+    return max(await _bonus_qty(db, table_id, "extra_directories"), DEFAULT_DIRECTORY_SLOTS)
+
+
 async def _require_table_access(
     db: AsyncSession,
     current_user: User,
@@ -374,9 +382,6 @@ async def list_directories(
     current_user: User = Depends(get_current_user),
 ) -> list[TableDirectoryDto]:
     await _require_table_access(db, current_user, table_id)
-    max_n = await _bonus_qty(db, table_id, "extra_directories")
-    if max_n <= 0:
-        return []
     res = await db.execute(
         select(TableDirectory)
         .options(selectinload(TableDirectory.items))
@@ -404,7 +409,7 @@ async def create_directory(
     table, is_owner = await _require_table_access(db, current_user, table_id)
     if not is_owner:
         raise HTTPException(status_code=403, detail="Только владелец может создавать справочники")
-    max_n = await _bonus_qty(db, table_id, "extra_directories")
+    max_n = await _directory_slot_limit(db, table_id)
     count_res = await db.execute(select(func.count()).select_from(TableDirectory).where(TableDirectory.table_id == table_id))
     current_count = int(count_res.scalar() or 0)
     if current_count >= max_n:
@@ -427,8 +432,6 @@ async def add_directory_item(
     table, is_owner = await _require_table_access(db, current_user, table_id)
     if not is_owner:
         raise HTTPException(status_code=403, detail="Только владелец может редактировать справочники")
-    if await _bonus_qty(db, table_id, "extra_directories") <= 0:
-        raise HTTPException(status_code=403, detail="Справочники не подключены")
     res = await db.execute(
         select(TableDirectory).where(TableDirectory.id == directory_id, TableDirectory.table_id == table_id),
     )

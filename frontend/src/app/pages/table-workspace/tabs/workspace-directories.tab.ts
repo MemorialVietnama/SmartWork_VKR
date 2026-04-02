@@ -29,16 +29,13 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     this.refresh();
   }
 
-  protected get unlocked(): boolean {
-    return this.state.bonusQty('extra_directories') > 0;
-  }
-
   protected get canEdit(): boolean {
     return !!this.state.detail()?.can_edit_settings;
   }
 
+  /** Лимит справочников: минимум 1 без бонуса; бонус увеличивает слоты. */
   protected get maxDirs(): number {
-    return this.state.bonusQty('extra_directories');
+    return Math.max(this.state.bonusQty('extra_directories'), 1);
   }
 
   protected refresh(): void {
