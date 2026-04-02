@@ -3,16 +3,40 @@
 .env.local
 *.local
 
-# Python
-backend/__pycache__/
-backend/**/__pycache__/
-backend/.venv/
-backend/venv/
+# Python (интерпретатор, виртуальные окружения, библиотеки и кэш)
+__pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+.uv/
+
+# Сборка / установка пакетов
+*.egg
 *.egg-info/
+*.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# Тесты и линтеры
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
 .coverage
+.coverage.*
 htmlcov/
+*.cover
+.hypothesis/
+
+# Jupyter
+.ipynb_checkpoints/
 
 # Node / Angular
 frontend/node_modules/
