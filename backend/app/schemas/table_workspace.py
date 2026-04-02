@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.table import TableBonusDto, TableStatDto
 
@@ -9,6 +9,35 @@ class TableMemberBriefDto(BaseModel):
     user_id: int
     short_name: str
     is_owner: bool
+
+
+class TablePatchRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=2, max_length=150)
+    description: str | None = Field(default=None, max_length=500)
+    preset: str | None = Field(default=None, max_length=50)
+    custom_preset_name: str | None = Field(default=None, max_length=80)
+    time_format: str | None = Field(default=None, max_length=10)
+    week_start_day: str | None = Field(default=None, max_length=20)
+    work_hours: str | None = Field(default=None, max_length=30)
+    color: str | None = Field(default=None, max_length=20)
+
+    @model_validator(mode="after")
+    def at_least_one_field(self) -> "TablePatchRequest":
+        if not any(
+            getattr(self, name) is not None
+            for name in (
+                "title",
+                "description",
+                "preset",
+                "custom_preset_name",
+                "time_format",
+                "week_start_day",
+                "work_hours",
+                "color",
+            )
+        ):
+            raise ValueError("Укажите хотя бы одно поле для обновления.")
+        return self
 
 
 class TableDetailDto(BaseModel):

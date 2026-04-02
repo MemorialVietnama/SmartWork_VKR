@@ -1,0 +1,334 @@
+<div class="tw-tab tw-settings">
+  <h2 class="tw-settings-title">Настройки</h2>
+
+  <nav class="tw-settings-nav" aria-label="Подразделы настроек">
+    @for (item of navItems(); track item.id) {
+      <button
+        type="button"
+        class="tw-settings-nav-btn"
+        [class.active]="section() === item.id"
+        [attr.aria-current]="section() === item.id ? 'page' : null"
+        (click)="selectNavItem(item)"
+      >
+        {{ item.label }}
+      </button>
+    }
+  </nav>
+
+  <div class="tw-settings-body">
+    @if (section() === 'notifications') {
+      <p-card>
+        <div class="tw-settings-section-head">
+          <h3>Уведомления</h3>
+          <p>Источники и каналы доставки относятся к вашему аккаунту и действуют во всём приложении.</p>
+        </div>
+        <div class="notify-grid">
+          <div class="notify-col">
+            <h4>Откуда принимать</h4>
+            <label class="switch-row">
+              <span>Системные</span>
+              <p-inputSwitch
+                [ngModel]="notifications().sources.system"
+                (ngModelChange)="setNotifSource('system', $event)"
+                inputId="ws-n-src-system"
+              />
+            </label>
+            <label class="switch-row">
+              <span>По столам</span>
+              <p-inputSwitch
+                [ngModel]="notifications().sources.tables"
+                (ngModelChange)="setNotifSource('tables', $event)"
+                inputId="ws-n-src-tables"
+              />
+            </label>
+            <label class="switch-row">
+              <span>По сотрудникам</span>
+              <p-inputSwitch
+                [ngModel]="notifications().sources.employees"
+                (ngModelChange)="setNotifSource('employees', $event)"
+                inputId="ws-n-src-employees"
+              />
+            </label>
+          </div>
+          <div class="notify-col">
+            <h4>Куда доставлять</h4>
+            <label class="switch-row">
+              <span>ПК (desktop)</span>
+              <p-inputSwitch
+                [ngModel]="notifications().targets.desktop"
+                (ngModelChange)="setNotifTarget('desktop', $event)"
+                inputId="ws-n-tgt-desktop"
+              />
+            </label>
+            <label class="switch-row">
+              <span>Телефон</span>
+              <p-inputSwitch
+                [ngModel]="notifications().targets.mobile"
+                (ngModelChange)="setNotifTarget('mobile', $event)"
+                inputId="ws-n-tgt-mobile"
+              />
+            </label>
+            <label class="switch-row">
+              <span>Email</span>
+              <p-inputSwitch
+                [ngModel]="notifications().targets.email"
+                (ngModelChange)="setNotifTarget('email', $event)"
+                inputId="ws-n-tgt-email"
+              />
+            </label>
+          </div>
+        </div>
+        @if (settingsError()) {
+          <p-message severity="error" [text]="settingsError()!" [closable]="false" />
+        }
+        @if (settingsSaved()) {
+          <p-message severity="success" text="Настройки сохранены." [closable]="false" />
+        }
+        <div class="tw-settings-actions">
+          <p-button
+            label="Сохранить уведомления"
+            icon="pi pi-check"
+            [loading]="settingsLoading()"
+            (onClick)="saveUserPrefs()"
+          />
+        </div>
+      </p-card>
+    }
+
+    @if (section() === 'appearance') {
+      <p-card>
+        <div class="tw-settings-section-head">
+          <h3>Оформление</h3>
+          <p>Персональные параметры интерфейса для вашего аккаунта.</p>
+        </div>
+        <div class="settings-form-grid">
+          <label>
+            <span>Тема</span>
+            <select [value]="appearance().theme" (change)="setAppearanceTheme($event)">
+              <option value="light">Светлая</option>
+              <option value="dark">Тёмная</option>
+              <option value="auto">Авто</option>
+            </select>
+          </label>
+          <label>
+            <span>Плотность интерфейса</span>
+            <select [value]="appearance().density" (change)="setAppearanceDensity($event)">
+              <option value="compact">Компактная</option>
+              <option value="comfortable">Стандартная</option>
+            </select>
+          </label>
+          <label>
+            <span>Размер карточек</span>
+            <select [value]="appearance().card_size" (change)="setAppearanceCardSize($event)">
+              <option value="small">Маленькие</option>
+              <option value="medium">Средние</option>
+              <option value="large">Крупные</option>
+            </select>
+          </label>
+        </div>
+        @if (settingsError()) {
+          <p-message severity="error" [text]="settingsError()!" [closable]="false" />
+        }
+        @if (settingsSaved()) {
+          <p-message severity="success" text="Оформление сохранено." [closable]="false" />
+        }
+        <div class="tw-settings-actions">
+          <p-button label="Сохранить оформление" icon="pi pi-check" [loading]="settingsLoading()" (onClick)="saveUserPrefs()" />
+        </div>
+      </p-card>
+    }
+
+    @if (section() === 'table' && isOwner()) {
+      <p-card>
+        <div class="tw-settings-section-head">
+          <h3>Настройки стола</h3>
+          <p>Основные параметры этого рабочего стола.</p>
+        </div>
+        @if (tableDraft(); as draft) {
+          <div class="settings-form-grid">
+            <label class="full">
+              <span>Название</span>
+              <input
+                type="text"
+                pInputText
+                [ngModel]="draft.title"
+                (ngModelChange)="updateTableDraft('title', $event)"
+                name="tableTitle"
+                autocomplete="off"
+              />
+            </label>
+            <label class="full">
+              <span>Описание</span>
+              <textarea
+                rows="3"
+                class="tw-textarea"
+                [ngModel]="draft.description"
+                (ngModelChange)="updateTableDraft('description', $event)"
+                name="tableDesc"
+              ></textarea>
+            </label>
+            <label>
+              <span>Предустановка</span>
+              <select [value]="draft.preset" (change)="onTablePresetChange($event)">
+                <option value="barbershop">Барбершоп</option>
+                <option value="grooming">Груминг</option>
+                <option value="custom">Своя</option>
+              </select>
+            </label>
+            @if (draft.preset === 'custom') {
+              <label class="full">
+                <span>Название своей предустановки</span>
+                <input
+                  type="text"
+                  pInputText
+                  [ngModel]="draft.customPresetName"
+                  (ngModelChange)="updateTableDraft('customPresetName', $event)"
+                  name="customPreset"
+                />
+              </label>
+            }
+            <label>
+              <span>Формат времени</span>
+              <select [value]="draft.timeFormat" (change)="updateTableDraft('timeFormat', $any($event.target).value)">
+                <option value="us">US (AM/PM)</option>
+                <option value="eu">EU (24 ч)</option>
+              </select>
+            </label>
+            <label>
+              <span>Неделя с</span>
+              <select [value]="draft.weekStartDay" (change)="updateTableDraft('weekStartDay', $any($event.target).value)">
+                <option value="monday">Понедельник</option>
+                <option value="tuesday">Вторник</option>
+                <option value="wednesday">Среда</option>
+                <option value="thursday">Четверг</option>
+                <option value="friday">Пятница</option>
+                <option value="saturday">Суббота</option>
+                <option value="sunday">Воскресенье</option>
+              </select>
+            </label>
+            <label>
+              <span>Начало рабочего дня</span>
+              <input
+                type="time"
+                [ngModel]="draft.workDayStart"
+                (ngModelChange)="updateTableDraft('workDayStart', $event)"
+                name="wsStart"
+              />
+            </label>
+            <label>
+              <span>Конец рабочего дня</span>
+              <input
+                type="time"
+                [ngModel]="draft.workDayEnd"
+                (ngModelChange)="updateTableDraft('workDayEnd', $event)"
+                name="wsEnd"
+              />
+            </label>
+          </div>
+        }
+        @if (tableSaveError()) {
+          <p-message severity="error" [text]="tableSaveError()!" [closable]="false" />
+        }
+        @if (tableSaved()) {
+          <p-message severity="success" text="Стол сохранён." [closable]="false" />
+        }
+        <div class="tw-settings-actions">
+          <p-button label="Сохранить стол" icon="pi pi-save" [loading]="tableSaveLoading()" (onClick)="saveTableSettings()" />
+        </div>
+      </p-card>
+    }
+
+    @if (section() === 'staff' && isOwner()) {
+      <p-card>
+        <div class="tw-settings-section-head">
+          <h3>Управление сотрудниками</h3>
+          <p>Участники этого стола и быстрое добавление из ваших сотрудников.</p>
+        </div>
+        <p class="tw-muted">
+          Карточки сотрудников, приглашения и привязка к столам — в
+          <button type="button" class="tw-link-inline" (click)="openDashboardEmployees()">дашборде, раздел «Сотрудники»</button>.
+        </p>
+        @if (employeesLoadError()) {
+          <p-message severity="error" [text]="employeesLoadError()!" [closable]="false" />
+        }
+        <div class="tw-settings-section-head section-gap">
+          <h4>Сейчас в столе</h4>
+        </div>
+        <ul class="tw-settings-member-list">
+          @for (m of state.members(); track m.user_id) {
+            <li>
+              @if (m.is_owner) {
+                <span class="tw-badge-mini">владелец</span>
+              }
+              {{ m.short_name }}
+            </li>
+          }
+        </ul>
+        <div class="tw-settings-section-head section-gap">
+          <h4>Добавить сотрудника в стол</h4>
+        </div>
+        @if (staffCandidates().length === 0) {
+          <p class="tw-muted">Нет доступных сотрудников для добавления (все уже участники или список пуст).</p>
+        } @else {
+          <div class="tw-form-inline-staff">
+            <label class="sr-only" for="ws-staff-select">Сотрудник</label>
+            <select
+              id="ws-staff-select"
+              class="tw-select"
+              [value]="selectedEmployeeId() ?? ''"
+              (change)="onStaffSelect($event)"
+            >
+              <option value="">Выберите сотрудника</option>
+              @for (e of staffCandidates(); track e.id) {
+                <option [value]="e.id">{{ employeeLabel(e) }}</option>
+              }
+            </select>
+            <p-button label="Добавить в стол" icon="pi pi-user-plus" (onClick)="addSelectedEmployeeToTable()" />
+          </div>
+        }
+        @if (staffActionError()) {
+          <p-message severity="error" [text]="staffActionError()!" [closable]="false" />
+        }
+      </p-card>
+    }
+
+    @if (section() === 'bonuses' && isOwner()) {
+      <p-card>
+        <div class="tw-settings-section-head">
+          <h3>Управление бонусами</h3>
+          <p>Активные опции для этого стола. Расчёт стоимости и оплата — в подписке.</p>
+        </div>
+        <p class="tw-muted">
+          Открыть полный экран подписки и промокоды:
+          <button type="button" class="tw-link-inline" (click)="openDashboardSubscription()">дашборд → «Подписка»</button>.
+        </p>
+        @if (bonusLoadError()) {
+          <p-message severity="error" [text]="bonusLoadError()!" [closable]="false" />
+        }
+        <div class="sub-bonus-grid">
+          @for (b of bonusCatalog; track b.key) {
+            <div class="sub-bonus-card">
+              <div>
+                <strong>{{ b.title }}</strong>
+                <small>{{ formatRub(b.price) }} / мес</small>
+              </div>
+              @if (b.kind === 'quantity') {
+                <div class="qty-controls" role="group" [attr.aria-label]="'Количество: ' + b.title">
+                  <button type="button" (click)="changeBonusQty(b.key, -1, b.maxQty ?? 50)">−</button>
+                  <span>{{ bonusQty(b.key) }}</span>
+                  <button type="button" (click)="changeBonusQty(b.key, 1, b.maxQty ?? 50)">+</button>
+                </div>
+              } @else {
+                <p-inputSwitch
+                  [ngModel]="bonusQty(b.key) > 0"
+                  (ngModelChange)="setBonusToggle(b.key, $event)"
+                  [inputId]="'ws-bonus-' + b.key"
+                />
+              }
+            </div>
+          }
+        </div>
+      </p-card>
+    }
+  </div>
+</div>

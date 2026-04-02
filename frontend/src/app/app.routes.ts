@@ -59,6 +59,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/table-workspace/tabs/workspace-analytics.tab').then((m) => m.WorkspaceAnalyticsTabComponent),
       },
+      {
+        path: 'settings',
+        loadComponent: () =>
+          import('./pages/table-workspace/tabs/workspace-settings.tab').then((m) => m.WorkspaceSettingsTabComponent),
+      },
     ],
   },
   {

@@ -25,6 +25,7 @@ from app.schemas.table_workspace import (
     DirectoryItemCreateRequest,
     DirectoryItemDto,
     TableDetailDto,
+    TablePatchRequest,
     TableDirectoryCreateRequest,
     TableDirectoryDto,
     TableMemberBriefDto,
@@ -132,6 +133,53 @@ async def get_table_detail(
         can_edit_settings=is_owner,
         bonuses=bonuses,
     )
+
+
+@router.patch("/{table_id}", response_model=TableDetailDto)
+async def patch_table_detail(
+    table_id: int,
+    req: TablePatchRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TableDetailDto:
+    table, is_owner = await _require_table_access(db, current_user, table_id)
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="Только владелец может менять настройки стола")
+
+    if req.title is not None:
+        table.title = req.title.strip()
+    if req.description is not None:
+        desc = req.description.strip()
+        table.description = desc if desc else None
+    if req.color is not None:
+        c = req.color.strip()
+        table.color = c if c else None
+    if req.time_format is not None:
+        table.time_format = req.time_format.strip()
+    if req.week_start_day is not None:
+        table.week_start_day = req.week_start_day.strip()
+    if req.work_hours is not None:
+        table.work_hours = req.work_hours.strip()
+
+    if req.preset is not None:
+        p = req.preset.strip()
+        table.preset = p
+        if p != "custom":
+            table.custom_preset_name = None
+    if req.custom_preset_name is not None:
+        preset_current = (table.preset or "").strip()
+        if preset_current != "custom":
+            raise HTTPException(
+                status_code=400,
+                detail="Название своей предустановки доступно только при типе «Своя».",
+            )
+        cn = req.custom_preset_name.strip()
+        if len(cn) < 2:
+            raise HTTPException(status_code=400, detail="Укажите название предустановки не короче 2 символов.")
+        table.custom_preset_name = cn
+
+    await db.commit()
+    return await get_table_detail(table_id, db, current_user)
 
 
 @router.get("/{table_id}/workspace/members", response_model=list[TableMemberBriefDto])

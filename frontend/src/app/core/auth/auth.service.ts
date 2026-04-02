@@ -385,6 +385,22 @@ export class AuthService {
     return this.http.get<TableDetailDto>(this.url(`/api/v1/tables/${tableId}`), { headers: this.authHeaders() });
   }
 
+  patchTableDetail(
+    tableId: number,
+    payload: {
+      title?: string;
+      description?: string | null;
+      preset?: string;
+      custom_preset_name?: string | null;
+      time_format?: string;
+      week_start_day?: string;
+      work_hours?: string;
+      color?: string | null;
+    },
+  ): Observable<TableDetailDto> {
+    return this.http.patch<TableDetailDto>(this.url(`/api/v1/tables/${tableId}`), payload, { headers: this.authHeaders() });
+  }
+
   listTableWorkspaceMembers(tableId: number): Observable<TableMemberBriefDto[]> {
     return this.http.get<TableMemberBriefDto[]>(
       this.url(`/api/v1/tables/${tableId}/workspace/members`),

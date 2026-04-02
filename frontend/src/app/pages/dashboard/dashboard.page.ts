@@ -432,7 +432,10 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
-  protected goTableWorkspace(tableId: number, tab: 'calendar' | 'tasks' | 'directories' | 'analytics' = 'calendar'): void {
+  protected goTableWorkspace(
+    tableId: number,
+    tab: 'calendar' | 'tasks' | 'directories' | 'analytics' | 'settings' = 'calendar',
+  ): void {
     void this.router.navigate(['/workspace/table', tableId, tab]);
     this.openedTableMenuId = null;
   }
