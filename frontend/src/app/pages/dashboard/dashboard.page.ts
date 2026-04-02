@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -39,6 +40,8 @@ import {
 })
 export class DashboardPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly analyticsBonusKey = 'unlock_analytics';
 
   protected user: MeDto | null = null;
@@ -134,6 +137,16 @@ export class DashboardPageComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    const section = this.route.snapshot.queryParamMap.get('section');
+    if (
+      section === 'tables' ||
+      section === 'employees' ||
+      section === 'analytics' ||
+      section === 'settings' ||
+      section === 'subscription'
+    ) {
+      this.selectedCategory = section as SidebarCategoryId;
+    }
     this.load();
   }
 
@@ -419,14 +432,17 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
-  protected openTableTasks(tableId: number): void {
-    this.staffInviteMessage = `Открыт просмотр задач стола #${tableId}`;
+  protected goTableWorkspace(tableId: number, tab: 'calendar' | 'tasks' | 'directories' | 'analytics' = 'calendar'): void {
+    void this.router.navigate(['/workspace/table', tableId, tab]);
     this.openedTableMenuId = null;
   }
 
+  protected openTableTasks(tableId: number): void {
+    this.goTableWorkspace(tableId, 'tasks');
+  }
+
   protected openTableAnalytics(tableId: number): void {
-    this.selectedCategory = 'analytics';
-    this.openedTableMenuId = null;
+    this.goTableWorkspace(tableId, 'analytics');
   }
 
   protected openSubscriptionForBonus(tableId: number, bonusKey: string): void {

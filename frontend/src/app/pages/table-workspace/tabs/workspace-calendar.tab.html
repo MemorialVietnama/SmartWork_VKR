@@ -1,0 +1,45 @@
+<div class="tw-tab">
+  <h2>Календарь</h2>
+  <p class="tw-muted">Слоты записей по этому столу.</p>
+
+  @if (loadError) {
+    <p class="tw-tab-error">{{ loadError }}</p>
+  }
+
+  <p-card header="Новый слот">
+    <div class="tw-form-grid">
+      <label>
+        <span>Название</span>
+        <input type="text" pInputText [(ngModel)]="newTitle" name="calTitle" />
+      </label>
+      <label>
+        <span>Начало</span>
+        <input type="datetime-local" [(ngModel)]="newStart" name="calStart" />
+      </label>
+      <label>
+        <span>Конец</span>
+        <input type="datetime-local" [(ngModel)]="newEnd" name="calEnd" />
+      </label>
+    </div>
+    @if (actionError) {
+      <p class="tw-tab-error">{{ actionError }}</p>
+    }
+    <p-button label="Добавить" icon="pi pi-plus" (onClick)="addSlot()" />
+  </p-card>
+
+  <p-card header="Ближайшие слоты">
+    @if (slots.length === 0) {
+      <p class="tw-muted">Пока нет записей.</p>
+    } @else {
+      <ul class="tw-slot-list">
+        @for (s of slots; track s.id) {
+          <li>
+            <strong>{{ s.title }}</strong>
+            <small>{{ s.starts_at | date: 'short' }} — {{ s.ends_at | date: 'short' }}</small>
+            <button type="button" class="tw-link-danger" (click)="removeSlot(s.id)">Удалить</button>
+          </li>
+        }
+      </ul>
+    }
+  </p-card>
+</div>

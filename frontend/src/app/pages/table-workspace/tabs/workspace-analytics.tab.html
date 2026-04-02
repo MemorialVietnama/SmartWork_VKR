@@ -1,0 +1,38 @@
+<div class="tw-tab">
+  <h2>Аналитика</h2>
+  @if (!unlocked) {
+    <p-card>
+      <p>Аналитика не подключена для этого стола.</p>
+      <p class="tw-muted">Включите бонус в разделе «Подписка».</p>
+    </p-card>
+  } @else if (err) {
+    <p class="tw-tab-error">{{ err }}</p>
+  } @else if (data) {
+    <p class="tw-muted"
+      >{{ data.table_name }} — участников: {{ data.participants }}, активных: {{ data.active_employees }}</p
+    >
+    <div class="tw-mini-grid">
+      @for (ch of data.charts; track ch.title) {
+        <div class="tw-mini-chart">
+          <div class="tw-mini-head">
+            <strong>{{ ch.title }}</strong>
+            <small>{{ ch.subtitle }}</small>
+          </div>
+          <div class="tw-mini-bars">
+            @for (v of ch.values; track $index) {
+              <div class="tw-mini-bar-wrap">
+                <div class="tw-mini-bar" [style.height.%]="(v / chartMax(ch.values)) * 100"></div>
+              </div>
+            }
+          </div>
+          <div class="tw-mini-meta">
+            <span>Ср: {{ chartAvg(ch.values) }}</span>
+            <span>Пик: {{ chartMax(ch.values) }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="tw-muted">Загрузка…</p>
+  }
+</div>

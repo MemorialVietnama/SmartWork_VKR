@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 
@@ -51,9 +51,59 @@ export interface TableAnalyticsDto {
   charts: AnalyticsMiniChartDto[];
 }
 
+export interface TableMemberBriefDto {
+  user_id: number;
+  short_name: string;
+  is_owner: boolean;
+}
+
+export interface CalendarSlotDto {
+  id: number;
+  title: string;
+  starts_at: string;
+  ends_at: string;
+}
+
+export interface WorkspaceTaskDto {
+  id: number;
+  title: string;
+  status: string;
+  assignee_user_id: number | null;
+}
+
+export interface WorkspaceDirectoryDto {
+  id: number;
+  name: string;
+  items: { id: number; label: string; value: string | null }[];
+}
+
+export interface WorkspaceOrderDto {
+  id: number;
+  title: string;
+  status: string;
+  created_at: string;
+  completed_at: string | null;
+}
+
 export interface TableBonusDto {
   key: string;
   qty: number;
+}
+
+export interface TableDetailDto {
+  id: number;
+  title: string;
+  description?: string | null;
+  preset?: string | null;
+  custom_preset_name?: string | null;
+  time_format?: string | null;
+  week_start_day?: string | null;
+  work_hours?: string | null;
+  total_participants: number;
+  owner_short_name: string;
+  stats: TableStatsDto;
+  can_edit_settings: boolean;
+  bonuses: TableBonusDto[];
 }
 
 export interface TableSubscriptionDto {
@@ -329,6 +379,149 @@ export class AuthService {
     notifications: NotificationSettingsDto;
   }): Observable<UserSettingsDto> {
     return this.http.put<UserSettingsDto>(this.url('/api/v1/settings/me'), payload, { headers: this.authHeaders() });
+  }
+
+  getTableDetail(tableId: number): Observable<TableDetailDto> {
+    return this.http.get<TableDetailDto>(this.url(`/api/v1/tables/${tableId}`), { headers: this.authHeaders() });
+  }
+
+  listTableWorkspaceMembers(tableId: number): Observable<TableMemberBriefDto[]> {
+    return this.http.get<TableMemberBriefDto[]>(
+      this.url(`/api/v1/tables/${tableId}/workspace/members`),
+      { headers: this.authHeaders() },
+    );
+  }
+
+  getTableWorkspaceAnalytics(tableId: number): Observable<TableAnalyticsDto> {
+    return this.http.get<TableAnalyticsDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/analytics`),
+      { headers: this.authHeaders() },
+    );
+  }
+
+  listCalendarSlots(tableId: number, from?: string, to?: string): Observable<CalendarSlotDto[]> {
+    let params = new HttpParams();
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
+    return this.http.get<CalendarSlotDto[]>(this.url(`/api/v1/tables/${tableId}/workspace/calendar/slots`), {
+      headers: this.authHeaders(),
+      params,
+    });
+  }
+
+  createCalendarSlot(
+    tableId: number,
+    payload: { title: string; starts_at: string; ends_at: string },
+  ): Observable<CalendarSlotDto> {
+    return this.http.post<CalendarSlotDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/calendar/slots`),
+      payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  deleteCalendarSlot(tableId: number, slotId: number): Observable<{ detail: string }> {
+    return this.http.delete<{ detail: string }>(
+      this.url(`/api/v1/tables/${tableId}/workspace/calendar/slots/${slotId}`),
+      { headers: this.authHeaders() },
+    );
+  }
+
+  listWorkspaceTasks(tableId: number): Observable<WorkspaceTaskDto[]> {
+    return this.http.get<WorkspaceTaskDto[]>(this.url(`/api/v1/tables/${tableId}/workspace/tasks`), {
+      headers: this.authHeaders(),
+    });
+  }
+
+  createWorkspaceTask(
+    tableId: number,
+    payload: { title: string; status?: string; assignee_user_id?: number | null },
+  ): Observable<WorkspaceTaskDto> {
+    return this.http.post<WorkspaceTaskDto>(this.url(`/api/v1/tables/${tableId}/workspace/tasks`), payload, {
+      headers: this.authHeaders(),
+    });
+  }
+
+  updateWorkspaceTask(
+    tableId: number,
+    taskId: number,
+    payload: { title?: string | null; status?: string | null; assignee_user_id?: number | null },
+  ): Observable<WorkspaceTaskDto> {
+    return this.http.patch<WorkspaceTaskDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/tasks/${taskId}`),
+      payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  deleteWorkspaceTask(tableId: number, taskId: number): Observable<{ detail: string }> {
+    return this.http.delete<{ detail: string }>(
+      this.url(`/api/v1/tables/${tableId}/workspace/tasks/${taskId}`),
+      { headers: this.authHeaders() },
+    );
+  }
+
+  listWorkspaceDirectories(tableId: number): Observable<WorkspaceDirectoryDto[]> {
+    return this.http.get<WorkspaceDirectoryDto[]>(this.url(`/api/v1/tables/${tableId}/workspace/directories`), {
+      headers: this.authHeaders(),
+    });
+  }
+
+  createWorkspaceDirectory(tableId: number, name: string): Observable<WorkspaceDirectoryDto> {
+    return this.http.post<WorkspaceDirectoryDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/directories`),
+      { name },
+      { headers: this.authHeaders() },
+    );
+  }
+
+  addWorkspaceDirectoryItem(
+    tableId: number,
+    directoryId: number,
+    payload: { label: string; value?: string | null },
+  ): Observable<{ id: number; label: string; value: string | null }> {
+    return this.http.post<{ id: number; label: string; value: string | null }>(
+      this.url(`/api/v1/tables/${tableId}/workspace/directories/${directoryId}/items`),
+      payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  deleteWorkspaceDirectory(tableId: number, directoryId: number): Observable<{ detail: string }> {
+    return this.http.delete<{ detail: string }>(
+      this.url(`/api/v1/tables/${tableId}/workspace/directories/${directoryId}`),
+      { headers: this.authHeaders() },
+    );
+  }
+
+  listWorkspaceOrders(
+    tableId: number,
+    opts?: { status?: string; limit?: number; offset?: number },
+  ): Observable<WorkspaceOrderDto[]> {
+    let params = new HttpParams();
+    if (opts?.status) params = params.set('status', opts.status);
+    if (opts?.limit != null) params = params.set('limit', String(opts.limit));
+    if (opts?.offset != null) params = params.set('offset', String(opts.offset));
+    return this.http.get<WorkspaceOrderDto[]>(this.url(`/api/v1/tables/${tableId}/workspace/orders`), {
+      headers: this.authHeaders(),
+      params,
+    });
+  }
+
+  createWorkspaceOrder(tableId: number, title: string): Observable<WorkspaceOrderDto> {
+    return this.http.post<WorkspaceOrderDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/orders`),
+      { title },
+      { headers: this.authHeaders() },
+    );
+  }
+
+  updateWorkspaceOrder(tableId: number, orderId: number, status: string): Observable<WorkspaceOrderDto> {
+    return this.http.patch<WorkspaceOrderDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/orders/${orderId}`),
+      { status },
+      { headers: this.authHeaders() },
+    );
   }
 
   saveToken(resp: AuthResponse): void {

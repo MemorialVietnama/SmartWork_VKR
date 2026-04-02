@@ -1,0 +1,53 @@
+<div class="tw-tab">
+  <h2>Справочники</h2>
+  @if (!unlocked) {
+    <p-card>
+      <p>Справочники не подключены (бонус «Доп. справочники»).</p>
+      <p class="tw-muted">Настройте подписку в дашборде.</p>
+    </p-card>
+  } @else {
+    @if (err) {
+      <p class="tw-tab-error">{{ err }}</p>
+    }
+    <p class="tw-muted">Лимит справочников: {{ maxDirs }}. Сейчас: {{ dirs.length }}.</p>
+    @if (canEdit) {
+      <p-card header="Новый справочник">
+        <input type="text" pInputText [(ngModel)]="newDirName" name="dirName" placeholder="Название" />
+        <p-button class="tw-mt" label="Создать" icon="pi pi-plus" (onClick)="addDirectory()" />
+      </p-card>
+    }
+    @for (d of dirs; track d.id) {
+      <p-card [header]="d.name">
+        @if (canEdit) {
+          <div class="tw-form-inline">
+            <input
+              type="text"
+              pInputText
+              [(ngModel)]="itemLabels[d.id]"
+              [name]="'lbl' + d.id"
+              placeholder="Подпись"
+            />
+            <input
+              type="text"
+              pInputText
+              [(ngModel)]="itemValues[d.id]"
+              [name]="'val' + d.id"
+              placeholder="Значение"
+            />
+            <p-button label="Добавить строку" (onClick)="addItem(d.id)" />
+            <button type="button" class="tw-link-danger" (click)="removeDir(d.id)">Удалить справочник</button>
+          </div>
+        }
+        @if (d.items.length === 0) {
+          <p class="tw-muted">Пусто.</p>
+        } @else {
+          <ul class="tw-dir-items">
+            @for (it of d.items; track it.id) {
+              <li><strong>{{ it.label }}</strong> — {{ it.value ?? '—' }}</li>
+            }
+          </ul>
+        }
+      </p-card>
+    }
+  }
+</div>

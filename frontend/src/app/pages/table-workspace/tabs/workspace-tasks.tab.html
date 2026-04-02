@@ -1,0 +1,33 @@
+<div class="tw-tab">
+  <h2>Задачи</h2>
+  @if (!tasksUnlocked) {
+    <p-card>
+      <p>Раздел «Задачи» не подключён для этого стола.</p>
+      <p class="tw-muted">Включите бонус в разделе «Подписка» в дашборде.</p>
+    </p-card>
+  } @else {
+    @if (err) {
+      <p class="tw-tab-error">{{ err }}</p>
+    }
+    <p-card header="Новая задача">
+      <input type="text" pInputText [(ngModel)]="newTitle" name="taskTitle" placeholder="Название" />
+      <p-button class="tw-mt" label="Добавить" icon="pi pi-plus" (onClick)="addTask()" />
+    </p-card>
+    <p-card header="Список">
+      @if (tasks.length === 0) {
+        <p class="tw-muted">Задач пока нет.</p>
+      } @else {
+        <ul class="tw-task-list">
+          @for (t of tasks; track t.id) {
+            <li>
+              <span class="tw-status" [class]="'st-' + t.status">{{ t.status }}</span>
+              <strong>{{ t.title }}</strong>
+              <button type="button" class="tw-link" (click)="cycleStatus(t)">Статус</button>
+              <button type="button" class="tw-link-danger" (click)="removeTask(t.id)">Удалить</button>
+            </li>
+          }
+        </ul>
+      }
+    </p-card>
+  }
+</div>

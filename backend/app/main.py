@@ -15,6 +15,7 @@ from app.routers import auth as auth_router
 from app.routers import tables as tables_router
 from app.routers import settings as settings_router
 from app.routers import employees as employees_router
+from app.routers import table_workspace as table_workspace_router
 
 
 @asynccontextmanager
@@ -93,6 +94,12 @@ app.include_router(
     tables_router.router,
     prefix=f"{settings.API_V1_PREFIX}/tables",
     tags=["tables"],
+)
+
+app.include_router(
+    table_workspace_router.router,
+    prefix=f"{settings.API_V1_PREFIX}/tables",
+    tags=["tables-workspace"],
 )
 
 app.include_router(

@@ -1,0 +1,87 @@
+<div class="table-workspace-page">
+  @if (state.loading()) {
+    <div class="tw-loading">Загрузка стола…</div>
+  } @else if (state.sidebarError()) {
+    <div class="tw-error">
+      <p>{{ state.sidebarError() }}</p>
+      <p-button label="К столам" icon="pi pi-arrow-left" (onClick)="backToTables()" />
+    </div>
+  } @else {
+    <header class="tw-header">
+      <div class="tw-header-main">
+        <p-button
+          label="К столам"
+          icon="pi pi-arrow-left"
+          styleClass="p-button-text"
+          (onClick)="backToTables()"
+        />
+        <div class="tw-title-block">
+          <h1>{{ state.detail()?.title }}</h1>
+          <small>Владелец: {{ state.detail()?.owner_short_name }} · Участников: {{ state.detail()?.total_participants }}</small>
+        </div>
+      </div>
+      <nav class="tw-tabs" aria-label="Разделы стола">
+        <a routerLink="calendar" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Календарь</a>
+        <a routerLink="tasks" routerLinkActive="active">Задачи</a>
+        <a routerLink="directories" routerLinkActive="active">Справочники</a>
+        <a routerLink="analytics" routerLinkActive="active">Аналитика</a>
+      </nav>
+    </header>
+
+    <div class="tw-body">
+      <aside class="tw-sidebar" aria-label="Контекст стола">
+        <section>
+          <h2>Сотрудники</h2>
+          <ul class="tw-side-list">
+            @for (m of state.members(); track m.user_id) {
+              <li>
+                @if (m.is_owner) {
+                  <span class="tw-badge-owner">владелец</span>
+                }
+                {{ m.short_name }}
+              </li>
+            }
+          </ul>
+        </section>
+        <section>
+          <h2>Очередь заказов</h2>
+          @if (state.queuedOrders().length === 0) {
+            <p class="tw-muted">В очереди пусто.</p>
+          } @else {
+            <ul class="tw-side-list compact">
+              @for (o of state.queuedOrders(); track o.id) {
+                <li>{{ o.title }}</li>
+              }
+            </ul>
+          }
+        </section>
+        <section>
+          <h2>История заказов</h2>
+          @if (state.historyOrders().length === 0) {
+            <p class="tw-muted">Нет завершённых.</p>
+          } @else {
+            <ul class="tw-side-list compact">
+              @for (o of state.historyOrders(); track o.id) {
+                <li>{{ o.title }}</li>
+              }
+            </ul>
+          }
+        </section>
+        <section>
+          <h2>Данные стола</h2>
+          @if (state.detail(); as d) {
+            <dl class="tw-meta">
+              <div><dt>Предустановка</dt><dd>{{ d.preset ?? '—' }}</dd></div>
+              <div><dt>Время</dt><dd>{{ d.time_format ?? '—' }}</dd></div>
+              <div><dt>Неделя с</dt><dd>{{ d.week_start_day ?? '—' }}</dd></div>
+              <div><dt>Часы</dt><dd>{{ d.work_hours ?? '—' }}</dd></div>
+            </dl>
+          }
+        </section>
+      </aside>
+      <main class="tw-main">
+        <router-outlet />
+      </main>
+    </div>
+  }
+</div>

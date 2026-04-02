@@ -76,16 +76,17 @@
                       </button>
                       @if (isTableMenuOpen(table.id)) {
                         <div class="table-menu-dropdown">
+                          <button type="button" (click)="goTableWorkspace(table.id)">Рабочий стол</button>
                           <button type="button" (click)="openTableSettings(table.id)">Настройка</button>
                           <button type="button" (click)="openTableMembers(table.id)">Добавление сотрудников</button>
                           <div class="menu-row">
-                            <button type="button" [disabled]="!ownerCanOpenTasks(table.id)" (click)="openTableTasks(table.id)">Просмотр задач</button>
+                            <button type="button" (click)="openTableTasks(table.id)">Просмотр задач</button>
                             @if (!ownerCanOpenTasks(table.id)) {
                               <button type="button" class="mini-dollar-btn" (click)="openSubscriptionForBonus(table.id, 'unlock_tasks')">$</button>
                             }
                           </div>
                           <div class="menu-row">
-                            <button type="button" [disabled]="!ownerCanOpenAnalytics(table.id)" (click)="openTableAnalytics(table.id)">Просмотр аналитики</button>
+                            <button type="button" (click)="openTableAnalytics(table.id)">Просмотр аналитики</button>
                             @if (!ownerCanOpenAnalytics(table.id)) {
                               <button type="button" class="mini-dollar-btn" (click)="openSubscriptionForBonus(table.id, 'unlock_analytics')">$</button>
                             }
@@ -124,6 +125,12 @@
                       <h3>{{ table.title }}</h3>
                       <p>Всего участников: <strong>{{ table.totalParticipants }}</strong></p>
                       <p>Владелец: <strong>{{ table.ownerShortName }}</strong></p>
+                      <p-button
+                        label="Рабочий стол"
+                        icon="pi pi-desktop"
+                        styleClass="p-button-sm p-button-outlined tw-mt-xs"
+                        (onClick)="goTableWorkspace(table.id)"
+                      />
                     </div>
                   </p-card>
                 }
@@ -144,6 +151,7 @@
                       </button>
                       @if (isTableMenuOpen(table.id)) {
                         <div class="table-menu-dropdown">
+                          <button type="button" (click)="goTableWorkspace(table.id)">Рабочий стол</button>
                           <button type="button" (click)="openTableSettings(table.id)">Просмотр настроек стола</button>
                           <button type="button" class="danger" (click)="requestDetachFromTable(table.id)">Заявка на открепление от стола</button>
                         </div>
@@ -153,6 +161,12 @@
                       <h3>{{ table.title }}</h3>
                       <p>Всего участников: <strong>{{ table.totalParticipants }}</strong></p>
                       <p>Владелец: <strong>{{ table.ownerShortName }}</strong></p>
+                      <p-button
+                        label="Рабочий стол"
+                        icon="pi pi-desktop"
+                        styleClass="p-button-sm p-button-outlined tw-mt-xs"
+                        (onClick)="goTableWorkspace(table.id)"
+                      />
                     </div>
                   </p-card>
                 }

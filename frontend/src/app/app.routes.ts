@@ -33,6 +33,35 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dashboard/dashboard.page').then((m) => m.DashboardPageComponent),
   },
   {
+    path: 'workspace/table/:tableId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/table-workspace/table-workspace.page').then((m) => m.TableWorkspacePageComponent),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'calendar' },
+      {
+        path: 'calendar',
+        loadComponent: () =>
+          import('./pages/table-workspace/tabs/workspace-calendar.tab').then((m) => m.WorkspaceCalendarTabComponent),
+      },
+      {
+        path: 'tasks',
+        loadComponent: () =>
+          import('./pages/table-workspace/tabs/workspace-tasks.tab').then((m) => m.WorkspaceTasksTabComponent),
+      },
+      {
+        path: 'directories',
+        loadComponent: () =>
+          import('./pages/table-workspace/tabs/workspace-directories.tab').then((m) => m.WorkspaceDirectoriesTabComponent),
+      },
+      {
+        path: 'analytics',
+        loadComponent: () =>
+          import('./pages/table-workspace/tabs/workspace-analytics.tab').then((m) => m.WorkspaceAnalyticsTabComponent),
+      },
+    ],
+  },
+  {
     path: 'status',
     loadComponent: () => import('./pages/status/status.page').then((m) => m.StatusPageComponent),
   },
