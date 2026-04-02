@@ -167,25 +167,28 @@
                 name="tableDesc"
               ></textarea>
             </label>
-            <label>
-              <span>Предустановка</span>
-              <select [value]="draft.preset" (change)="onTablePresetChange($event)">
-                <option value="barbershop">Барбершоп</option>
-                <option value="grooming">Груминг</option>
-                <option value="custom">Своя</option>
-              </select>
-            </label>
-            @if (draft.preset === 'custom') {
-              <label class="full">
-                <span>Название своей предустановки</span>
-                <input
-                  type="text"
-                  pInputText
-                  [ngModel]="draft.customPresetName"
-                  (ngModelChange)="updateTableDraft('customPresetName', $event)"
-                  name="customPreset"
+            <p class="tw-muted full">
+              <strong>Предустановка стола:</strong> {{ tablePresetDisplay() }}. Задаётся только при создании стола (структура справочников), изменить нельзя.
+            </p>
+            @if (canRepairPresetDirectories()) {
+              <div class="full tw-settings-preset-repair">
+                <p class="tw-muted">
+                  Если справочники по шаблону не появились при создании, нажмите кнопку: будут досозданы справочники и примеры записей. Уже заполненные шаблонные справочники не дублируются.
+                </p>
+                <p-button
+                  label="Восстановить шаблон справочников"
+                  icon="pi pi-refresh"
+                  styleClass="p-button-outlined"
+                  [loading]="presetRepairLoading()"
+                  (onClick)="repairPresetDirectories()"
                 />
-              </label>
+                @if (presetRepairError()) {
+                  <p-message severity="error" [text]="presetRepairError()!" [closable]="false" />
+                }
+                @if (presetRepairResult()) {
+                  <p-message severity="success" [text]="presetRepairResult()!" [closable]="false" />
+                }
+              </div>
             }
             <label>
               <span>Формат времени</span>

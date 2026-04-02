@@ -1,48 +1,349 @@
-<div class="tw-tab">
+<div class="tw-tab tw-dir">
   <h2>Справочники</h2>
   @if (err) {
     <p class="tw-tab-error">{{ err }}</p>
   }
-  <p class="tw-muted"
-    >По умолчанию доступен 1 справочник; бонус «Доп. справочники» увеличивает лимит. Сейчас лимит:
-    {{ maxDirs }}, создано: {{ dirs.length }}.</p
-  >
+  <p class="tw-muted">
+    Для столов «Барбершоп» и «Груминг» при создании добавляются справочники по шаблону. Дополнительные произвольные справочники — до
+    {{ maxDirs }} шт. (сейчас: {{ extraDirCount() }}).
+  </p>
+
   @if (canEdit) {
-    <p-card header="Новый справочник">
+    <p-card header="Новый произвольный справочник">
       <input type="text" pInputText [(ngModel)]="newDirName" name="dirName" placeholder="Название" />
       <p-button class="tw-mt" label="Создать" icon="pi pi-plus" (onClick)="addDirectory()" />
     </p-card>
   }
+
   @for (d of dirs; track d.id) {
-    <p-card [header]="d.name">
-      @if (canEdit) {
-        <div class="tw-form-inline">
-          <input
-            type="text"
-            pInputText
-            [(ngModel)]="itemLabels[d.id]"
-            [name]="'lbl' + d.id"
-            placeholder="Подпись"
-          />
-          <input
-            type="text"
-            pInputText
-            [(ngModel)]="itemValues[d.id]"
-            [name]="'val' + d.id"
-            placeholder="Значение"
-          />
-          <p-button label="Добавить строку" (onClick)="addItem(d.id)" />
-          <button type="button" class="tw-link-danger" (click)="removeDir(d.id)">Удалить справочник</button>
-        </div>
-      }
-      @if (d.items.length === 0) {
-        <p class="tw-muted">Пусто.</p>
-      } @else {
-        <ul class="tw-dir-items">
+    <p-card [header]="d.name + (d.kind ? ' (шаблон)' : '')">
+      @if (d.kind === 'services') {
+        @if (canEdit) {
+          <p-button label="Добавить услугу" icon="pi pi-plus" size="small" (onClick)="openCreate(d)" />
+        }
+        @if (isEditorOpen(d.id, 'services')) {
+          <div class="tw-dir-editor">
+            <h4 class="tw-dir-editor-title">{{ editor!.itemId == null ? 'Новая услуга' : 'Редактирование' }}</h4>
+            <p class="tw-muted">Карточка: название, стоимость (при подуслугах — сумма подуслуг), описание.</p>
+            <div class="tw-dir-grid">
+              <label>
+                <span>Название</span>
+                <input type="text" pInputText [(ngModel)]="editService.title" name="svcTitle" />
+              </label>
+              <label>
+                <span>Стоимость (итог)</span>
+                <input type="number" pInputText [(ngModel)]="editService.cost" name="svcCost" />
+              </label>
+              <label class="tw-dir-full">
+                <span>Описание услуги</span>
+                <textarea class="tw-dir-textarea" rows="2" [(ngModel)]="editService.description" name="svcDesc"></textarea>
+              </label>
+            </div>
+            <h5>Содержимое (внутри услуги)</h5>
+            <div class="tw-dir-grid">
+              <label class="tw-dir-full">
+                <span>Название услуги (внутреннее)</span>
+                <input type="text" pInputText [(ngModel)]="editService.inner.displayName" name="svcInName" />
+              </label>
+            </div>
+            <p class="tw-muted"
+              >Подуслуги: сумма полей «Стоимость» подставляется в «Стоимость (итог)» при сохранении, если сумма &gt; 0. Сейчас сумма:
+              {{ sumSubservices(editService) }} ₽</p
+            >
+            @for (sub of editService.inner.subservices; track $index) {
+              <div class="tw-dir-subcard">
+                <label>
+                  <span>Подуслуга</span>
+                  <input type="text" pInputText [(ngModel)]="sub.name" [name]="'subn' + $index" />
+                </label>
+                <label>
+                  <span>Стоимость</span>
+                  <input type="number" pInputText [(ngModel)]="sub.cost" [name]="'subc' + $index" />
+                </label>
+                <label>
+                  <span>Времязатрата (мин)</span>
+                  <input type="number" pInputText [(ngModel)]="sub.durationMinutes" [name]="'subd' + $index" />
+                </label>
+                <label>
+                  <span>Иконка (URL / класс)</span>
+                  <input type="text" pInputText [(ngModel)]="sub.icon" [name]="'subi' + $index" />
+                </label>
+                @if (canEdit) {
+                  <button type="button" class="tw-link-danger" (click)="removeSubservice($index)">Удалить подуслугу</button>
+                }
+              </div>
+            }
+            @if (canEdit) {
+              <p-button label="Добавить подуслугу" size="small" styleClass="p-button-outlined" (onClick)="addSubservice()" />
+              <div class="tw-dir-actions">
+                <p-button label="Сохранить" icon="pi pi-check" (onClick)="saveEditor()" />
+                <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeEditor()" />
+              </div>
+            }
+          </div>
+        }
+        @if (d.items.length === 0 && !isEditorOpen(d.id, 'services')) {
+          <p class="tw-muted">Нет услуг.</p>
+        }
+        <ul class="tw-dir-cards">
           @for (it of d.items; track it.id) {
-            <li><strong>{{ it.label }}</strong> — {{ it.value ?? '—' }}</li>
+            <li class="tw-dir-card-row">
+              <strong>{{ itemSummary(d, it) }}</strong>
+              @if (canEdit) {
+                <button type="button" class="tw-dir-link" (click)="openEdit(d, it)">Изменить</button>
+                <button type="button" class="tw-link-danger" (click)="deleteItem(d.id, it.id)">Удалить</button>
+              }
+            </li>
           }
         </ul>
+      } @else if (d.kind === 'clients') {
+        @if (canEdit) {
+          <p-button label="Добавить клиента" icon="pi pi-plus" size="small" (onClick)="openCreate(d)" />
+        }
+        @if (isEditorOpen(d.id, 'clients')) {
+          <div class="tw-dir-editor">
+            <h4 class="tw-dir-editor-title">{{ editor!.itemId == null ? 'Новый клиент' : 'Редактирование' }}</h4>
+            <p class="tw-muted">Кратко: фамилия, имя, число питомцев, телефон.</p>
+            <div class="tw-dir-grid">
+              <label>
+                <span>Фамилия</span>
+                <input type="text" pInputText [(ngModel)]="editClient.lastName" name="cln" />
+              </label>
+              <label>
+                <span>Имя</span>
+                <input type="text" pInputText [(ngModel)]="editClient.firstName" name="clf" />
+              </label>
+              <label>
+                <span>Кол-во питомцев</span>
+                <input type="number" pInputText [(ngModel)]="editClient.petCount" name="clpc" />
+              </label>
+              <label>
+                <span>Контактный телефон</span>
+                <input type="text" pInputText [(ngModel)]="editClient.phone" name="clph" />
+              </label>
+            </div>
+            <h5>Внутри карточки</h5>
+            <div class="tw-dir-grid">
+              <label>
+                <span>Фамилия (подробно)</span>
+                <input type="text" pInputText [(ngModel)]="editClient.detail.lastName" name="cldl" />
+              </label>
+              <label>
+                <span>Имя (подробно)</span>
+                <input type="text" pInputText [(ngModel)]="editClient.detail.firstName" name="cldf" />
+              </label>
+              <label class="tw-dir-full">
+                <span>Адрес</span>
+                <input type="text" pInputText [(ngModel)]="editClient.detail.address" name="clda" />
+              </label>
+              <label>
+                <span>Рейтинг клиента</span>
+                <input type="number" pInputText [(ngModel)]="editClient.detail.rating" name="clr" />
+              </label>
+            </div>
+            @if (petsDirectoryItems().length > 0) {
+              <fieldset class="tw-dir-fieldset">
+                <legend>Питомцы владельца</legend>
+                @for (p of petsDirectoryItems(); track p.id) {
+                  <label class="tw-dir-check">
+                    <input
+                      type="checkbox"
+                      [checked]="isPetSelectedForClient(p.id)"
+                      (change)="togglePetForClient(p.id, $any($event.target).checked)"
+                    />
+                    {{ petCheckboxLabel(p) }}
+                  </label>
+                }
+              </fieldset>
+            } @else {
+              <p class="tw-muted">Справочник «Питомцы» пуст — сначала добавьте питомцев (груминг).</p>
+            }
+            <h5>История услуг</h5>
+            @for (h of editClient.detail.serviceHistory; track $index) {
+              <div class="tw-dir-subcard">
+                <label>
+                  <span>Дата</span>
+                  <input type="date" pInputText [(ngModel)]="h.date" [name]="'chd' + $index" />
+                </label>
+                <label class="tw-dir-full">
+                  <span>Услуга</span>
+                  <input type="text" pInputText [(ngModel)]="h.serviceTitle" [name]="'cht' + $index" />
+                </label>
+                <button type="button" class="tw-link-danger" (click)="removeClientHistory($index)">Удалить</button>
+              </div>
+            }
+            <p-button label="Добавить запись в историю" size="small" styleClass="p-button-outlined" (onClick)="addClientHistory()" />
+            @if (canEdit) {
+              <div class="tw-dir-actions">
+                <p-button label="Сохранить" icon="pi pi-check" (onClick)="saveEditor()" />
+                <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeEditor()" />
+              </div>
+            }
+          </div>
+        }
+        @if (d.items.length === 0 && !isEditorOpen(d.id, 'clients')) {
+          <p class="tw-muted">Нет клиентов.</p>
+        }
+        <ul class="tw-dir-cards">
+          @for (it of d.items; track it.id) {
+            <li class="tw-dir-card-row">
+              <strong>{{ itemSummary(d, it) }}</strong>
+              @if (canEdit) {
+                <button type="button" class="tw-dir-link" (click)="openEdit(d, it)">Изменить</button>
+                <button type="button" class="tw-link-danger" (click)="deleteItem(d.id, it.id)">Удалить</button>
+              }
+            </li>
+          }
+        </ul>
+      } @else if (d.kind === 'pets') {
+        @if (canEdit) {
+          <p-button label="Добавить питомца" icon="pi pi-plus" size="small" (onClick)="openCreate(d)" />
+        }
+        @if (isEditorOpen(d.id, 'pets')) {
+          <div class="tw-dir-editor">
+            <h4 class="tw-dir-editor-title">{{ editor!.itemId == null ? 'Новый питомец' : 'Редактирование' }}</h4>
+            <p class="tw-muted">Краткая карточка: иконка/фото, возраст, порода, владелец.</p>
+            <div class="tw-dir-grid">
+              <label>
+                <span>Иконка / фото (URL)</span>
+                <input type="text" pInputText [(ngModel)]="editPet.iconUrl" name="ptic" />
+              </label>
+              <label>
+                <span>Возраст</span>
+                <input type="text" pInputText [(ngModel)]="editPet.age" name="pta" />
+              </label>
+              <label>
+                <span>Порода</span>
+                <input type="text" pInputText [(ngModel)]="editPet.breed" name="ptb" />
+              </label>
+              <label>
+                <span>Подпорода</span>
+                <input type="text" pInputText [(ngModel)]="editPet.subbreed" name="pts" />
+              </label>
+              <label>
+                <span>Владелец</span>
+                <input type="text" pInputText [(ngModel)]="editPet.ownerName" name="pton" />
+              </label>
+              <label>
+                <span>Номер владельца</span>
+                <input type="text" pInputText [(ngModel)]="editPet.ownerPhone" name="ptop" />
+              </label>
+            </div>
+            <h5>Внутри карточки</h5>
+            <div class="tw-dir-grid">
+              <label>
+                <span>Аватар (URL)</span>
+                <input type="text" pInputText [(ngModel)]="editPet.detail.avatarUrl" name="ptav" />
+              </label>
+              <label>
+                <span>Кличка</span>
+                <input type="text" pInputText [(ngModel)]="editPet.detail.nickname" name="ptnk" />
+              </label>
+              <label>
+                <span>Возраст (подробно)</span>
+                <input type="text" pInputText [(ngModel)]="editPet.detail.age" name="ptda" />
+              </label>
+              <label>
+                <span>Порода</span>
+                <input type="text" pInputText [(ngModel)]="editPet.detail.breed" name="ptdb" />
+              </label>
+              <label>
+                <span>Подпорода</span>
+                <input type="text" pInputText [(ngModel)]="editPet.detail.subbreed" name="ptds" />
+              </label>
+              <label>
+                <span>Тип животного</span>
+                <select [(ngModel)]="editPet.detail.animalType" name="ptat">
+                  <option value="">—</option>
+                  @for (t of petAnimalTypes; track t) {
+                    <option [value]="t">{{ t }}</option>
+                  }
+                </select>
+              </label>
+              <label class="tw-dir-full">
+                <span>Здоровье</span>
+                <textarea class="tw-dir-textarea" rows="2" [(ngModel)]="editPet.detail.health" name="pth"></textarea>
+              </label>
+              <label class="tw-dir-full">
+                <span>Поведение</span>
+                <textarea class="tw-dir-textarea" rows="2" [(ngModel)]="editPet.detail.behavior" name="ptbe"></textarea>
+              </label>
+              <label class="tw-dir-full">
+                <span>Особенности</span>
+                <textarea class="tw-dir-textarea" rows="2" [(ngModel)]="editPet.detail.notes" name="ptno"></textarea>
+              </label>
+              <label class="tw-dir-full">
+                <span>Информация о владельце</span>
+                <textarea class="tw-dir-textarea" rows="2" [(ngModel)]="editPet.detail.ownerInfo" name="ptoi"></textarea>
+              </label>
+            </div>
+            <h5>История приёма</h5>
+            @for (v of editPet.detail.visitHistory; track $index) {
+              <div class="tw-dir-subcard">
+                <label>
+                  <span>Дата</span>
+                  <input type="date" pInputText [(ngModel)]="v.date" [name]="'pvd' + $index" />
+                </label>
+                <label class="tw-dir-full">
+                  <span>Заметка</span>
+                  <input type="text" pInputText [(ngModel)]="v.note" [name]="'pvn' + $index" />
+                </label>
+                <button type="button" class="tw-link-danger" (click)="removePetVisit($index)">Удалить</button>
+              </div>
+            }
+            <p-button label="Добавить приём" size="small" styleClass="p-button-outlined" (onClick)="addPetVisit()" />
+            @if (canEdit) {
+              <div class="tw-dir-actions">
+                <p-button label="Сохранить" icon="pi pi-check" (onClick)="saveEditor()" />
+                <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeEditor()" />
+              </div>
+            }
+          </div>
+        }
+        @if (d.items.length === 0 && !isEditorOpen(d.id, 'pets')) {
+          <p class="tw-muted">Нет питомцев.</p>
+        }
+        <ul class="tw-dir-cards">
+          @for (it of d.items; track it.id) {
+            <li class="tw-dir-card-row">
+              <strong>{{ itemSummary(d, it) }}</strong>
+              @if (canEdit) {
+                <button type="button" class="tw-dir-link" (click)="openEdit(d, it)">Изменить</button>
+                <button type="button" class="tw-link-danger" (click)="deleteItem(d.id, it.id)">Удалить</button>
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        @if (canEdit) {
+          <div class="tw-form-inline">
+            <input
+              type="text"
+              pInputText
+              [(ngModel)]="itemLabels[d.id]"
+              [name]="'lbl' + d.id"
+              placeholder="Подпись"
+            />
+            <input
+              type="text"
+              pInputText
+              [(ngModel)]="itemValues[d.id]"
+              [name]="'val' + d.id"
+              placeholder="Значение"
+            />
+            <p-button label="Добавить строку" (onClick)="addItem(d.id)" />
+            <button type="button" class="tw-link-danger" (click)="removeDir(d.id)">Удалить справочник</button>
+          </div>
+        }
+        @if (d.items.length === 0) {
+          <p class="tw-muted">Пусто.</p>
+        } @else {
+          <ul class="tw-dir-items">
+            @for (it of d.items; track it.id) {
+              <li><strong>{{ it.label }}</strong> — {{ it.value ?? '—' }}</li>
+            }
+          </ul>
+        }
       }
     </p-card>
   }

@@ -39,6 +39,8 @@ async def lifespan(app: FastAPI):
         await conn.execute(text("ALTER TABLE tables ADD COLUMN IF NOT EXISTS time_format VARCHAR(10)"))
         await conn.execute(text("ALTER TABLE tables ADD COLUMN IF NOT EXISTS week_start_day VARCHAR(20)"))
         await conn.execute(text("ALTER TABLE tables ADD COLUMN IF NOT EXISTS work_hours VARCHAR(30)"))
+        await conn.execute(text("ALTER TABLE table_directories ADD COLUMN IF NOT EXISTS kind VARCHAR(40)"))
+        await conn.execute(text("ALTER TABLE table_directory_items ADD COLUMN IF NOT EXISTS payload JSONB"))
 
     if settings.ENABLE_DEV_SEED_STAFF and settings.DEV_SEED_STAFF_PASSWORD:
         async with AsyncSession(engine) as session:

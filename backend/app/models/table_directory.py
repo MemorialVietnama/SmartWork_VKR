@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, JSON, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -14,6 +14,8 @@ class TableDirectory(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     table_id: Mapped[int] = mapped_column(ForeignKey("tables.id"), index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    # services | clients | pets — задан при создании стола; NULL = произвольный справочник
+    kind: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     items: Mapped[list["TableDirectoryItem"]] = relationship(
@@ -34,5 +36,6 @@ class TableDirectoryItem(Base):
     )
     label: Mapped[str] = mapped_column(String(200), nullable=False)
     value: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     directory: Mapped[TableDirectory] = relationship("TableDirectory", back_populates="items")

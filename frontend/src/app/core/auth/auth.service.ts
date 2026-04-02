@@ -71,10 +71,25 @@ export interface WorkspaceTaskDto {
   assignee_user_id: number | null;
 }
 
+export interface WorkspaceDirectoryItemDto {
+  id: number;
+  label: string;
+  value: string | null;
+  payload?: Record<string, unknown> | null;
+}
+
 export interface WorkspaceDirectoryDto {
   id: number;
   name: string;
-  items: { id: number; label: string; value: string | null }[];
+  kind?: string | null;
+  items: WorkspaceDirectoryItemDto[];
+}
+
+export interface PresetDirectoriesRepairResultDto {
+  detail: string;
+  directories_created: number;
+  example_items_added: number;
+  skipped_nonempty_directories: number;
 }
 
 export interface WorkspaceOrderDto {
@@ -390,8 +405,6 @@ export class AuthService {
     payload: {
       title?: string;
       description?: string | null;
-      preset?: string;
-      custom_preset_name?: string | null;
       time_format?: string;
       week_start_day?: string;
       work_hours?: string;
@@ -483,6 +496,14 @@ export class AuthService {
     });
   }
 
+  repairPresetWorkspaceDirectories(tableId: number): Observable<PresetDirectoriesRepairResultDto> {
+    return this.http.post<PresetDirectoriesRepairResultDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/directories/repair-preset`),
+      {},
+      { headers: this.authHeaders() },
+    );
+  }
+
   createWorkspaceDirectory(tableId: number, name: string): Observable<WorkspaceDirectoryDto> {
     return this.http.post<WorkspaceDirectoryDto>(
       this.url(`/api/v1/tables/${tableId}/workspace/directories`),
@@ -494,11 +515,35 @@ export class AuthService {
   addWorkspaceDirectoryItem(
     tableId: number,
     directoryId: number,
-    payload: { label: string; value?: string | null },
-  ): Observable<{ id: number; label: string; value: string | null }> {
-    return this.http.post<{ id: number; label: string; value: string | null }>(
+    payload: { label: string; value?: string | null; payload?: Record<string, unknown> | null },
+  ): Observable<WorkspaceDirectoryItemDto> {
+    return this.http.post<WorkspaceDirectoryItemDto>(
       this.url(`/api/v1/tables/${tableId}/workspace/directories/${directoryId}/items`),
       payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  patchWorkspaceDirectoryItem(
+    tableId: number,
+    directoryId: number,
+    itemId: number,
+    body: { label?: string; value?: string | null; payload?: Record<string, unknown> | null },
+  ): Observable<WorkspaceDirectoryItemDto> {
+    return this.http.patch<WorkspaceDirectoryItemDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/directories/${directoryId}/items/${itemId}`),
+      body,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  deleteWorkspaceDirectoryItem(
+    tableId: number,
+    directoryId: number,
+    itemId: number,
+  ): Observable<{ detail: string }> {
+    return this.http.delete<{ detail: string }>(
+      this.url(`/api/v1/tables/${tableId}/workspace/directories/${directoryId}/items/${itemId}`),
       { headers: this.authHeaders() },
     );
   }

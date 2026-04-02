@@ -19,11 +19,15 @@ from app.models.user import User
 from app.routers.auth import get_current_user
 from app.routers.tables import _owner_short_name
 from app.schemas.table import AnalyticsMiniChartDto, TableAnalyticsDto, TableBonusDto, TableStatDto
+from app.config.directory_presets import empty_payload_for_kind, preset_has_directory_template
+from app.services.directory_bootstrap import repair_preset_directories as run_preset_directories_repair
 from app.schemas.table_workspace import (
     CalendarSlotCreateRequest,
     CalendarSlotDto,
     DirectoryItemCreateRequest,
     DirectoryItemDto,
+    DirectoryItemPatchRequest,
+    PresetDirectoriesRepairResultDto,
     TableDetailDto,
     TablePatchRequest,
     TableDirectoryCreateRequest,
@@ -52,6 +56,10 @@ DEFAULT_DIRECTORY_SLOTS = 1
 
 async def _directory_slot_limit(db: AsyncSession, table_id: int) -> int:
     return max(await _bonus_qty(db, table_id, "extra_directories"), DEFAULT_DIRECTORY_SLOTS)
+
+
+def _directory_item_dto(item: TableDirectoryItem) -> DirectoryItemDto:
+    return DirectoryItemDto(id=item.id, label=item.label, value=item.value, payload=item.payload)
 
 
 async def _require_table_access(
@@ -160,23 +168,6 @@ async def patch_table_detail(
         table.week_start_day = req.week_start_day.strip()
     if req.work_hours is not None:
         table.work_hours = req.work_hours.strip()
-
-    if req.preset is not None:
-        p = req.preset.strip()
-        table.preset = p
-        if p != "custom":
-            table.custom_preset_name = None
-    if req.custom_preset_name is not None:
-        preset_current = (table.preset or "").strip()
-        if preset_current != "custom":
-            raise HTTPException(
-                status_code=400,
-                detail="Название своей предустановки доступно только при типе «Своя».",
-            )
-        cn = req.custom_preset_name.strip()
-        if len(cn) < 2:
-            raise HTTPException(status_code=400, detail="Укажите название предустановки не короче 2 символов.")
-        table.custom_preset_name = cn
 
     await db.commit()
     return await get_table_detail(table_id, db, current_user)
@@ -441,10 +432,41 @@ async def list_directories(
         TableDirectoryDto(
             id=d.id,
             name=d.name,
-            items=[DirectoryItemDto(id=i.id, label=i.label, value=i.value) for i in d.items],
+            kind=d.kind,
+            items=[_directory_item_dto(i) for i in d.items],
         )
         for d in dirs
     ]
+
+
+@router.post(
+    "/{table_id}/workspace/directories/repair-preset",
+    response_model=PresetDirectoriesRepairResultDto,
+)
+async def repair_preset_workspace_directories(
+    table_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PresetDirectoriesRepairResultDto:
+    """Досоздаёт шаблонные справочники и примеры для старых столов (владелец)."""
+    table, is_owner = await _require_table_access(db, current_user, table_id)
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="Только владелец может восстановить шаблон справочников")
+    if not preset_has_directory_template(table.preset):
+        raise HTTPException(
+            status_code=400,
+            detail="Восстановление доступно только для столов с предустановкой «Барбершоп» или «Груминг».",
+        )
+    stats = await run_preset_directories_repair(db, table_id, table.preset)
+    parts = []
+    if stats["directories_created"]:
+        parts.append(f"создано справочников: {stats['directories_created']}")
+    if stats["example_items_added"]:
+        parts.append(f"добавлено примеров: {stats['example_items_added']}")
+    if stats["skipped_nonempty_directories"]:
+        parts.append(f"без изменений (уже были данные): {stats['skipped_nonempty_directories']}")
+    msg = "Готово. " + ("; ".join(parts) if parts else "Шаблон уже был на месте, новых действий не потребовалось.")
+    return PresetDirectoriesRepairResultDto(detail=msg, **stats)
 
 
 @router.post("/{table_id}/workspace/directories", response_model=TableDirectoryDto)
@@ -458,15 +480,20 @@ async def create_directory(
     if not is_owner:
         raise HTTPException(status_code=403, detail="Только владелец может создавать справочники")
     max_n = await _directory_slot_limit(db, table_id)
-    count_res = await db.execute(select(func.count()).select_from(TableDirectory).where(TableDirectory.table_id == table_id))
+    count_res = await db.execute(
+        select(func.count()).select_from(TableDirectory).where(
+            TableDirectory.table_id == table_id,
+            TableDirectory.kind.is_(None),
+        ),
+    )
     current_count = int(count_res.scalar() or 0)
     if current_count >= max_n:
         raise HTTPException(status_code=403, detail="Достигнут лимит справочников для стола")
-    d = TableDirectory(table_id=table_id, name=req.name.strip())
+    d = TableDirectory(table_id=table_id, name=req.name.strip(), kind=None)
     db.add(d)
     await db.commit()
     await db.refresh(d)
-    return TableDirectoryDto(id=d.id, name=d.name, items=[])
+    return TableDirectoryDto(id=d.id, name=d.name, kind=d.kind, items=[])
 
 
 @router.post("/{table_id}/workspace/directories/{directory_id}/items", response_model=DirectoryItemDto)
@@ -486,11 +513,87 @@ async def add_directory_item(
     d = res.scalar_one_or_none()
     if not d:
         raise HTTPException(status_code=404, detail="Справочник не найден")
-    item = TableDirectoryItem(directory_id=directory_id, label=req.label.strip(), value=req.value.strip() if req.value else None)
+    payload_data = req.payload
+    if d.kind and payload_data is None:
+        payload_data = empty_payload_for_kind(d.kind)
+    item = TableDirectoryItem(
+        directory_id=directory_id,
+        label=req.label.strip(),
+        value=req.value.strip() if req.value else None,
+        payload=payload_data,
+    )
     db.add(item)
     await db.commit()
     await db.refresh(item)
-    return DirectoryItemDto(id=item.id, label=item.label, value=item.value)
+    return _directory_item_dto(item)
+
+
+@router.patch(
+    "/{table_id}/workspace/directories/{directory_id}/items/{item_id}",
+    response_model=DirectoryItemDto,
+)
+async def patch_directory_item(
+    table_id: int,
+    directory_id: int,
+    item_id: int,
+    req: DirectoryItemPatchRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DirectoryItemDto:
+    _, is_owner = await _require_table_access(db, current_user, table_id)
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="Только владелец может редактировать справочники")
+    res = await db.execute(
+        select(TableDirectory).where(TableDirectory.id == directory_id, TableDirectory.table_id == table_id),
+    )
+    d = res.scalar_one_or_none()
+    if not d:
+        raise HTTPException(status_code=404, detail="Справочник не найден")
+    ires = await db.execute(
+        select(TableDirectoryItem).where(
+            TableDirectoryItem.id == item_id,
+            TableDirectoryItem.directory_id == directory_id,
+        ),
+    )
+    item = ires.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Элемент не найден")
+    if req.label is not None:
+        item.label = req.label.strip()
+    if req.value is not None:
+        v = req.value.strip()
+        item.value = v if v else None
+    if req.payload is not None:
+        item.payload = req.payload
+    await db.commit()
+    await db.refresh(item)
+    return _directory_item_dto(item)
+
+
+@router.delete("/{table_id}/workspace/directories/{directory_id}/items/{item_id}")
+async def delete_directory_item(
+    table_id: int,
+    directory_id: int,
+    item_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    _, is_owner = await _require_table_access(db, current_user, table_id)
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="Только владелец может удалять элементы")
+    res = await db.execute(
+        select(TableDirectory).where(TableDirectory.id == directory_id, TableDirectory.table_id == table_id),
+    )
+    if not res.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Справочник не найден")
+    await db.execute(
+        delete(TableDirectoryItem).where(
+            TableDirectoryItem.id == item_id,
+            TableDirectoryItem.directory_id == directory_id,
+        ),
+    )
+    await db.commit()
+    return {"detail": "Удалено"}
 
 
 @router.delete("/{table_id}/workspace/directories/{directory_id}")

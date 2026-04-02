@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -12,10 +13,10 @@ class TableMemberBriefDto(BaseModel):
 
 
 class TablePatchRequest(BaseModel):
+    """Предустановку стола (preset) менять нельзя — только при создании."""
+
     title: str | None = Field(default=None, min_length=2, max_length=150)
     description: str | None = Field(default=None, max_length=500)
-    preset: str | None = Field(default=None, max_length=50)
-    custom_preset_name: str | None = Field(default=None, max_length=80)
     time_format: str | None = Field(default=None, max_length=10)
     week_start_day: str | None = Field(default=None, max_length=20)
     work_hours: str | None = Field(default=None, max_length=30)
@@ -28,8 +29,6 @@ class TablePatchRequest(BaseModel):
             for name in (
                 "title",
                 "description",
-                "preset",
-                "custom_preset_name",
                 "time_format",
                 "week_start_day",
                 "work_hours",
@@ -92,11 +91,13 @@ class DirectoryItemDto(BaseModel):
     id: int
     label: str
     value: str | None
+    payload: dict[str, Any] | None = None
 
 
 class TableDirectoryDto(BaseModel):
     id: int
     name: str
+    kind: str | None = None
     items: list[DirectoryItemDto]
 
 
@@ -107,6 +108,20 @@ class TableDirectoryCreateRequest(BaseModel):
 class DirectoryItemCreateRequest(BaseModel):
     label: str = Field(min_length=1, max_length=200)
     value: str | None = Field(default=None, max_length=500)
+    payload: dict[str, Any] | None = None
+
+
+class DirectoryItemPatchRequest(BaseModel):
+    label: str | None = Field(default=None, min_length=1, max_length=200)
+    value: str | None = Field(default=None, max_length=500)
+    payload: dict[str, Any] | None = None
+
+
+class PresetDirectoriesRepairResultDto(BaseModel):
+    detail: str
+    directories_created: int
+    example_items_added: int
+    skipped_nonempty_directories: int
 
 
 class TableOrderDto(BaseModel):

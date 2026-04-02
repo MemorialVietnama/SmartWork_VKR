@@ -27,8 +27,6 @@ interface WorkspaceSettingsNavItem {
 interface TableDraft {
   title: string;
   description: string;
-  preset: string;
-  customPresetName: string;
   timeFormat: string;
   weekStartDay: string;
   workDayStart: string;
@@ -91,8 +89,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
   protected readonly tableDraft = signal<TableDraft>({
     title: '',
     description: '',
-    preset: 'barbershop',
-    customPresetName: '',
     timeFormat: 'us',
     weekStartDay: 'monday',
     workDayStart: '09:00',
@@ -125,7 +121,35 @@ export class WorkspaceSettingsTabComponent implements OnInit {
   protected tableSaveError = signal<string | null>(null);
   protected tableSaved = signal(false);
 
+  protected presetRepairLoading = signal(false);
+  protected presetRepairError = signal<string | null>(null);
+  protected presetRepairResult = signal<string | null>(null);
+
   protected bonusLoadError = signal<string | null>(null);
+
+  /** Кнопка восстановления: только владелец и шаблонные пресеты (в т.ч. старые опечатки в БД). */
+  protected readonly canRepairPresetDirectories = computed(() => {
+    const d = this.state.detail();
+    if (!d?.can_edit_settings) {
+      return false;
+    }
+    const p = (d.preset ?? '').trim().toLowerCase();
+    if (!p || p === 'custom') {
+      return false;
+    }
+    const allowed = new Set([
+      'barbershop',
+      'grooming',
+      'grumming',
+      'groomin',
+      'barber',
+      'barber_shop',
+      'парикмахерская',
+      'груминг',
+      'грамминг',
+    ]);
+    return allowed.has(p);
+  });
 
   ngOnInit(): void {
     this.loadUserSettings();
@@ -142,6 +166,8 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     this.tableSaved.set(false);
     if (id === 'table') {
       this.syncTableDraftFromDetail();
+      this.presetRepairError.set(null);
+      this.presetRepairResult.set(null);
     }
     if (id === 'staff') {
       this.loadEmployeesForStaff();
@@ -190,16 +216,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     this.tableSaved.set(false);
   }
 
-  protected onTablePresetChange(ev: Event): void {
-    const v = (ev.target as HTMLSelectElement).value;
-    this.tableDraft.update((d) => ({
-      ...d,
-      preset: v,
-      customPresetName: v === 'custom' ? d.customPresetName : '',
-    }));
-    this.tableSaved.set(false);
-  }
-
   protected saveUserPrefs(): void {
     this.settingsLoading.set(true);
     this.settingsError.set(null);
@@ -239,10 +255,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
       this.tableSaveError.set('Название стола — не короче 2 символов.');
       return;
     }
-    if (d.preset === 'custom' && d.customPresetName.trim().length < 2) {
-      this.tableSaveError.set('Укажите название своей предустановки.');
-      return;
-    }
     if (!d.workDayStart || !d.workDayEnd) {
       this.tableSaveError.set('Укажите рабочие часы.');
       return;
@@ -254,8 +266,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
       .patchTableDetail(id, {
         title: d.title.trim(),
         description: d.description.trim() || null,
-        preset: d.preset,
-        custom_preset_name: d.preset === 'custom' ? d.customPresetName.trim() : null,
         time_format: d.timeFormat,
         week_start_day: d.weekStartDay,
         work_hours: `${d.workDayStart}-${d.workDayEnd}`,
@@ -312,6 +322,42 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     this.persistBonuses();
   }
 
+  protected repairPresetDirectories(): void {
+    const tid = this.state.tableId();
+    this.presetRepairLoading.set(true);
+    this.presetRepairError.set(null);
+    this.presetRepairResult.set(null);
+    this.auth.repairPresetWorkspaceDirectories(tid).subscribe({
+      next: (r) => {
+        this.presetRepairLoading.set(false);
+        this.presetRepairResult.set(r.detail);
+      },
+      error: (err: { error?: { detail?: string } }) => {
+        this.presetRepairLoading.set(false);
+        const d = err?.error?.detail;
+        this.presetRepairError.set(typeof d === 'string' ? d : 'Не удалось восстановить справочники.');
+      },
+    });
+  }
+
+  protected tablePresetDisplay(): string {
+    const d = this.state.detail();
+    if (!d) {
+      return '—';
+    }
+    const p = (d.preset ?? '').toLowerCase();
+    const labels: Record<string, string> = {
+      barbershop: 'Барбершоп',
+      grooming: 'Груминг',
+      custom: 'Своя',
+    };
+    const base = labels[p] ?? d.preset ?? '—';
+    if (p === 'custom' && d.custom_preset_name) {
+      return `${base}: ${d.custom_preset_name}`;
+    }
+    return base;
+  }
+
   protected formatRub(value: number): string {
     return `${new Intl.NumberFormat('ru-RU').format(value)} ₽`;
   }
@@ -361,8 +407,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     this.tableDraft.set({
       title: d.title,
       description: d.description ?? '',
-      preset: (d.preset as string) || 'barbershop',
-      customPresetName: d.custom_preset_name ?? '',
       timeFormat: (d.time_format as TableDraft['timeFormat']) || 'us',
       weekStartDay: (d.week_start_day as TableDraft['weekStartDay']) || 'monday',
       workDayStart: wh.start,

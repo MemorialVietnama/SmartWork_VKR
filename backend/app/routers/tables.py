@@ -12,6 +12,7 @@ from app.models.table_bonus import TableBonus
 from app.models.table_member import TableMember
 from app.models.user import User
 from app.routers.auth import get_current_user
+from app.config.directory_presets import ANIMAL_TYPES, normalize_table_preset
 from app.schemas.table import (
     AnalyticsMiniChartDto,
     TableBonusDto,
@@ -24,6 +25,7 @@ from app.schemas.table import (
     TableSubscriptionDto,
     TableSubscriptionUpdateRequest,
 )
+from app.services.directory_bootstrap import bootstrap_preset_directories
 from app.services.email_sender import send_email
 
 router = APIRouter()
@@ -47,7 +49,7 @@ async def _create_table_from_payload(db: AsyncSession, current_user: User, req: 
         title=req.title.strip(),
         description=req.description.strip() if req.description else None,
         color=None,
-        preset=req.preset.strip(),
+        preset=normalize_table_preset(req.preset.strip()),
         custom_preset_name=req.custom_preset_name.strip() if req.custom_preset_name else None,
         time_format=req.time_format.strip(),
         week_start_day=req.week_start_day.strip(),
@@ -70,6 +72,7 @@ async def _create_table_from_payload(db: AsyncSession, current_user: User, req: 
         for employee_id in allowed_ids:
             db.add(TableMember(table_id=table.id, user_id=employee_id))
     await db.commit()
+    await bootstrap_preset_directories(db, table.id, req.preset)
     return TableDto(
         id=table.id,
         title=table.title,
@@ -143,6 +146,12 @@ async def confirm_create_table(
 
     payload = TableCreateRequest.model_validate_json(payload_raw)
     return await _create_table_from_payload(db=db, current_user=current_user, req=payload)
+
+
+@router.get("/directory-presets/animal-types", response_model=list[str])
+async def directory_preset_animal_types() -> list[str]:
+    """Типы животных для справочника «Питомцы» (груминг)."""
+    return list(ANIMAL_TYPES)
 
 
 @router.get("/subscriptions/my", response_model=list[TableSubscriptionDto])
