@@ -57,3 +57,40 @@ class TableTaskUpdateRequest(BaseModel):
     title: str | None = Field(default=None, max_length=300)
     status: str | None = Field(default=None, max_length=20)
     assignee_user_id: int | None = None
+
+
+class DirectoryItemDto(BaseModel):
+    id: int
+    label: str
+    value: str | None
+
+
+class TableDirectoryDto(BaseModel):
+    id: int
+    name: str
+    items: list[DirectoryItemDto]
+
+
+class TableDirectoryCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+
+class DirectoryItemCreateRequest(BaseModel):
+    label: str = Field(min_length=1, max_length=200)
+    value: str | None = Field(default=None, max_length=500)
+
+
+class TableOrderDto(BaseModel):
+    id: int
+    title: str
+    status: str
+    created_at: datetime
+    completed_at: datetime | None
+
+
+class TableOrderCreateRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=300)
+
+
+class TableOrderUpdateRequest(BaseModel):
+    status: str = Field(max_length=20)

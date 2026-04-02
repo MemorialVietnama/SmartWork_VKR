@@ -39,6 +39,12 @@ export class LoginPageComponent {
       },
       error: (e) => {
         this.loading = false;
+        const status = e?.status as number | undefined;
+        if (status === 0 || status === 502 || status === 503 || status === 504) {
+          this.error =
+            'Сервер API недоступен (часто сразу после перезапуска Docker). Подождите 10–30 секунд и обновите страницу. Убедитесь, что контейнер smartwork-api в состоянии healthy.';
+          return;
+        }
         const detail = e?.error?.detail;
         if (detail?.code === 'ACCOUNT_NOT_ACTIVATED') {
           void this.router.navigate(['/auth/verify'], {
@@ -46,7 +52,8 @@ export class LoginPageComponent {
           });
           return;
         }
-        this.error = detail ?? 'Не удалось войти. Проверьте логин/пароль.';
+        const msg = typeof detail === 'string' ? detail : null;
+        this.error = msg ?? 'Не удалось войти. Проверьте логин/пароль.';
       },
     });
   }

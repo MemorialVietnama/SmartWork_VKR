@@ -47,6 +47,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: smartwork-api
+    restart: unless-stopped
     env_file:
       - .env
     environment:
@@ -63,6 +64,16 @@ services:
         condition: service_started
     ports:
       - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://127.0.0.1:8000/health'', timeout=5).read()"',
+        ]
+      interval: 5s
+      timeout: 8s
+      retries: 12
+      start_period: 45s
 
   web:
     build:
@@ -71,8 +82,10 @@ services:
       args:
         API_URL: ${API_PUBLIC_URL:-http://localhost:8000}
     container_name: smartwork-web
+    restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
       - "${WEB_PORT:-80}:80"
 
