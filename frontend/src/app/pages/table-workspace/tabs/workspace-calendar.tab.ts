@@ -12,35 +12,27 @@ import { catchError, distinctUntilChanged, finalize, of, switchMap, tap } from '
 
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 
 import { AuthService, CalendarSlotDto } from '../../../core/auth/auth.service';
+import { WorkspaceCalendarWidgetComponent } from '../../../shared/workspace-calendar-widget/workspace-calendar-widget.component';
 import { TableWorkspaceState } from '../table-workspace.state';
-import {
-  addDays,
-  addMonths,
-  addYears,
-  buildMonthGrid,
-  CalendarViewMode,
-  dayKeyLocal,
-  endOfWeek,
-  indexSlotsByLocalDay,
-  monthName as ruMonthName,
-  slotIntersectsHour,
-  startOfWeek,
-  toIsoRange,
-  visibleRangeForView,
-  weekdayHeaders,
-  weekdayShort as ruWeekdayShort,
-  weekStartDayToJs,
-  workHoursToHourIndices,
-} from './calendar-view.utils';
+import { CalendarViewMode, toIsoRange, visibleRangeForView, weekStartDayToJs } from './calendar-view.utils';
 
 @Component({
   selector: 'app-workspace-calendar-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, CardModule, ButtonModule, InputTextModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    CardModule,
+    ButtonModule,
+    DialogModule,
+    InputTextModule,
+    WorkspaceCalendarWidgetComponent,
+  ],
   templateUrl: './workspace-calendar.tab.html',
   styleUrl: './workspace-calendar.tab.scss',
 })
@@ -48,7 +40,7 @@ export class WorkspaceCalendarTabComponent {
   private readonly auth = inject(AuthService);
   protected readonly state = inject(TableWorkspaceState);
 
-  protected readonly viewMode = signal<CalendarViewMode>('week');
+  protected readonly viewMode = signal<CalendarViewMode>('month');
   /** Опорная дата; при смене всегда новый объект Date */
   protected readonly anchorDate = signal<Date>(new Date());
 
@@ -56,9 +48,23 @@ export class WorkspaceCalendarTabComponent {
   protected readonly slotsLoading = signal(false);
   protected readonly loadError = signal<string | null>(null);
 
+  protected createDialogVisible = false;
+  protected createStep = 1;
   protected newTitle = '';
-  protected newStart = '';
-  protected newEnd = '';
+  protected newSelectedEmployeeIds: number[] = [];
+  protected newDateFrom = '';
+  protected newTimeFrom = '09:00';
+  protected newDateTo = '';
+  protected newTimeTo = '18:00';
+  protected editDialogVisible = false;
+  protected editingSlotId: number | null = null;
+  protected editTitle = '';
+  protected editStart = '';
+  protected editEnd = '';
+  protected slotMenuVisible = false;
+  protected slotMenuX = 0;
+  protected slotMenuY = 0;
+  protected selectedSlot: CalendarSlotDto | null = null;
   protected actionError: string | null = null;
 
   protected readonly weekStartsOn = computed(() => weekStartDayToJs(this.state.detail()?.week_start_day));
@@ -72,46 +78,24 @@ export class WorkspaceCalendarTabComponent {
   protected readonly loadKey = computed(() => {
     const id = this.state.tableId();
     const { from, to } = this.visibleRange();
+    const reloadTick = this.state.calendarReloadTick();
     return {
       tableId: id,
       from: from.toISOString(),
       to: to.toISOString(),
+      reloadTick,
     };
   });
 
-  protected readonly slotsByDay = computed(() => {
-    const list = this.slots();
-    const { from, to } = this.visibleRange();
-    return indexSlotsByLocalDay(list, from, to);
-  });
-
-  protected readonly periodLabel = computed(() => this.formatPeriodLabel());
-
-  protected monthName(m: number): string {
-    return ruMonthName(m);
-  }
-
-  protected weekdayShort(d: number): string {
-    return ruWeekdayShort(d);
-  }
-
-  protected readonly monthHeaders = computed(() => weekdayHeaders(this.weekStartsOn()));
-
-  protected readonly monthViewGrid = computed(() => {
-    const a = this.anchorDate();
-    return buildMonthGrid(a.getFullYear(), a.getMonth(), this.weekStartsOn());
-  });
-
-  protected readonly workHourIndices = computed(() =>
-    workHoursToHourIndices(this.state.detail()?.work_hours ?? null),
-  );
-
   constructor() {
-    // toObservable и takeUntilDestroyed() требуют контекста внедрения — не вызывать из ngOnInit (NG0203).
     toObservable(this.loadKey)
       .pipe(
         distinctUntilChanged(
-          (a, b) => a.tableId === b.tableId && a.from === b.from && a.to === b.to,
+          (a, b) =>
+            a.tableId === b.tableId &&
+            a.from === b.from &&
+            a.to === b.to &&
+            a.reloadTick === b.reloadTick,
         ),
         tap(() => {
           this.loadError.set(null);
@@ -135,65 +119,44 @@ export class WorkspaceCalendarTabComponent {
       .subscribe((data) => this.slots.set(data));
   }
 
-  protected onViewModeChange(ev: Event): void {
-    const v = (ev.target as HTMLSelectElement).value as CalendarViewMode;
-    if (v === 'year' || v === 'month' || v === 'week' || v === 'day') {
-      this.viewMode.set(v);
+  protected onCalendarAnchorChange(d: Date): void {
+    this.anchorDate.set(new Date(d.getTime()));
+  }
+
+  protected openCreateSlotDialog(): void {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    this.createDialogVisible = true;
+    this.createStep = 1;
+    this.newTitle = '';
+    this.newSelectedEmployeeIds = [];
+    this.newDateFrom = this.toDateInputValue(now);
+    this.newDateTo = this.toDateInputValue(tomorrow);
+    this.newTimeFrom = '09:00';
+    this.newTimeTo = '18:00';
+    this.actionError = null;
+  }
+
+  protected closeCreateSlotDialog(): void {
+    this.createDialogVisible = false;
+  }
+
+  protected nextCreateStep(): void {
+    if (this.createStep === 1 && this.newTitle.trim().length < 2) {
+      this.actionError = 'Название слота должно содержать минимум 2 символа.';
+      return;
+    }
+    if (this.createStep < 3) {
+      this.actionError = null;
+      this.createStep += 1;
     }
   }
 
-  protected prevPeriod(): void {
-    this.shiftAnchor(-1);
-  }
-
-  protected nextPeriod(): void {
-    this.shiftAnchor(1);
-  }
-
-  protected goToday(): void {
-    this.anchorDate.set(new Date());
-  }
-
-  /** Стабильные ключи для @for — в track нельзя ссылаться на внешние ym/ri. */
-  protected readonly yearMiniLayout = computed(() => {
-    const y = this.anchorDate().getFullYear();
-    const ws = this.weekStartsOn();
-    const months = Array.from({ length: 12 }, (_, m) => ({ year: y, month: m }));
-    return months.map((ym) => {
-      const grid = buildMonthGrid(ym.year, ym.month, ws);
-      const rows = grid.map((cells, ri) => ({
-        rowKey: `${ym.year}-${ym.month}-r${ri}`,
-        cells: cells.map((cell, ci) => ({
-          cell,
-          cellKey: cell
-            ? `d-${ym.year}-${ym.month}-${cell.getDate()}`
-            : `e-${ym.year}-${ym.month}-${ri}-${ci}`,
-        })),
-      }));
-      return { year: ym.year, month: ym.month, rows };
-    });
-  });
-
-  protected weekDays(): Date[] {
-    const a = this.anchorDate();
-    const ws = this.weekStartsOn();
-    const start = startOfWeek(a, ws);
-    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  }
-
-  protected slotsForDayKey(key: string): CalendarSlotDto[] {
-    return this.slotsByDay().get(key) ?? [];
-  }
-
-  protected slotsForHour(hour: number): CalendarSlotDto[] {
-    const anchor = this.anchorDate();
-    return this.slots().filter((s) => slotIntersectsHour(s, anchor, hour));
-  }
-
-  protected pickDay(d: Date): void {
-    const next = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    this.anchorDate.set(next);
-    this.viewMode.set('day');
+  protected prevCreateStep(): void {
+    if (this.createStep > 1) {
+      this.actionError = null;
+      this.createStep -= 1;
+    }
   }
 
   protected refresh(): void {
@@ -218,15 +181,21 @@ export class WorkspaceCalendarTabComponent {
     const id = this.state.tableId();
     this.actionError = null;
     const title = this.newTitle.trim();
-    if (!title || !this.newStart || !this.newEnd) {
+    if (!title || !this.newDateFrom || !this.newDateTo || !this.newTimeFrom || !this.newTimeTo) {
       this.actionError = 'Заполните название и время.';
       return;
     }
-    const starts_at = new Date(this.newStart).toISOString();
-    const ends_at = new Date(this.newEnd).toISOString();
-    this.auth.createCalendarSlot(id, { title, starts_at, ends_at }).subscribe({
+    const starts_at = new Date(`${this.newDateFrom}T${this.newTimeFrom}`).toISOString();
+    const ends_at = new Date(`${this.newDateTo}T${this.newTimeTo}`).toISOString();
+    const employeeNames = this.state.members()
+      .filter((member) => this.newSelectedEmployeeIds.includes(member.user_id))
+      .map((member) => member.short_name);
+    const fullTitle = employeeNames.length > 0 ? `${title} (${employeeNames.join(', ')})` : title;
+    this.auth.createCalendarSlot(id, { title: fullTitle, starts_at, ends_at }).subscribe({
       next: () => {
+        this.createDialogVisible = false;
         this.newTitle = '';
+        this.newSelectedEmployeeIds = [];
         this.refresh();
       },
       error: (err) => {
@@ -245,70 +214,122 @@ export class WorkspaceCalendarTabComponent {
     });
   }
 
-  protected dayKey(d: Date): string {
-    return dayKeyLocal(d);
+  protected onSlotContextMenu(payload: { slot: CalendarSlotDto; clientX: number; clientY: number }): void {
+    this.selectedSlot = payload.slot;
+    this.slotMenuX = payload.clientX;
+    this.slotMenuY = payload.clientY;
+    this.slotMenuVisible = true;
   }
 
-  protected formatDayTitle(d: Date): string {
-    return `${this.weekdayShort(d.getDay())}, ${d.getDate()} ${this.monthName(d.getMonth())} ${d.getFullYear()}`;
+  protected closeSlotMenu(): void {
+    this.slotMenuVisible = false;
   }
 
-  protected isToday(cell: Date): boolean {
-    const n = new Date();
-    return (
-      cell.getFullYear() === n.getFullYear() &&
-      cell.getMonth() === n.getMonth() &&
-      cell.getDate() === n.getDate()
-    );
-  }
-
-  protected formatTimeRange(s: CalendarSlotDto): string {
-    const a = new Date(s.starts_at);
-    const b = new Date(s.ends_at);
-    return `${a.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} — ${b.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
-  }
-
-  private shiftAnchor(dir: number): void {
-    const a = this.anchorDate();
-    const mode = this.viewMode();
-    let next: Date;
-    switch (mode) {
-      case 'year':
-        next = addYears(a, dir);
-        break;
-      case 'month':
-        next = addMonths(a, dir);
-        break;
-      case 'week':
-        next = addDays(a, dir * 7);
-        break;
-      case 'day':
-        next = addDays(a, dir);
-        break;
+  protected openEditSlotDialog(): void {
+    if (!this.selectedSlot) {
+      return;
     }
-    this.anchorDate.set(next);
+    this.editingSlotId = this.selectedSlot.id;
+    this.editTitle = this.selectedSlot.title;
+    this.editStart = this.toDateTimeLocalValue(this.selectedSlot.starts_at);
+    this.editEnd = this.toDateTimeLocalValue(this.selectedSlot.ends_at);
+    this.editDialogVisible = true;
+    this.slotMenuVisible = false;
   }
 
-  private formatPeriodLabel(): string {
-    const a = this.anchorDate();
-    const mode = this.viewMode();
-    const ws = this.weekStartsOn();
-    switch (mode) {
-      case 'year':
-        return String(a.getFullYear());
-      case 'month':
-        return `${ruMonthName(a.getMonth())} ${a.getFullYear()}`;
-      case 'week': {
-        const s = startOfWeek(a, ws);
-        const e = endOfWeek(a, ws);
-        const sameMonth = s.getMonth() === e.getMonth();
-        if (sameMonth) {
-          return `${s.getDate()}–${e.getDate()} ${ruMonthName(s.getMonth()).slice(0, 3)}. ${s.getFullYear()}`;
-        }
-        return `${s.getDate()} ${ruMonthName(s.getMonth()).slice(0, 3)}. – ${e.getDate()} ${ruMonthName(e.getMonth()).slice(0, 3)}. ${e.getFullYear()}`;
+  protected saveEditedSlot(): void {
+    const tableId = this.state.tableId();
+    if (!this.editingSlotId) {
+      return;
+    }
+    const title = this.editTitle.trim();
+    if (!title || !this.editStart || !this.editEnd) {
+      this.actionError = 'Заполните название и время слота.';
+      return;
+    }
+    this.auth
+      .updateCalendarSlot(tableId, this.editingSlotId, {
+        title,
+        starts_at: new Date(this.editStart).toISOString(),
+        ends_at: new Date(this.editEnd).toISOString(),
+      })
+      .subscribe({
+        next: () => {
+          this.editDialogVisible = false;
+          this.editingSlotId = null;
+          this.refresh();
+        },
+        error: (err) => {
+          this.actionError = err?.error?.detail ?? 'Не удалось обновить слот.';
+        },
+      });
+  }
+
+  protected deleteSelectedSlot(): void {
+    if (!this.selectedSlot) {
+      return;
+    }
+    const id = this.selectedSlot.id;
+    this.slotMenuVisible = false;
+    this.removeSlot(id);
+  }
+
+  protected onSlotDateDrop(payload: { slotId: number; targetDate: string }): void {
+    const slot = this.slots().find((item) => item.id === payload.slotId);
+    if (!slot) {
+      return;
+    }
+    const startsAt = new Date(slot.starts_at);
+    const endsAt = new Date(slot.ends_at);
+    const durationMs = endsAt.getTime() - startsAt.getTime();
+    const [year, month, day] = payload.targetDate.split('-').map(Number);
+    const targetStart = new Date(year, month - 1, day, startsAt.getHours(), startsAt.getMinutes(), 0, 0);
+    const targetEnd = new Date(targetStart.getTime() + durationMs);
+    this.auth
+      .updateCalendarSlot(this.state.tableId(), slot.id, {
+        starts_at: targetStart.toISOString(),
+        ends_at: targetEnd.toISOString(),
+      })
+      .subscribe({
+        next: () => {
+          this.refresh();
+        },
+        error: (err) => {
+          this.actionError = err?.error?.detail ?? 'Не удалось перенести слот.';
+        },
+      });
+  }
+
+  protected toggleEmployeeSelection(userId: number, checked: boolean): void {
+    if (checked) {
+      if (!this.newSelectedEmployeeIds.includes(userId)) {
+        this.newSelectedEmployeeIds = [...this.newSelectedEmployeeIds, userId];
       }
-      case 'day':
-        return this.formatDayTitle(a);
+      return;
     }
+    this.newSelectedEmployeeIds = this.newSelectedEmployeeIds.filter((id) => id !== userId);
+  }
+
+  protected activeEmployeeNames(): string[] {
+    return this.state.members()
+      .filter((member) => this.newSelectedEmployeeIds.includes(member.user_id))
+      .map((member) => member.short_name);
+  }
+
+  private toDateInputValue(value: Date): string {
+    const year = value.getFullYear();
+    const month = `${value.getMonth() + 1}`.padStart(2, '0');
+    const day = `${value.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private toDateTimeLocalValue(valueIso: string): string {
+    const value = new Date(valueIso);
+    const year = value.getFullYear();
+    const month = `${value.getMonth() + 1}`.padStart(2, '0');
+    const day = `${value.getDate()}`.padStart(2, '0');
+    const hours = `${value.getHours()}`.padStart(2, '0');
+    const minutes = `${value.getMinutes()}`.padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 }

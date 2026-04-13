@@ -49,6 +49,24 @@ export interface TableAnalyticsDto {
   active_employees: number;
   queued_orders: number;
   charts: AnalyticsMiniChartDto[];
+  periods?: Array<{
+    period: string;
+    values: number[];
+  }>;
+  segments?: Array<{
+    key: string;
+    label: string;
+    value: number;
+  }>;
+  forecast?: {
+    horizon: string;
+    values: number[];
+  } | null;
+  anomalies?: Array<{
+    date: string;
+    title: string;
+    severity: 'low' | 'medium' | 'high';
+  }>;
 }
 
 export interface TableMemberBriefDto {
@@ -62,6 +80,12 @@ export interface CalendarSlotDto {
   title: string;
   starts_at: string;
   ends_at: string;
+}
+
+export interface ShiftScheduleApplyResponse {
+  detail: string;
+  created_count: number;
+  skipped_duplicates: number;
 }
 
 export interface WorkspaceTaskDto {
@@ -290,6 +314,22 @@ export class AuthService {
     return this.http.post<TableDto>(this.url('/api/v1/tables/create/confirm'), { code }, { headers: this.authHeaders() });
   }
 
+  requestDeleteTableCode(tableId: number): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(
+      this.url(`/api/v1/tables/${tableId}/delete/request-code`),
+      {},
+      { headers: this.authHeaders() },
+    );
+  }
+
+  confirmDeleteTable(tableId: number, code: string): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(
+      this.url(`/api/v1/tables/${tableId}/delete/confirm`),
+      { code },
+      { headers: this.authHeaders() },
+    );
+  }
+
   myTables(): Observable<TableDto[]> {
     return this.http.get<TableDto[]>(this.url('/api/v1/tables/my'), { headers: this.authHeaders() });
   }
@@ -456,6 +496,35 @@ export class AuthService {
     );
   }
 
+  updateCalendarSlot(
+    tableId: number,
+    slotId: number,
+    payload: { title?: string; starts_at?: string; ends_at?: string },
+  ): Observable<CalendarSlotDto> {
+    return this.http.patch<CalendarSlotDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/calendar/slots/${slotId}`),
+      payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  applyShiftSchedule(
+    tableId: number,
+    payload: {
+      employee_user_id: number;
+      weekdays: number[];
+      start_time: string;
+      end_time: string;
+      weeks_ahead: number;
+    },
+  ): Observable<ShiftScheduleApplyResponse> {
+    return this.http.post<ShiftScheduleApplyResponse>(
+      this.url(`/api/v1/tables/${tableId}/workspace/shifts/apply`),
+      payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
   listWorkspaceTasks(tableId: number): Observable<WorkspaceTaskDto[]> {
     return this.http.get<WorkspaceTaskDto[]>(this.url(`/api/v1/tables/${tableId}/workspace/tasks`), {
       headers: this.authHeaders(),
@@ -591,7 +660,7 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    void this.router.navigate(['/auth/login']);
+    void this.router.navigate(['/welcome']);
   }
 }
 

@@ -66,5 +66,14 @@ export class VerifyPageComponent implements OnInit {
       },
     });
   }
+
+  protected codePreviewSlots(): string[] {
+    const clean = this.code.replace(/\s+/g, '').slice(0, 6);
+    return Array.from({ length: 6 }, (_, index) => clean[index] ?? '•');
+  }
+
+  protected normalizedLogin(): string {
+    return this.login.trim().toLowerCase();
+  }
 }
 

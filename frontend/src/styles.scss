@@ -1,9 +1,14 @@
 @import 'primeicons/primeicons.css';
 
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 html,
 body {
   height: 100%;
   margin: 0;
+  font-family: var(--font-family);
 }
 
 .dashboard-page .subscription-summary {
@@ -15,7 +20,7 @@ body {
   justify-content: space-between;
   gap: 0.8rem;
   align-items: center;
-  background: rgba(99, 102, 241, 0.06);
+  background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
 }
 
 .dashboard-page .subscription-top {
@@ -65,7 +70,7 @@ body {
 }
 
 .dashboard-page .plan-card.current {
-  border-color: var(--p-primary-color, #6366f1);
+  border-color: var(--p-primary-color);
 }
 
 .dashboard-page .plan-card.recommended {
@@ -348,7 +353,7 @@ body {
   border: 1px solid var(--p-content-border-color, #e2e8f0);
   border-radius: 0.625rem;
   padding: 0.75rem;
-  background: rgba(99, 102, 241, 0.04);
+  background: color-mix(in srgb, var(--p-primary-color) 5%, transparent);
 }
 
 .dashboard-page .notify-col h4 {
@@ -548,7 +553,7 @@ body {
 .dashboard-page .analytics-locked .locked-preview .bar {
   display: block;
   border-radius: 0.3rem 0.3rem 0.1rem 0.1rem;
-  background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(180deg, var(--p-primary-400) 0%, var(--p-primary-700) 100%);
 }
 
 .dashboard-page .h28 { height: 28%; }
@@ -644,7 +649,7 @@ body {
 }
 
 .dashboard-page .table-menu-dropdown button:hover:not(:disabled) {
-  background: rgba(99, 102, 241, 0.08);
+  background: color-mix(in srgb, var(--p-primary-color) 10%, transparent);
 }
 
 .dashboard-page .table-menu-dropdown button:disabled {
@@ -1121,7 +1126,7 @@ body {
 
 .table-workspace-page .tw-mini-bar {
   width: 100%;
-  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  background: linear-gradient(180deg, var(--p-primary-500), var(--p-primary-700));
   border-radius: 0.2rem 0.2rem 0 0;
   min-height: 4px;
 }

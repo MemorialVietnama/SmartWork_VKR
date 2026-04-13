@@ -1,0 +1,14 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [closable]="false"
+  [style]="{ width: '28rem', maxWidth: '95vw' }"
+  header="Подтверждение выхода"
+>
+  <p>Вы уверены, что хотите выйти из аккаунта?</p>
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="visibleChange.emit(false)" />
+    <p-button label="Выйти" icon="pi pi-sign-out" severity="danger" (onClick)="confirm.emit()" />
+  </div>
+</p-dialog>

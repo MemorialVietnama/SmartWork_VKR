@@ -1,0 +1,73 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [style]="{ width: '46rem', maxWidth: '95vw' }"
+  [header]="mode() === 'create' ? 'Добавление сотрудника' : 'Редактирование сотрудника'"
+>
+  <div class="employee-form-grid">
+    <label>
+      <span>Фамилия *</span>
+      <input type="text" pInputText [(ngModel)]="form().lastName" />
+    </label>
+
+    <label>
+      <span>Имя *</span>
+      <input type="text" pInputText [(ngModel)]="form().firstName" />
+    </label>
+
+    <label>
+      <span>Отчество</span>
+      <input type="text" pInputText [(ngModel)]="form().middleName" />
+    </label>
+
+    <label>
+      <span>Дата рождения *</span>
+      <input type="date" pInputText [(ngModel)]="form().birthDate" />
+    </label>
+
+    <label>
+      <span>Номер телефона *</span>
+      <input type="tel" pInputText [(ngModel)]="form().phone" />
+    </label>
+
+    <label>
+      <span>Email сотрудника</span>
+      <input type="email" pInputText [(ngModel)]="form().email" />
+    </label>
+
+    <label>
+      <span>Должность *</span>
+      <input type="text" pInputText [(ngModel)]="form().position" placeholder="Например: Барбер" />
+    </label>
+
+    <label class="full">
+      <span>Примечание</span>
+      <textarea rows="3" pInputText [(ngModel)]="form().note"></textarea>
+    </label>
+
+    <label class="full">
+      <span>Аватар</span>
+      <input type="file" accept="image/*" (change)="avatarSelected.emit($event)" />
+      @if (form().avatarDataUrl) {
+        <div class="avatar-preview-row">
+          <img [src]="form().avatarDataUrl" alt="avatar preview" class="avatar avatar-preview" />
+          <p-button label="Убрать аватар" icon="pi pi-trash" size="small" styleClass="p-button-text" (onClick)="clearAvatar.emit()" />
+        </div>
+      }
+    </label>
+  </div>
+
+  @if (formError()) {
+    <p-message severity="error" [text]="formError() ?? ''" [closable]="false" />
+  }
+
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="visibleChange.emit(false)" />
+    <p-button
+      [label]="mode() === 'create' ? 'Создать аккаунт' : 'Сохранить изменения'"
+      icon="pi pi-check"
+      (onClick)="submit.emit()"
+    />
+  </div>
+</p-dialog>

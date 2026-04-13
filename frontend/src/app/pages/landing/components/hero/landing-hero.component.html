@@ -1,0 +1,162 @@
+<section class="landing-hero">
+  <div class="landing-section-inner landing-hero-grid">
+    <div class="landing-hero-copy">
+      <h1 class="landing-hero-title">Умное место для умного малого бизнеса</h1>
+      <p class="landing-hero-lead">
+        Один Владелекц, Одна компанда, Один стол - в котором есть все что нужно для работы. Календарь, очередь заказов, задачи и аналитика в одном интерфейсе.
+      </p>
+      <div class="landing-hero-actions">
+        <p-button
+          label="Начать бесплатно"
+          icon="pi pi-play"
+          size="large"
+          styleClass="landing-hero-cta-primary"
+          (onClick)="goLogin()"
+        />
+        <a
+          pButton
+          routerLink="/welcome"
+          fragment="features"
+          label="Узнать больше"
+          icon="pi pi-info-circle"
+          severity="secondary"
+          size="large"
+          [outlined]="true"
+          styleClass="landing-hero-cta-secondary"
+        ></a>
+      </div>
+    </div>
+    <div class="landing-hero-visual">
+      <div class="landing-dashboard-preview" aria-label="Демо интерфейса личного кабинета">
+        <div class="landing-preview-dots" aria-hidden="true">
+          <span class="landing-dot landing-dot-red"></span>
+          <span class="landing-dot landing-dot-yellow"></span>
+          <span class="landing-dot landing-dot-green"></span>
+        </div>
+        <p class="landing-mock-dash-url m-0" aria-hidden="true">localhost/dashboard</p>
+
+        <div class="landing-mock-dash">
+          <aside class="landing-mock-dash-sidebar" aria-hidden="true">
+            <div class="landing-mock-dash-head">
+              <p-tag severity="info" value="owner" styleClass="landing-mock-dash-tag" />
+              <h3 class="landing-mock-dash-user">Петров Пётр</h3>
+              <small class="landing-mock-dash-login">owner&#64;example.ru</small>
+            </div>
+            <nav class="landing-mock-dash-menu" aria-label="Демо меню">
+              @for (item of mockNav; track item.id) {
+                <button
+                  type="button"
+                  class="landing-mock-dash-menu-item"
+                  [class.landing-mock-dash-menu-item--active]="mockDashTab() === item.id"
+                  (click)="selectMockTab(item.id)"
+                >
+                  <i [class]="item.icon" aria-hidden="true"></i>
+                  <span>{{ item.label }}</span>
+                </button>
+              }
+            </nav>
+          </aside>
+
+          <section class="landing-mock-dash-content">
+            @switch (mockDashTab()) {
+              @case ('tables') {
+                <div class="landing-mock-dash-content-head">
+                  <h2 class="landing-mock-dash-h2">Столы</h2>
+                  <p>Рабочие пространства, в которых состоит ваш аккаунт.</p>
+                </div>
+                <div class="landing-mock-dash-toolbar">
+                  <p-button label="Создать стол" icon="pi pi-plus" size="small" [disabled]="true" />
+                  <p-button label="Присоединиться" icon="pi pi-sign-in" size="small" [outlined]="true" [disabled]="true" />
+                </div>
+                <p-card styleClass="landing-mock-table-card">
+                  <div class="landing-mock-stats">
+                    <div class="landing-mock-stats-row">
+                      <span>Активные сотрудники</span>
+                      <strong>4</strong>
+                    </div>
+                    <div class="landing-mock-stats-row">
+                      <span>Заказов в очереди</span>
+                      <strong>12</strong>
+                    </div>
+                    <div class="landing-mock-task-bars">
+                      <div class="landing-mock-task-bars-head">
+                        <span>Задачи</span>
+                        <strong>62%</strong>
+                      </div>
+                      <div class="landing-mock-bars">
+                        <span class="landing-mock-bar landing-mock-bar--done"></span>
+                        <span class="landing-mock-bar landing-mock-bar--wait"></span>
+                        <span class="landing-mock-bar landing-mock-bar--new"></span>
+                      </div>
+                      <small>Сделано: 5 | В ожидании: 2 | Новые: 1</small>
+                    </div>
+                  </div>
+                  <div class="landing-mock-table-meta">
+                    <h3>Барбершоп «Центр»</h3>
+                    <p class="m-0">Всего участников: <strong>6</strong></p>
+                    <p class="m-0">Владелец: <strong>Петров П.</strong></p>
+                    <p-button label="Рабочий стол" icon="pi pi-desktop" size="small" styleClass="p-button-outlined mt-2" [disabled]="true" />
+                  </div>
+                </p-card>
+              }
+              @case ('employees') {
+                <div class="landing-mock-dash-content-head">
+                  <h2 class="landing-mock-dash-h2">Сотрудники</h2>
+                  <p>Управление сотрудниками владельца: добавление, приглашение, редактирование и открепление.</p>
+                </div>
+                <div class="landing-mock-dash-toolbar">
+                  <p-button label="Добавить сотрудника" icon="pi pi-user-plus" size="small" [disabled]="true" />
+                </div>
+                <p-card styleClass="landing-mock-employee-card">
+                  <div class="landing-mock-employee-head">
+                    <div class="landing-mock-avatar" aria-hidden="true">МК</div>
+                    <div>
+                      <h3 class="landing-mock-employee-name m-0">Козлова Мария</h3>
+                      <small class="text-color-secondary">Барбер</small>
+                    </div>
+                  </div>
+                  <p class="text-sm text-color-secondary m-0 mt-2 mb-0">
+                    <strong>Телефон:</strong> +7 ··· ··· ·· ··
+                  </p>
+                </p-card>
+              }
+              @case ('analytics') {
+                <div class="landing-mock-dash-content-head">
+                  <h2 class="landing-mock-dash-h2">Аналитика</h2>
+                  <p>Аналитика по всем столам, где аккаунт является владельцем.</p>
+                </div>
+                <div class="landing-mock-analytics-card">
+                  <div class="landing-mock-analytics-head">
+                    <div>
+                      <h3 class="m-0">Барбершоп «Центр»</h3>
+                      <small class="text-color-secondary">Участников: 6 | Активных сотрудников: 4</small>
+                    </div>
+                    <p-tag severity="success" value="Доступ активен" styleClass="text-xs" />
+                  </div>
+                  <div class="landing-mock-mini-charts">
+                    <div class="landing-mock-mini-chart">
+                      <strong class="text-sm">Выручка по дням</strong>
+                      <div class="landing-mock-mini-bars">
+                        @for (h of [45, 70, 52, 82, 64, 76, 58]; track $index) {
+                          <span class="landing-mock-mini-bar" [style.height.%]="h"></span>
+                        }
+                      </div>
+                    </div>
+                    <div class="landing-mock-mini-chart">
+                      <strong class="text-sm">Записи</strong>
+                      <div class="landing-mock-mini-bars">
+                        @for (h of [38, 56, 48, 66, 60, 73, 51]; track $index) {
+                          <span class="landing-mock-mini-bar landing-mock-mini-bar--alt" [style.height.%]="h"></span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+            }
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

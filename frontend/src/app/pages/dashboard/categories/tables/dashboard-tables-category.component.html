@@ -1,0 +1,201 @@
+﻿<div class="content-head tables-hero">
+  <div>
+    <h2>Столы</h2>
+    <p>Рабочие пространства, в которых находится ваш аккаунт.</p>
+  </div>
+  <div class="hero-kpi-grid">
+    <div class="hero-kpi-card">
+      <small>Столов</small>
+      <strong>{{ $any(ctx())?.ownerTables?.length }}</strong>
+    </div>
+    <div class="hero-kpi-card">
+      <small>Активных сотрудников</small>
+      <strong>{{ $any(ctx())?.totalActiveEmployees() }}</strong>
+    </div>
+    <div class="hero-kpi-card">
+      <small>Заказов в очереди</small>
+      <strong>{{ $any(ctx())?.totalQueuedOrders() }}</strong>
+    </div>
+    <div class="hero-kpi-card">
+      <small>Новых задач</small>
+      <strong>{{ $any(ctx())?.totalNewTasks() }}</strong>
+    </div>
+  </div>
+</div>
+
+@if ($any(ctx())?.isOwner) {
+  @if (!$any(ctx())?.hasOwnerTables) {
+    <div class="empty-state-card">
+      <div class="empty-state-icon" aria-hidden="true">
+        <i class="pi pi-table"></i>
+      </div>
+      <h3>Пока нет рабочих столов</h3>
+      <p>Создайте первый стол, чтобы подключить сотрудников и начать работу с задачами и аналитикой.</p>
+      <div class="owner-empty-actions">
+        <button type="button" class="square-action" (click)="$any(ctx())?.openCreateTableDialog()">
+          <i class="pi pi-plus-circle"></i>
+          <span>Создать стол</span>
+        </button>
+        <button type="button" class="square-action">
+          <i class="pi pi-sign-in"></i>
+          <span>Присоединиться к столу</span>
+        </button>
+      </div>
+    </div>
+  } @else {
+    <div class="table-toolbar">
+      <p-button label="Создать стол" icon="pi pi-plus" (onClick)="$any(ctx())?.openCreateTableDialog()" />
+      <p-button label="Присоединиться к столу" icon="pi pi-sign-in" styleClass="p-button-outlined" />
+      <p-button label="Пригласить сотрудника" icon="pi pi-send" styleClass="p-button-outlined" (onClick)="$any(ctx())?.showInviteDialog()" />
+    </div>
+
+    <div class="table-grid">
+      @for (table of $any(ctx())?.ownerTables ?? []; track table.id) {
+        <p-card class="table-card">
+          <div class="table-card-head">
+            <div class="table-title-wrap">
+              <h3>{{ table.title }}</h3>
+              <div class="table-badges">
+                <span class="table-badge"><i class="pi pi-users"></i> {{ table.totalParticipants }}</span>
+                <span class="table-badge"><i class="pi pi-user"></i> {{ table.ownerShortName }}</span>
+              </div>
+            </div>
+            <div class="table-menu-wrap">
+              <button type="button" class="dots-btn" (click)="$any(ctx())?.toggleTableMenu(table.id)" aria-label="Действия со столом">
+                <i class="pi pi-ellipsis-v"></i>
+              </button>
+              @if ($any(ctx())?.isTableMenuOpen(table.id)) {
+                <div class="table-menu-dropdown" role="menu">
+                  <button type="button" role="menuitem" (click)="$any(ctx())?.goTableWorkspace(table.id)">
+                    <i class="pi pi-desktop"></i>
+                    <span>Рабочий стол</span>
+                  </button>
+                  <button type="button" role="menuitem" (click)="$any(ctx())?.openTableSettings(table.id)">
+                    <i class="pi pi-cog"></i>
+                    <span>Настройка</span>
+                  </button>
+                  <button type="button" role="menuitem" (click)="$any(ctx())?.openTableMembers(table.id)">
+                    <i class="pi pi-user-plus"></i>
+                    <span>Добавление сотрудников</span>
+                  </button>
+                  <div class="menu-row">
+                    <button type="button" role="menuitem" (click)="$any(ctx())?.openTableTasks(table.id)">
+                      <i class="pi pi-check-square"></i>
+                      <span>Просмотр задач</span>
+                    </button>
+                    @if (!$any(ctx())?.ownerCanOpenTasks(table.id)) {
+                      <button type="button" class="mini-dollar-btn" (click)="$any(ctx())?.openSubscriptionForBonus(table.id, 'unlock_tasks')">$</button>
+                    }
+                  </div>
+                  <div class="menu-row">
+                    <button type="button" role="menuitem" (click)="$any(ctx())?.openTableAnalytics(table.id)">
+                      <i class="pi pi-chart-line"></i>
+                      <span>Просмотр аналитики</span>
+                    </button>
+                    @if (!$any(ctx())?.ownerCanOpenAnalytics(table.id)) {
+                      <button type="button" class="mini-dollar-btn" (click)="$any(ctx())?.openSubscriptionForBonus(table.id, 'unlock_analytics')">$</button>
+                    }
+                  </div>
+                  <button type="button" role="menuitem" (click)="$any(ctx())?.selectCategory('subscription')">
+                    <i class="pi pi-wallet"></i>
+                    <span>Купить бонусы</span>
+                  </button>
+                  <button type="button" role="menuitem" class="danger" (click)="$any(ctx())?.openDeleteTableDialog(table.id)">
+                    <i class="pi pi-trash"></i>
+                    <span>Удалить стол</span>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="stats-block table-metrics">
+            <div class="stats-row">
+              <span>Активные сотрудники</span>
+              <strong>{{ table.stats.activeEmployees }}</strong>
+            </div>
+            <div class="stats-row">
+              <span>Заказов в очереди</span>
+              <strong>{{ table.stats.queuedOrders }}</strong>
+            </div>
+            <div class="task-bars">
+              <div class="task-bars-head">
+                <span>Прогресс задач</span>
+                <strong>{{ $any(ctx())?.getTaskProgress(table.stats) }}%</strong>
+              </div>
+              <div class="bars">
+                <div class="bar done" [style.flex]="table.stats.tasksDone"></div>
+                <div class="bar waiting" [style.flex]="table.stats.tasksWaiting"></div>
+                <div class="bar new" [style.flex]="table.stats.tasksNew"></div>
+              </div>
+              <small>
+                Сделано: {{ table.stats.tasksDone }} | В ожидании: {{ table.stats.tasksWaiting }} | Новые:
+                {{ table.stats.tasksNew }}
+              </small>
+            </div>
+          </div>
+          <div class="table-meta table-actions-row">
+            <p-button label="Рабочий стол" icon="pi pi-desktop" styleClass="p-button-sm" (onClick)="$any(ctx())?.goTableWorkspace(table.id)" />
+          </div>
+        </p-card>
+      }
+    </div>
+  }
+} @else {
+  @if (!$any(ctx())?.hasOwnerTables) {
+    <div class="empty-state-card empty-state-compact">
+      <div class="empty-state-icon" aria-hidden="true">
+        <i class="pi pi-inbox"></i>
+      </div>
+      <h3>У вас пока нет подключенных столов</h3>
+      <p>Попросите владельца отправить приглашение и введите код для присоединения.</p>
+      <p-button label="Перейти в раздел сотрудников" icon="pi pi-users" styleClass="p-button-outlined" (onClick)="$any(ctx())?.selectCategory('employees')" />
+    </div>
+  } @else {
+    <div class="table-grid">
+      @for (table of $any(ctx())?.ownerTables ?? []; track table.id) {
+        <p-card class="table-card">
+          <div class="table-card-head">
+            <div class="table-title-wrap">
+              <h3>{{ table.title }}</h3>
+              <div class="table-badges">
+                <span class="table-badge"><i class="pi pi-users"></i> {{ table.totalParticipants }}</span>
+                <span class="table-badge"><i class="pi pi-user"></i> {{ table.ownerShortName }}</span>
+              </div>
+            </div>
+            <div class="table-menu-wrap">
+              <button type="button" class="dots-btn" (click)="$any(ctx())?.toggleTableMenu(table.id)" aria-label="Действия со столом">
+                <i class="pi pi-ellipsis-v"></i>
+              </button>
+              @if ($any(ctx())?.isTableMenuOpen(table.id)) {
+                <div class="table-menu-dropdown" role="menu">
+                  <button type="button" role="menuitem" (click)="$any(ctx())?.goTableWorkspace(table.id)">
+                    <i class="pi pi-desktop"></i>
+                    <span>Рабочий стол</span>
+                  </button>
+                  <button type="button" role="menuitem" (click)="$any(ctx())?.openTableSettings(table.id)">
+                    <i class="pi pi-eye"></i>
+                    <span>Просмотр настроек стола</span>
+                  </button>
+                  <button type="button" role="menuitem" class="danger" (click)="$any(ctx())?.requestDetachFromTable(table.id)">
+                    <i class="pi pi-times-circle"></i>
+                    <span>Заявка на открепление от стола</span>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="table-meta table-actions-row">
+            <p-button label="Рабочий стол" icon="pi pi-desktop" styleClass="p-button-sm" (onClick)="$any(ctx())?.goTableWorkspace(table.id)" />
+            <p-button
+              label="Открепиться"
+              icon="pi pi-times-circle"
+              severity="danger"
+              styleClass="p-button-sm p-button-outlined"
+              (onClick)="$any(ctx())?.requestDetachFromTable(table.id)"
+            />
+          </div>
+        </p-card>
+      }
+    </div>
+  }
+}

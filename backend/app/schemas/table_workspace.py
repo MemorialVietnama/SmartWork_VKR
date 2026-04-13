@@ -68,6 +68,26 @@ class CalendarSlotCreateRequest(BaseModel):
     ends_at: datetime
 
 
+class CalendarSlotPatchRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+
+
+class ShiftScheduleApplyRequest(BaseModel):
+    employee_user_id: int
+    weekdays: list[int] = Field(default_factory=list)
+    start_time: str = Field(pattern=r"^\d{2}:\d{2}$")
+    end_time: str = Field(pattern=r"^\d{2}:\d{2}$")
+    weeks_ahead: int = Field(ge=1, le=8)
+
+
+class ShiftScheduleApplyResponse(BaseModel):
+    detail: str
+    created_count: int
+    skipped_duplicates: int
+
+
 class TableTaskDto(BaseModel):
     id: int
     title: str

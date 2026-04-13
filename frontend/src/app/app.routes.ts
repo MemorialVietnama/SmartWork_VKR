@@ -1,8 +1,12 @@
 import { Routes } from '@angular/router';
+
 import { authGuard } from './core/auth/auth.guard';
+import { LandingPageComponent } from './pages/landing/landing.page';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'auth/login' },
+  { path: '', pathMatch: 'full', redirectTo: 'welcome' },
+  { path: 'welcone', pathMatch: 'full', redirectTo: 'welcome' },
+  { path: 'welcome', component: LandingPageComponent },
   {
     path: 'auth/login',
     loadComponent: () => import('./pages/auth/login/login.page').then((m) => m.LoginPageComponent),
@@ -50,6 +54,11 @@ export const routes: Routes = [
           import('./pages/table-workspace/tabs/workspace-tasks.tab').then((m) => m.WorkspaceTasksTabComponent),
       },
       {
+        path: 'employees',
+        loadComponent: () =>
+          import('./pages/table-workspace/tabs/workspace-employees.tab').then((m) => m.WorkspaceEmployeesTabComponent),
+      },
+      {
         path: 'directories',
         loadComponent: () =>
           import('./pages/table-workspace/tabs/workspace-directories.tab').then((m) => m.WorkspaceDirectoriesTabComponent),
@@ -70,5 +79,5 @@ export const routes: Routes = [
     path: 'status',
     loadComponent: () => import('./pages/status/status.page').then((m) => m.StatusPageComponent),
   },
-  { path: '**', redirectTo: 'auth/login' },
+  { path: '**', redirectTo: 'welcome' },
 ];

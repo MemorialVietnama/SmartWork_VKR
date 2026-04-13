@@ -1,0 +1,25 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [style]="{ width: '34rem', maxWidth: '95vw' }"
+  header="Добавление сотрудников в стол"
+>
+  @if (tableTitle()) {
+    <p><strong>Стол:</strong> {{ tableTitle() }}</p>
+  }
+  @if (employees().length === 0) {
+    <p>Нет сотрудников для добавления.</p>
+  } @else {
+    <div class="checkbox-list">
+      @for (employee of employees(); track employee.id) {
+        <button type="button" class="member-add-btn" (click)="addEmployee.emit(employee.id)">
+          {{ employee.lastName }} {{ employee.firstName }} <span>Добавить</span>
+        </button>
+      }
+    </div>
+  }
+  @if (actionError()) {
+    <p-message severity="error" [text]="actionError() ?? ''" [closable]="false" />
+  }
+</p-dialog>

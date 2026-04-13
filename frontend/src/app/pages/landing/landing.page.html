@@ -1,0 +1,55 @@
+<div class="landing-shell">
+  <app-landing-header
+    [headerScrolled]="headerScrolled()"
+    [mobileNavOpen]="mobileNavOpen()"
+    [langLabel]="langLabel()"
+    (langToggle)="toggleLang()"
+    (mobileNavToggle)="toggleMobileNav()"
+    (closeMobile)="closeMobileNav()"
+  />
+
+  <main id="main-content" class="landing-main" tabindex="-1">
+    <app-landing-hero />
+
+    <section class="landing-tpl-section landing-tpl--features surface-ground" id="features">
+      <app-landing-features
+        [featureId]="featureId()"
+        [featureOptions]="featureOptions"
+        (featureChange)="setFeature($event)"
+      />
+    </section>
+
+    <section class="landing-tpl-section landing-tpl--industries" id="industries">
+      <app-landing-industries
+        [industryId]="industryId()"
+        [industryOptions]="industryOptions"
+        (industryChange)="setIndustry($event)"
+        (registerClick)="goRegister()"
+      />
+    </section>
+
+    <section class="landing-tpl-section landing-tpl--pricing" id="pricing">
+      <app-landing-pricing
+        [billingYearly]="billingYearly()"
+        [pricingExampleRows]="pricingExampleRows"
+        (billingChange)="onBillingChange($event)"
+        (loginClick)="goLogin()"
+        (registerClick)="goRegister()"
+      />
+    </section>
+
+    <section class="landing-tpl-section landing-tpl--api" id="api">
+      <app-landing-api [apiId]="apiId()" [apiOptions]="apiOptions" (apiChange)="setApi($event)" />
+    </section>
+
+    <section class="landing-tpl-section landing-tpl--about" id="about">
+      <app-landing-about />
+    </section>
+
+    <section class="landing-tpl-section landing-tpl--faq surface-ground" id="faq">
+      <app-landing-faq [faqItems]="faqItems" />
+    </section>
+  </main>
+
+  <app-landing-footer />
+</div>

@@ -1,0 +1,156 @@
+﻿<div class="content-head">
+  <h2>Настройки</h2>
+  <p> Управление личными параметрами аккаунта и рабочими настройками.</p>
+</div>
+
+<div class="settings-layout">
+  <aside class="settings-nav">
+    @for (tab of $any(ctx())?.settingsTabs ?? []; track tab.id) {
+      <button
+        type="button"
+        class="settings-tab-btn"
+        [class.active]="$any(ctx())?.selectedSettingsTab === tab.id"
+        (click)="$any(ctx())?.selectSettingsTab(tab.id)"
+      >
+        <i [class]="tab.icon"></i>
+        <span>{{ tab.label }}</span>
+      </button>
+    }
+  </aside>
+
+  <div class="settings-content">
+    @if ($any(ctx())?.selectedSettingsTab === 'account') {
+      <p-card>
+        <div class="settings-section-head">
+          <h3>Аккаунт</h3>
+          <p>Безопасность и управление учетными данными.</p>
+        </div>
+
+        <div class="settings-form-grid">
+          <label class="full">
+            <span>Профиль</span>
+            <input type="text" pInputText [ngModel]="$any(ctx())?.accountForm?.fullName" disabled />
+          </label>
+          <label class="full">
+            <span>Логин</span>
+            <input type="text" pInputText [ngModel]="$any(ctx())?.accountForm?.login" disabled />
+          </label>
+        </div>
+
+        <div class="settings-section-head section-gap">
+          <h3>Безопасность</h3>
+          <p>Часть данных зашифрована. Поля не доступны для прямого редактирования.</p>
+        </div>
+
+        <div class="settings-form-grid">
+          <label class="full">
+            <span>Email</span>
+            <div class="inline-control">
+              <input type="text" pInputText [ngModel]="$any(ctx())?.accountForm?.emailMasked" disabled />
+              <p-button label="Изменить" icon="pi pi-pencil" size="small" (onClick)="$any(ctx())?.requestEmailChange()" />
+            </div>
+          </label>
+
+          <label class="full">
+            <span>Пароль</span>
+            <div class="inline-control">
+              <input type="text" pInputText [ngModel]="$any(ctx())?.accountForm?.passwordMasked" disabled />
+              <p-button label="Изменить" icon="pi pi-key" size="small" (onClick)="$any(ctx())?.requestPasswordChange()" />
+            </div>
+          </label>
+        </div>
+
+        <div class="settings-section-head section-gap">
+          <h3>Уведомления</h3>
+          <p>Выберите, откуда принимать уведомления и куда их доставлять.</p>
+        </div>
+
+        <div class="notify-grid">
+          <div class="notify-col">
+            <h4>Откуда принимать</h4>
+            <label class="switch-row">
+              <span>Системные</span>
+              <p-inputSwitch [ngModel]="$any(ctx())?.notificationsSettings?.sources?.system" (ngModelChange)="$any(ctx()).notificationsSettings.sources.system = $event" />
+            </label>
+            <label class="switch-row">
+              <span>По столам</span>
+              <p-inputSwitch [ngModel]="$any(ctx())?.notificationsSettings?.sources?.tables" (ngModelChange)="$any(ctx()).notificationsSettings.sources.tables = $event" />
+            </label>
+            <label class="switch-row">
+              <span>По сотрудникам</span>
+              <p-inputSwitch [ngModel]="$any(ctx())?.notificationsSettings?.sources?.employees" (ngModelChange)="$any(ctx()).notificationsSettings.sources.employees = $event" />
+            </label>
+          </div>
+          <div class="notify-col">
+            <h4>Куда принимать</h4>
+            <label class="switch-row">
+              <span>PK (desktop)</span>
+              <p-inputSwitch [ngModel]="$any(ctx())?.notificationsSettings?.targets?.desktop" (ngModelChange)="$any(ctx()).notificationsSettings.targets.desktop = $event" />
+            </label>
+            <label class="switch-row">
+              <span>Телефон</span>
+              <p-inputSwitch [ngModel]="$any(ctx())?.notificationsSettings?.targets?.mobile" (ngModelChange)="$any(ctx()).notificationsSettings.targets.mobile = $event" />
+            </label>
+            <label class="switch-row">
+              <span>Email</span>
+              <p-inputSwitch [ngModel]="$any(ctx())?.notificationsSettings?.targets?.email" (ngModelChange)="$any(ctx()).notificationsSettings.targets.email = $event" />
+            </label>
+          </div>
+        </div>
+
+        @if ($any(ctx())?.settingsError) {
+          <p-message severity="error" [text]="$any(ctx())?.settingsError ?? ''" [closable]="false" />
+        }
+        @if ($any(ctx())?.settingsSaved) {
+          <p-message severity="success" text="Настройки сохранены." [closable]="false" />
+        }
+        <div class="dialog-actions">
+          <p-button label="Сохранить настройки" icon="pi pi-check" [loading]="$any(ctx())?.settingsLoading" (onClick)="$any(ctx())?.saveAccountSettings()" />
+        </div>
+      </p-card>
+    }
+
+    @if ($any(ctx())?.selectedSettingsTab === 'appearance') {
+      <p-card>
+        <div class="settings-section-head">
+          <h3>Оформление</h3>
+          <p>Персональные настройки оформления интерфейса и карточек.</p>
+        </div>
+        <div class="settings-form-grid">
+          <label>
+            <span>Тема</span>
+            <select [ngModel]="$any(ctx())?.appearanceSettings?.theme" (ngModelChange)="$any(ctx()).appearanceSettings.theme = $event">
+              <option value="light">Светлая</option>
+              <option value="dark">Темная</option>
+              <option value="auto">Авто</option>
+            </select>
+          </label>
+          <label>
+            <span>Плотность интерфейса</span>
+            <select [ngModel]="$any(ctx())?.appearanceSettings?.density" (ngModelChange)="$any(ctx()).appearanceSettings.density = $event">
+              <option value="compact">Компактная</option>
+              <option value="comfortable">Комфортная</option>
+            </select>
+          </label>
+          <label>
+            <span>Размер карточек</span>
+            <select [ngModel]="$any(ctx())?.appearanceSettings?.cardSize" (ngModelChange)="$any(ctx()).appearanceSettings.cardSize = $event">
+              <option value="small">Маленькие</option>
+              <option value="medium">Средние</option>
+              <option value="large">Крупные</option>
+            </select>
+          </label>
+        </div>
+        @if ($any(ctx())?.settingsError) {
+          <p-message severity="error" [text]="$any(ctx())?.settingsError ?? ''" [closable]="false" />
+        }
+        @if ($any(ctx())?.settingsSaved) {
+          <p-message severity="success" text="Оформление сохранено." [closable]="false" />
+        }
+        <div class="dialog-actions">
+          <p-button label="Применить оформление" icon="pi pi-check" [loading]="$any(ctx())?.settingsLoading" (onClick)="$any(ctx())?.saveAppearanceSettings()" />
+        </div>
+      </p-card>
+    }
+  </div>
+</div>

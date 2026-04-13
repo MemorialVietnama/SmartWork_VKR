@@ -1,0 +1,129 @@
+<div class="landing-section-inner">
+  <h2 class="landing-template-title">Для кого сделано</h2>
+  <p-selectButton
+    [options]="industryOptions()"
+    optionLabel="label"
+    optionValue="value"
+    [ngModel]="industryId()"
+    (ngModelChange)="industryChange.emit($event)"
+    styleClass="landing-select-industry-cards flex-wrap mb-4"
+    [allowEmpty]="false"
+  >
+    <ng-template let-item pTemplate="item">
+      <span class="flex flex-column align-items-center gap-2 text-center">
+        <i [class]="item.icon + ' landing-industry-tab-icon'" aria-hidden="true"></i>
+        <span>{{ item.label }}</span>
+      </span>
+    </ng-template>
+  </p-selectButton>
+
+  @if (industryId() === 'barber') {
+    <div class="landing-feature-grid landing-industry-grid">
+      <div>
+        <h3 class="landing-industry-heading">Для барбершопов</h3>
+        <p>SmartWork помогает организовать работу барбершопа от расписания мастеров до анализа доходности.</p>
+        <ul class="landing-list">
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Онлайн-запись на услуги</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Журнал клиентов с историей</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Расписание мастеров</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Аналитика доходов</li>
+        </ul>
+      </div>
+      <div class="landing-industry-visual">
+        <i class="pi pi-image landing-industry-visual-icon text-primary mb-3" aria-hidden="true"></i>
+        <p class="m-0 font-medium text-color-secondary">Полная система управления барбершопом</p>
+      </div>
+    </div>
+  }
+  @if (industryId() === 'grooming') {
+    <div class="landing-feature-grid landing-industry-grid">
+      <div>
+        <h3 class="landing-industry-heading">Для груминг-салонов</h3>
+        <p>Карточки питомцев, история процедур, удобный учёт особенностей животных.</p>
+        <ul class="landing-list">
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Карточки питомцев</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>История процедур</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Учёт вакцинации и здоровья</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Уведомления владельцам</li>
+        </ul>
+      </div>
+      <div class="landing-industry-visual">
+        <i class="pi pi-heart landing-industry-visual-icon text-primary mb-3" aria-hidden="true"></i>
+        <p class="m-0 font-medium text-color-secondary">Груминг с карточками питомцев</p>
+      </div>
+    </div>
+  }
+  @if (industryId() === 'beauty') {
+    <div class="landing-feature-grid landing-industry-grid">
+      <div>
+        <h3 class="landing-industry-heading">Для косметологии</h3>
+        <p>Учёт процедур, материалов и результатов, контроль остатков.</p>
+        <ul class="landing-list">
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Запись на процедуры</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Результаты лечения</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Расходники</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Программы лояльности</li>
+        </ul>
+      </div>
+      <div class="landing-industry-visual">
+        <i class="pi pi-star landing-industry-visual-icon text-primary mb-3" aria-hidden="true"></i>
+        <p class="m-0 font-medium text-color-secondary">Контроль косметологической клиники</p>
+      </div>
+    </div>
+  }
+  @if (industryId() === 'confectionery') {
+    <div class="landing-feature-grid landing-industry-grid">
+      <div>
+        <h3 class="landing-industry-heading">Для кондитерской</h3>
+        <p>Заказы десертов, рецептуры, доставка и калькуляция.</p>
+        <ul class="landing-list">
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Приём заказов</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Рецептуры и ингредиенты</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Планирование доставки</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Себестоимость</li>
+        </ul>
+      </div>
+      <div class="landing-industry-visual">
+        <i class="pi pi-shopping-bag landing-industry-visual-icon text-primary mb-3" aria-hidden="true"></i>
+        <p class="m-0 font-medium text-color-secondary">Система для кондитерской</p>
+      </div>
+    </div>
+  }
+  @if (industryId() === 'fitness') {
+    <div class="landing-feature-grid landing-industry-grid">
+      <div>
+        <h3 class="landing-industry-heading">Для фитнес-клубов</h3>
+        <p>Абонементы, расписание, персональные тренировки.</p>
+        <ul class="landing-list">
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Абонементы</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Групповые занятия</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Персональные тренировки</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Прогресс клиентов</li>
+        </ul>
+      </div>
+      <div class="landing-industry-visual">
+        <i class="pi pi-circle landing-industry-visual-icon text-primary mb-3" aria-hidden="true"></i>
+        <p class="m-0 font-medium text-color-secondary">Платформа для фитнес-клуба</p>
+      </div>
+    </div>
+  }
+  @if (industryId() === 'custom') {
+    <div class="landing-feature-grid landing-industry-grid">
+      <div>
+        <h3 class="landing-industry-heading">Для вашего бизнеса</h3>
+        <p>Гибкая платформа для услугового бизнеса: справочники, поля payload, процессы под вас.</p>
+        <ul class="landing-list">
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Кастомизация</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Расширяемые справочники</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Интеграции</li>
+          <li><i class="pi pi-check-circle text-green-600 mr-2" aria-hidden="true"></i>Поддержка в настройке</li>
+        </ul>
+      </div>
+      <div class="landing-custom-cta">
+        <h4>Идея вашего бизнеса уникальна</h4>
+        <p>Мы готовы помочь настроить SmartWork под ваш сервис.</p>
+        <p-button label="Получить консультацию" icon="pi pi-comments" (onClick)="registerClick.emit()" />
+      </div>
+    </div>
+  }
+</div>

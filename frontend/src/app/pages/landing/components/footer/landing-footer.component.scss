@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.landing-footer-lead {
+  color: color-mix(in srgb, var(--p-surface-0) 72%, transparent);
+}
+
+.landing-footer-bottom {
+  color: color-mix(in srgb, var(--p-surface-0) 65%, transparent);
+}
+
+:host ::ng-deep .p-divider {
+  border-color: color-mix(in srgb, var(--p-surface-0) 18%, transparent);
+}
+
+:host ::ng-deep .p-button.p-button-text {
+  color: color-mix(in srgb, var(--p-surface-0) 80%, transparent);
+}
+
+:host ::ng-deep .p-button.p-button-text:not(:disabled):hover {
+  color: var(--p-primary-300);
+  background: color-mix(in srgb, var(--p-surface-0) 8%, transparent);
+}

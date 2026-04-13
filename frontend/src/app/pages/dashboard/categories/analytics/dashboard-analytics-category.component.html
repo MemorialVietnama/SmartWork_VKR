@@ -1,0 +1,262 @@
+﻿<div class="content-head">
+  <h2>Аналитика</h2>
+  <p>Аналитика по всем столам, где аккаунт является владельцем.</p>
+</div>
+
+@if ($any(ctx())?.isOwner) {
+  @if (!$any(ctx())?.hasAnalyticsTables) {
+    <p-card>
+      <p>Пока нет столов для аналитики.</p>
+      <div class="table-toolbar">
+        <p-button label="Создать стол" icon="pi pi-plus" (onClick)="$any(ctx())?.openCreateTableDialog()" />
+      </div>
+    </p-card>
+  } @else {
+    <div class="analytics-focus-layout">
+      <div class="analytics-filter-row">
+        <label class="analytics-control">
+          <span>Стол</span>
+          <select
+            [ngModel]="$any(ctx())?.selectedAnalyticsTable()?.tableId"
+            (ngModelChange)="$any(ctx())?.selectAnalyticsTable($event)"
+            aria-label="Выбор стола для аналитики"
+          >
+            @for (table of $any(ctx())?.analyticsAccessibleTables() ?? []; track table.tableId) {
+              <option [value]="table.tableId">{{ table.tableName }}</option>
+            }
+          </select>
+        </label>
+        <div class="analytics-period-switch" role="tablist" aria-label="Период аналитики">
+          @for (period of $any(ctx())?.analyticsPeriods ?? []; track period.id) {
+            <button
+              type="button"
+              [class.active]="$any(ctx())?.analyticsPeriod === period.id"
+              (click)="$any(ctx())?.selectAnalyticsPeriod(period.id)"
+              [attr.aria-selected]="$any(ctx())?.analyticsPeriod === period.id"
+            >
+              {{ period.label }}
+            </button>
+          }
+        </div>
+        <label class="analytics-compare">
+          <span>Сравнение с предыдущим периодом</span>
+          <p-inputSwitch
+            [ngModel]="$any(ctx())?.analyticsCompareWithPrevious"
+            (ngModelChange)="$any(ctx())?.toggleAnalyticsCompareMode($event)"
+          />
+        </label>
+      </div>
+
+      @if ($any(ctx())?.selectedAnalyticsTable(); as table) {
+        <div class="analytics-kpi-grid">
+          @for (kpi of $any(ctx())?.analyticsKpis(table) ?? []; track kpi.key) {
+            <button
+              type="button"
+              class="analytics-kpi-card"
+              [class.active]="$any(ctx())?.analyticsSelectedKpi === kpi.key"
+              (click)="$any(ctx())?.selectAnalyticsKpi(kpi.key)"
+              [title]="'Изменение к предыдущему периоду: ' + kpi.delta"
+            >
+              <small>{{ kpi.title }}</small>
+              <strong>{{ kpi.value }}</strong>
+              <span [class.positive]="kpi.delta.startsWith('+')" [class.negative]="kpi.delta.startsWith('-')">
+                {{ kpi.delta }}
+              </span>
+            </button>
+          }
+        </div>
+
+        <div class="analytics-grid">
+          <div class="analytics-panel">
+            <div class="analytics-panel-head">
+              <h3>Тренд выбранного показателя</h3>
+              <small>{{ $any(ctx())?.analyticsPeriodLabel() }}</small>
+            </div>
+            <div class="analytics-chart-wrap">
+              <p-chart type="line" [data]="$any(ctx())?.analyticsTrendData(table)" [options]="$any(ctx())?.analyticsTrendOptions()" />
+            </div>
+          </div>
+
+          <div class="analytics-panel">
+            <div class="analytics-panel-head">
+              <h3>Распределение по категориям</h3>
+              <small>Средние значения по метрикам</small>
+            </div>
+            <div class="analytics-chart-wrap">
+              <p-chart type="bar" [data]="$any(ctx())?.analyticsDistributionData(table)" [options]="$any(ctx())?.analyticsDistributionOptions()" />
+            </div>
+          </div>
+        </div>
+
+        <div class="analytics-interactions-grid">
+          <div class="analytics-panel">
+            <div class="analytics-panel-head">
+              <h3>Категории и drill-down</h3>
+              <small>Выберите категорию для детализации</small>
+            </div>
+            <div class="analytics-chip-list">
+              @for (chart of table.charts; track chart.title) {
+                <button
+                  type="button"
+                  class="analytics-chip"
+                  [class.active]="$any(ctx())?.analyticsDrilldownChartTitle === chart.title"
+                  (click)="$any(ctx())?.openAnalyticsDrilldown(chart.title)"
+                  [title]="'Ср: ' + $any(ctx())?.chartAverage(chart.values) + ', Пик: ' + $any(ctx())?.chartMax(chart.values)"
+                >
+                  <span>{{ chart.title }}</span>
+                  <small>{{ chart.subtitle }}</small>
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="analytics-panel">
+            <div class="analytics-panel-head">
+              <h3>Инсайты и рекомендации</h3>
+              <small>Блок для управленческих действий</small>
+            </div>
+            <ul class="analytics-insights-list">
+              @for (insight of $any(ctx())?.analyticsTableInsights(table) ?? []; track insight) {
+                <li>{{ insight }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+
+        @if ($any(ctx())?.analyticsDrilldownChartTitle) {
+          <div class="analytics-drilldown">
+            <div class="analytics-drilldown-head">
+              <h4>Детализация: {{ $any(ctx())?.analyticsDrilldownChartTitle }}</h4>
+              <button type="button" (click)="$any(ctx())?.closeAnalyticsDrilldown()">Закрыть</button>
+            </div>
+            <div class="analytics-drilldown-grid">
+              @for (row of $any(ctx())?.analyticsDrilldownRows(table) ?? []; track row.label) {
+                <div class="analytics-drill-row" [title]="'Значение: ' + row.value">
+                  <span>{{ row.label }}</span>
+                  <strong>{{ row.value }}</strong>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="analytics-locked">
+          <div class="locked-title">
+            <h3>Нет столов с активной аналитикой</h3>
+            <small>Подключите доступ к аналитике для выбранного стола.</small>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="analytics-list owner-locked-list">
+      @for (table of $any(ctx())?.analyticsTables ?? []; track table.tableId) {
+        @if (!$any(ctx())?.hasAnalyticsAccess(table.tableId)) {
+          <div class="analytics-locked" [class.show-hint]="$any(ctx())?.isFirstLockedAnalyticsTable(table.tableId)">
+            <div class="locked-title">
+              <h3>{{ table.tableName }}</h3>
+              <small>Доступ к аналитике не активирован</small>
+            </div>
+            <div class="locked-preview">
+              <div class="locked-chart-row">
+                <span class="bar" style="height: 45%"></span>
+                <span class="bar" style="height: 70%"></span>
+                <span class="bar" style="height: 52%"></span>
+                <span class="bar" style="height: 82%"></span>
+                <span class="bar" style="height: 64%"></span>
+                <span class="bar" style="height: 76%"></span>
+                <span class="bar" style="height: 58%"></span>
+              </div>
+            </div>
+            @if ($any(ctx())?.isFirstLockedAnalyticsTable(table.tableId)) {
+              <div class="locked-overlay">
+                <p>Чтобы открыть аналитику для стола, подключите подписку.</p>
+                <p-button
+                  [label]="'Приобрести: ' + $any(ctx())?.formatRub($any(ctx())?.analyticsUnlockMonthlyAmount(table.tableId) ?? 0) + ' / мес'"
+                  icon="pi pi-wallet"
+                  (onClick)="$any(ctx())?.goToSubscriptionForAnalytics(table.tableId)"
+                />
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+  }
+} @else {
+  <div class="analytics-skeleton-wrap" [class.locked]="!$any(ctx())?.hasStaffAnalyticsAccess()">
+    <div class="analytics-skeleton-head">
+      <div class="line w40"></div>
+      <div class="line w60"></div>
+    </div>
+    <div class="analytics-skeleton-grid">
+      <div class="sk-card">
+        <div class="sk-bars">
+          <span class="bar" style="height: 35%"></span><span class="bar" style="height: 50%"></span><span class="bar" style="height: 42%"></span><span class="bar" style="height: 63%"></span><span class="bar" style="height: 48%"></span><span class="bar" style="height: 67%"></span>
+        </div>
+      </div>
+      <div class="sk-card">
+        <div class="sk-bars">
+          <span class="bar" style="height: 28%"></span><span class="bar" style="height: 44%"></span><span class="bar" style="height: 37%"></span><span class="bar" style="height: 59%"></span><span class="bar" style="height: 41%"></span><span class="bar" style="height: 61%"></span>
+        </div>
+      </div>
+      <div class="sk-card">
+        <div class="sk-bars">
+          <span class="bar" style="height: 32%"></span><span class="bar" style="height: 46%"></span><span class="bar" style="height: 39%"></span><span class="bar" style="height: 54%"></span><span class="bar" style="height: 47%"></span><span class="bar" style="height: 64%"></span>
+        </div>
+      </div>
+    </div>
+    @if (!$any(ctx())?.hasStaffAnalyticsAccess()) {
+      <div class="analytics-skeleton-overlay">
+        <p>Аналитика аккаунта не активирована.</p>
+        <p-button label="Приобрести подписку" icon="pi pi-wallet" (onClick)="$any(ctx())?.openStaffAnalyticsSubscription()" />
+      </div>
+    }
+  </div>
+
+  <div class="analytics-list staff-list">
+    @for (table of $any(ctx())?.analyticsTables ?? []; track table.tableId) {
+      @if ($any(ctx())?.hasStaffAnalyticsAccess()) {
+        <details class="analytics-accordion">
+          <summary>
+            <div class="accordion-summary">
+              <div>
+                <h3>{{ table.tableName }}</h3>
+                <small>Участников: {{ table.participants }} | Активных сотрудников: {{ table.activeEmployees }}</small>
+              </div>
+              <p-tag severity="success" value="Доступ активирован"></p-tag>
+            </div>
+          </summary>
+          <div class="mini-charts-grid">
+            @for (chart of table.charts; track chart.title) {
+              <div class="mini-chart-card">
+                <div class="mini-chart-head">
+                  <strong>{{ chart.title }}</strong>
+                  <small>{{ chart.subtitle }}</small>
+                </div>
+                <div class="mini-bars">
+                  @for (value of chart.values; track $index) {
+                    <div class="mini-bar-wrap">
+                      <div class="mini-bar" [style.height.%]="(value / ($any(ctx())?.chartMax(chart.values) ?? 1)) * 100" [title]="value"></div>
+                    </div>
+                  }
+                </div>
+                <div class="mini-chart-meta">
+                  <span>Среднее: {{ $any(ctx())?.chartAverage(chart.values) }}</span>
+                  <span>Максимум: {{ $any(ctx())?.chartMax(chart.values) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </details>
+      } @else {
+        <div class="analytics-locked">
+          <div class="locked-title">
+            <h3>{{ table.tableName }}</h3>
+          </div>
+          <div class="locked-preview"></div>
+        </div>
+      }
+    }
+  </div>
+}

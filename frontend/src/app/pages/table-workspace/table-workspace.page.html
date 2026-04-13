@@ -17,11 +17,11 @@
         />
         <div class="tw-title-block">
           <h1>{{ state.detail()?.title }}</h1>
-          <small>Владелец: {{ state.detail()?.owner_short_name }} · Участников: {{ state.detail()?.total_participants }}</small>
         </div>
       </div>
       <nav class="tw-tabs" aria-label="Разделы стола">
         <a routerLink="calendar" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Календарь</a>
+        <a routerLink="employees" routerLinkActive="active">Сотрудники</a>
         <a routerLink="tasks" routerLinkActive="active">Задачи</a>
         <a routerLink="directories" routerLinkActive="active">Справочники</a>
         <a routerLink="analytics" routerLinkActive="active">Аналитика</a>
@@ -31,19 +31,6 @@
 
     <div class="tw-body">
       <aside class="tw-sidebar" aria-label="Контекст стола">
-        <section>
-          <h2>Сотрудники</h2>
-          <ul class="tw-side-list">
-            @for (m of state.members(); track m.user_id) {
-              <li>
-                @if (m.is_owner) {
-                  <span class="tw-badge-owner">владелец</span>
-                }
-                {{ m.short_name }}
-              </li>
-            }
-          </ul>
-        </section>
         <section>
           <h2>Очередь заказов</h2>
           @if (state.queuedOrders().length === 0) {

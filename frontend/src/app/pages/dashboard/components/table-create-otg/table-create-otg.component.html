@@ -1,0 +1,22 @@
+<div class="table-otg">
+  <div class="table-otg-head">
+    <h4>{{ title() }}</h4>
+    <p>{{ description() }}</p>
+  </div>
+
+  <div class="otp-preview" aria-hidden="true">
+    @for (slot of previewSlots(); track $index) {
+      <span>{{ slot }}</span>
+    }
+  </div>
+
+  <label class="full">
+    <span>Код из email</span>
+    <input type="text" pInputText [ngModel]="code()" (ngModelChange)="onCodeInput($event)" maxlength="6" inputmode="numeric" autocomplete="one-time-code" />
+  </label>
+
+  <div class="dialog-actions">
+    <p-button label="Назад" styleClass="p-button-text" (onClick)="back.emit()" />
+    <p-button [label]="confirmLabel()" icon="pi pi-check" [loading]="loading()" (onClick)="confirm.emit()" />
+  </div>
+</div>

@@ -1,84 +1,100 @@
-<div class="page">
-  <p-card header="Авторизация">
-    <div class="lead">
-      Введите логин (email) и пароль. Пароль скрыт во время ввода и отправляется на сервер только для проверки.
-    </div>
+<div class="login-page">
+  <p-card styleClass="login-card">
+    <div class="login-card-body">
+      <a routerLink="/welcome" class="login-brand" aria-label="SmartWork — на главную">
+        <span class="login-brand__icon" aria-hidden="true">
+          <i class="pi pi-briefcase"></i>
+        </span>
+        <span class="login-brand__text">SmartWork</span>
+      </a>
 
-    @if (error) {
-      <p-message severity="error" [text]="error" [closable]="false" />
-    }
+      <div class="login-heading">
+        <h1 class="login-title">Вход</h1>
+        <p class="login-lead">Войдите в аккаунт, чтобы открыть рабочий стол и календарь.</p>
+      </div>
 
-    <form
-      class="form"
-      (ngSubmit)="onLogin()"
-      #f="ngForm"
-    >
-      <div class="field">
-        <label for="login">Логин (email)</label>
-        <input
-          id="login"
-          type="email"
-          pInputText
-          name="login"
-          [(ngModel)]="login"
-          required
+      @if (error) {
+        <div class="login-alert login-alert--error" role="alert" aria-live="assertive">
+          <i class="pi pi-times-circle login-alert__icon" aria-hidden="true"></i>
+          <p class="login-alert__text">{{ error }}</p>
+        </div>
+      }
+
+      <form class="login-form" (ngSubmit)="onLogin()" novalidate>
+        <div class="login-field">
+          <label class="login-label" for="login-email">Email</label>
+          <p-iconfield iconPosition="left" styleClass="login-iconfield w-full">
+            <p-inputicon class="pi pi-envelope" />
+            <input
+              id="login-email"
+              type="email"
+              pInputText
+              fluid
+              name="login"
+              [(ngModel)]="login"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="name@example.com"
+              aria-required="true"
+              [attr.aria-invalid]="error ? 'true' : null"
+              aria-describedby="login-email-hint"
+            />
+          </p-iconfield>
+          <p id="login-email-hint" class="login-hint">Адрес, который вы указывали при регистрации.</p>
+        </div>
+
+        <div class="login-field">
+          <label class="login-label" for="login-password">Пароль</label>
+          <p-iconfield iconPosition="left" styleClass="login-iconfield login-iconfield--password w-full">
+            <p-inputicon class="pi pi-lock" />
+            <p-password
+              inputId="login-password"
+              name="password"
+              [(ngModel)]="password"
+              [toggleMask]="true"
+              [feedback]="false"
+              fluid
+              styleClass="login-password-input"
+              placeholder="Введите пароль"
+              autocomplete="current-password"
+              aria-required="true"
+              [attr.aria-invalid]="error ? 'true' : null"
+              aria-describedby="login-password-hint"
+            />
+          </p-iconfield>
+          <p id="login-password-hint" class="login-hint">Проверьте раскладку клавиатуры и Caps Lock.</p>
+        </div>
+
+        <p-button
+          type="submit"
+          label="Войти"
+          icon="pi pi-sign-in"
+          styleClass="login-submit w-full"
+          [loading]="loading"
+          [disabled]="loading"
         />
+      </form>
+
+      <div class="login-links" role="navigation" aria-label="Дополнительные действия">
+        <a routerLink="/auth/register" class="login-link-card">
+          <span class="login-link-card__icon" aria-hidden="true">
+            <i class="pi pi-user-plus"></i>
+          </span>
+          <span class="login-link-card__content">
+            <span class="login-link-card__title">Регистрация</span>
+            <span class="login-link-card__desc">Создать новый аккаунт</span>
+          </span>
+        </a>
+        <a routerLink="/auth/forgot-password" class="login-link-card login-link-card--muted">
+          <span class="login-link-card__icon" aria-hidden="true">
+            <i class="pi pi-key"></i>
+          </span>
+          <span class="login-link-card__content">
+            <span class="login-link-card__title">Забыли пароль?</span>
+            <span class="login-link-card__desc">Восстановление по email</span>
+          </span>
+        </a>
       </div>
-
-      <div class="field">
-        <label for="password">Пароль</label>
-        <p-password
-          id="password"
-          name="password"
-          [(ngModel)]="password"
-          [toggleMask]="true"
-          [feedback]="false"
-          styleClass="w-full"
-        />
-      </div>
-
-      <div class="actions">
-        <p-button type="submit" label="Вход" icon="pi pi-sign-in" [loading]="loading" />
-      </div>
-
-      <div class="links">
-        <a routerLink="/auth/register">Регистрация</a>
-        <a (click)="forgot(); $event.preventDefault()">Забыли пароль?</a>
-      </div>
-    </form>
-
-    <div class="divider"></div>
-
-    <div class="social-title">Вход через соцсети:</div>
-    <div class="social-grid">
-      <p-button
-        label="VK"
-        (onClick)="onSocial('vk')"
-        [loading]="loading"
-        styleClass="p-button-outlined"
-      />
-      <p-button
-        label="YANDEX"
-        (onClick)="onSocial('yandex')"
-        [loading]="loading"
-        styleClass="p-button-outlined"
-      />
-      <p-button
-        label="MAIL.RU"
-        (onClick)="onSocial('mailru')"
-        [loading]="loading"
-        styleClass="p-button-outlined"
-      />
-      <p-button
-        label="GOOGLE"
-        (onClick)="onSocial('google')"
-        [loading]="loading"
-        styleClass="p-button-outlined"
-      />
-    </div>
-    <div class="note">
-      Социальный вход в демо-режиме работает как прототип (без реального OAuth).
     </div>
   </p-card>
 </div>
-

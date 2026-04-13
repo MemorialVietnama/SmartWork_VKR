@@ -1,0 +1,195 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [style]="{ width: '74rem', maxWidth: '98vw' }"
+  header="Создание стола"
+>
+  @if (!tableCodeDialogVisible()) {
+    <p-stepper [value]="tableCreateStep()">
+      <p-step-list>
+        <p-step [value]="1" (click)="selectStep(1)">1. Данные</p-step>
+        <p-step [value]="2" (click)="selectStep(2)">2. Предустановка</p-step>
+        <p-step [value]="3" (click)="selectStep(3)">3. Время</p-step>
+        <p-step [value]="4" (click)="selectStep(4)">4. Сотрудники</p-step>
+        <p-step [value]="5" (click)="selectStep(5)">5. Бонусы</p-step>
+        <p-step [value]="6" (click)="selectStep(6)">6. Подтверждение</p-step>
+      </p-step-list>
+      <p-step-panels>
+        <p-step-panel [value]="1">
+          <ng-template #content>
+            <div style="display:grid;grid-template-columns:1.2fr .8fr;gap:1rem;align-items:stretch;animation:fadein .25s ease;">
+              <div class="employee-form-grid" style="margin:0;">
+                <label class="full">
+                  <span>Название стола *</span>
+                  <input type="text" pInputText [(ngModel)]="tableForm().title" placeholder="Например: Барбершоп Центр" />
+                  <small style="color:var(--p-text-muted-color,#64748b);">Название будет видно в меню и аналитике</small>
+                </label>
+                <label class="full">
+                  <span>Описание</span>
+                  <textarea rows="5" pInputText [(ngModel)]="tableForm().description" placeholder="Кратко опишите специализацию, стиль и правила обслуживания"></textarea>
+                  <small style="color:var(--p-text-muted-color,#64748b);">Минимум 10 символов для информативности</small>
+                </label>
+              </div>
+              <div style="border:1px solid var(--p-content-border-color,#e2e8f0);border-radius:.85rem;padding:.85rem;background:linear-gradient(160deg,rgba(99,102,241,.08),transparent);">
+                <h4 style="margin:0 0 .6rem;">Превью карточки стола</h4>
+                <div style="border:1px solid var(--p-content-border-color,#e2e8f0);border-radius:.75rem;padding:.7rem;background:#fff;">
+                  <div style="display:flex;justify-content:space-between;gap:.45rem;">
+                    <strong>{{ tableForm().title || 'Новый стол' }}</strong>
+                    <i class="pi pi-table"></i>
+                  </div>
+                  <p style="margin:.55rem 0;color:var(--p-text-muted-color,#64748b);font-size:.88rem;">{{ tableForm().description || 'Описание пока не добавлено' }}</p>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </p-step-panel>
+        <p-step-panel [value]="2">
+          <ng-template #content>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;animation:fadein .25s ease;">
+              <div style="display:grid;gap:.75rem;">
+                <button type="button" (click)="tableForm().preset='barbershop'" [style]="{border:'1px solid var(--p-content-border-color,#e2e8f0)',borderRadius:'.8rem',padding:'.8rem',textAlign:'left',background:tableForm().preset==='barbershop' ? 'rgba(99,102,241,.1)' : '#fff'}"><strong>Парикмахерская</strong></button>
+                <button type="button" (click)="tableForm().preset='grooming'" [style]="{border:'1px solid var(--p-content-border-color,#e2e8f0)',borderRadius:'.8rem',padding:'.8rem',textAlign:'left',background:tableForm().preset==='grooming' ? 'rgba(99,102,241,.1)' : '#fff'}"><strong>Грумминг</strong></button>
+                <button type="button" (click)="tableForm().preset='custom'" [style]="{border:'1px solid var(--p-content-border-color,#e2e8f0)',borderRadius:'.8rem',padding:'.8rem',textAlign:'left',background:tableForm().preset==='custom' ? 'rgba(99,102,241,.1)' : '#fff'}"><strong>Своё</strong></button>
+                @if (tableForm().preset === 'custom') {
+                  <label>
+                    <span>Название предустановки *</span>
+                    <input type="text" pInputText [(ngModel)]="tableForm().customPresetName" />
+                  </label>
+                }
+              </div>
+              <div style="border:1px solid var(--p-content-border-color,#e2e8f0);border-radius:.85rem;padding:.85rem;background:#fff;">
+                <h4 style="margin:0 0 .4rem;">Описание выбранной предустановки</h4>
+                <p style="margin:.2rem 0 0;color:var(--p-text-muted-color,#64748b);">{{ presetDescription(tableForm().preset) }}</p>
+              </div>
+            </div>
+          </ng-template>
+        </p-step-panel>
+        <p-step-panel [value]="3">
+          <ng-template #content>
+            <div class="employee-form-grid" style="animation:fadein .25s ease;">
+              <label>
+                <span>Формат времени *</span>
+                <select [(ngModel)]="tableForm().timeFormat">
+                  <option value="us">AM/PM</option>
+                  <option value="eu">24ч</option>
+                </select>
+              </label>
+              <label>
+                <span>Начало недели *</span>
+                <select [(ngModel)]="tableForm().weekStartDay">
+                  <option value="monday">Понедельник</option>
+                  <option value="tuesday">Вторник</option>
+                  <option value="wednesday">Среда</option>
+                  <option value="thursday">Четверг</option>
+                  <option value="friday">Пятница</option>
+                  <option value="saturday">Суббота</option>
+                  <option value="sunday">Воскресенье</option>
+                </select>
+              </label>
+              <label>
+                <span>Рабочие часы: с</span>
+                <input type="time" pInputText [(ngModel)]="tableForm().workDayStart" />
+              </label>
+              <label>
+                <span>Рабочие часы: до</span>
+                <input type="time" pInputText [(ngModel)]="tableForm().workDayEnd" />
+              </label>
+            </div>
+          </ng-template>
+        </p-step-panel>
+        <p-step-panel [value]="4">
+          <ng-template #content>
+            <div style="display:grid;gap:.6rem;animation:fadein .25s ease;">
+              <div style="display:flex;gap:.35rem;flex-wrap:wrap;">
+                @for (employee of selectedEmployees(); track employee.id) {
+                  <span style="display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--p-content-border-color,#e2e8f0);border-radius:999px;padding:.15rem .45rem;background:rgba(99,102,241,.08);">
+                    <span>{{ employeeInitials(employee) }}</span>
+                    <span>{{ employee.lastName }} {{ employee.firstName }}</span>
+                  </span>
+                }
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));gap:.6rem;max-height:16rem;overflow:auto;">
+                @for (employee of ownerEmployees(); track employee.id) {
+                  <button type="button" (click)="toggleEmployee.emit({ employeeId: employee.id, checked: !tableForm().selectedEmployeeIds.includes(employee.id) })" [style]="{border:'1px solid var(--p-content-border-color,#e2e8f0)',borderRadius:'.75rem',padding:'.6rem',textAlign:'left',background:tableForm().selectedEmployeeIds.includes(employee.id) ? 'rgba(99,102,241,.1)' : '#fff'}">
+                    <strong>{{ employee.lastName }} {{ employee.firstName }}</strong>
+                    <small style="display:block;color:var(--p-text-muted-color,#64748b);">{{ employee.position }}</small>
+                  </button>
+                }
+              </div>
+            </div>
+          </ng-template>
+        </p-step-panel>
+        <p-step-panel [value]="5">
+          <ng-template #content>
+            <div style="display:grid;gap:.6rem;animation:fadein .25s ease;">
+              <div class="sub-bonus-grid" style="margin-top:0;">
+                @for (bonus of subscriptionBonuses(); track bonus.key) {
+                  <div class="sub-bonus-card" style="border:1px solid var(--p-content-border-color,#e2e8f0);border-radius:.75rem;padding:.6rem;background:#fff;">
+                    <div>
+                      <strong>{{ bonus.title }}</strong>
+                      <small style="display:block;">{{ formatRub(bonus.price) }} / мес</small>
+                    </div>
+                    @if (bonus.kind === 'quantity') {
+                      <div class="qty-controls">
+                        <button type="button" (click)="changeBonusQuantity.emit({ bonusKey: bonus.key, delta: -1, maxQty: bonus.maxQty ?? 0 })">-</button>
+                        <span>{{ bonusValue(bonus.key) }}</span>
+                        <button type="button" (click)="changeBonusQuantity.emit({ bonusKey: bonus.key, delta: 1, maxQty: bonus.maxQty ?? 0 })">+</button>
+                      </div>
+                    } @else {
+                      <p-inputSwitch [ngModel]="bonusValue(bonus.key) > 0" (ngModelChange)="setBonusToggle.emit({ bonusKey: bonus.key, enabled: $event })" />
+                    }
+                  </div>
+                }
+              </div>
+              <p class="monthly-total">Подытог: <strong>{{ formatRub(bonusMonthlyTotal()) }}</strong></p>
+            </div>
+          </ng-template>
+        </p-step-panel>
+        <p-step-panel [value]="6">
+          <ng-template #content>
+            <div style="display:grid;gap:.8rem;animation:fadein .25s ease;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.65rem;">
+                <div style="border:1px solid var(--p-content-border-color,#e2e8f0);border-radius:.8rem;padding:.7rem;">
+                  <small style="color:var(--p-text-muted-color,#64748b);">Стол</small>
+                  <strong style="display:block;">{{ tableForm().title }}</strong>
+                </div>
+                <div style="border:1px solid var(--p-content-border-color,#e2e8f0);border-radius:.8rem;padding:.7rem;">
+                  <small style="color:var(--p-text-muted-color,#64748b);">Сотрудники и бонусы</small>
+                  <strong style="display:block;">{{ tableForm().selectedEmployeeIds.length }} сотрудников</strong>
+                  <small style="display:block;color:var(--p-text-muted-color,#64748b);">{{ selectedBonusesCount() }} бонусов</small>
+                </div>
+              </div>
+              <p class="monthly-total" style="margin:0;">Итого к оплате в месяц: <strong>{{ formatRub(bonusMonthlyTotal()) }}</strong></p>
+            </div>
+          </ng-template>
+        </p-step-panel>
+      </p-step-panels>
+    </p-stepper>
+    @if (tableFormError()) {
+      <p-message severity="error" [text]="tableFormError() ?? ''" [closable]="false" />
+    }
+    <div class="dialog-actions">
+      <p-button label="Отмена" styleClass="p-button-text" (onClick)="visibleChange.emit(false)" />
+      @if (tableCreateStep() > 1) {
+        <p-button label="Назад" icon="pi pi-angle-left" styleClass="p-button-text" (onClick)="prevStep.emit()" />
+      }
+      @if (tableCreateStep() < 6) {
+        <p-button label="Далее" icon="pi pi-angle-right" iconPos="right" (onClick)="nextStep.emit()" />
+      } @else {
+        <p-button label="Создать (получить код)" icon="pi pi-envelope" [loading]="creatingTable()" (onClick)="submitCreate.emit()" />
+      }
+    </div>
+  } @else {
+    <app-table-create-otg
+      [code]="tableCreateCode()"
+      [loading]="creatingTable()"
+      (valueChange)="tableCreateCodeChange.emit($event)"
+      (back)="tableCodeDialogVisibleChange.emit(false)"
+      (confirm)="confirmCreate.emit()"
+    />
+    @if (tableFormError()) {
+      <p-message severity="error" [text]="tableFormError() ?? ''" [closable]="false" />
+    }
+  }
+</p-dialog>

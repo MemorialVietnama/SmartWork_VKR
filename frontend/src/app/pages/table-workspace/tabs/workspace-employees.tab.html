@@ -1,0 +1,86 @@
+<div class="tw-tab tw-employees">
+  <h2>Сотрудники</h2>
+  <p class="tw-muted">Настройте график смен сотрудника. После сохранения смены автоматически добавляются в календарь стола.</p>
+
+  @if (members().length === 0) {
+    <p-card>
+      <p class="tw-muted">К столу пока не прикреплены сотрудники.</p>
+    </p-card>
+  } @else {
+    <div class="tw-employee-accordion">
+      @for (member of members(); track member.user_id) {
+        <details class="tw-employee-item">
+          <summary>
+            <span>{{ member.short_name }}</span>
+            <small>id: {{ member.user_id }}</small>
+          </summary>
+          <div class="tw-employee-content">
+            @if (!canEdit(member)) {
+              <p class="tw-muted">Изменять график может владелец стола или сам сотрудник.</p>
+            }
+            <div class="tw-form-grid">
+              <label class="tw-form-full">
+                <span>Дни работы</span>
+                <div class="tw-days">
+                  @for (day of weekdays; track day.value) {
+                    <label class="tw-day-pill">
+                      <input
+                        type="checkbox"
+                        [checked]="ensureForm(member.user_id).weekdays.includes(day.value)"
+                        [disabled]="!canEdit(member)"
+                        (change)="onWeekdayChange(member.user_id, day.value, $event)"
+                      />
+                      <span>{{ day.label }}</span>
+                    </label>
+                  }
+                </div>
+              </label>
+              <label>
+                <span>Начало смены</span>
+                <input
+                  type="time"
+                  [disabled]="!canEdit(member)"
+                  [ngModel]="ensureForm(member.user_id).startTime"
+                  (ngModelChange)="ensureForm(member.user_id).startTime = $event"
+                />
+              </label>
+              <label>
+                <span>Конец смены</span>
+                <input
+                  type="time"
+                  [disabled]="!canEdit(member)"
+                  [ngModel]="ensureForm(member.user_id).endTime"
+                  (ngModelChange)="ensureForm(member.user_id).endTime = $event"
+                />
+              </label>
+              <label>
+                <span>На сколько недель вперед</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="8"
+                  [disabled]="!canEdit(member)"
+                  [ngModel]="ensureForm(member.user_id).weeksAhead"
+                  (ngModelChange)="ensureForm(member.user_id).weeksAhead = +$event"
+                />
+              </label>
+            </div>
+            @if (errorByUser[member.user_id]) {
+              <p class="tw-tab-error">{{ errorByUser[member.user_id] }}</p>
+            }
+            @if (successByUser[member.user_id]) {
+              <p class="tw-success">{{ successByUser[member.user_id] }}</p>
+            }
+            <p-button
+              label="Сохранить график и добавить в календарь"
+              icon="pi pi-calendar-plus"
+              [disabled]="!canEdit(member)"
+              [loading]="savingByUser[member.user_id] === true"
+              (onClick)="saveSchedule(member)"
+            />
+          </div>
+        </details>
+      }
+    </div>
+  }
+</div>

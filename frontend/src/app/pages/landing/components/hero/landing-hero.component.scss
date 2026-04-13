@@ -1,0 +1,425 @@
+:host {
+  display: block;
+}
+
+@keyframes landing-hero-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.28;
+  }
+}
+
+.landing-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(3rem, 8vw, 5rem) 0 clamp(3rem, 6vw, 6.25rem);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--p-primary-50) 90%, var(--p-content-background)) 0%,
+    var(--p-content-background) 50%,
+    color-mix(in srgb, var(--p-green-50) 80%, var(--p-content-background)) 100%
+  );
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: min(600px, 90vw);
+    height: min(600px, 90vw);
+    background: radial-gradient(circle, color-mix(in srgb, var(--p-primary-200) 70%, transparent) 0%, transparent 70%);
+    opacity: 0.5;
+    pointer-events: none;
+    animation: landing-hero-pulse 4s ease-in-out infinite;
+  }
+}
+
+.landing-hero-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: clamp(2rem, 4vw, 4rem);
+  align-items: center;
+}
+
+@media (min-width: 960px) {
+  .landing-hero-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.landing-hero-title {
+  margin: 0 0 1.5rem;
+  font-size: clamp(2rem, 4.5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--p-surface-900) 0%, var(--p-primary-700) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-hero-lead {
+  margin: 0 0 2rem;
+  font-size: 1.25rem;
+  line-height: 1.7;
+  color: var(--p-text-muted-color);
+}
+
+.landing-dashboard-preview {
+  background: var(--p-surface-100);
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.08);
+  padding: 1rem 1rem 1.25rem;
+  border: 1px solid var(--p-content-border-color);
+  transform: perspective(1000px) rotateY(-5deg) rotateX(5deg);
+  transition: transform 0.5s ease;
+
+  &:hover {
+    transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+  }
+}
+
+.landing-preview-dots {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.landing-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.landing-dot-red {
+  background: #ef4444;
+}
+
+.landing-dot-yellow {
+  background: #eab308;
+}
+
+.landing-dot-green {
+  background: var(--p-green-500);
+}
+
+.landing-mock-dash-url {
+  font-size: 0.7rem;
+  color: var(--p-text-muted-color);
+  font-family: ui-monospace, monospace;
+  margin-bottom: 0.75rem;
+}
+
+.landing-mock-dash {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  align-items: start;
+}
+
+@media (min-width: 520px) {
+  .landing-mock-dash {
+    grid-template-columns: minmax(7.5rem, 9.5rem) 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.landing-mock-dash-sidebar {
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 0.65rem;
+  padding: 0.45rem;
+}
+
+.landing-mock-dash-head {
+  border-bottom: 1px solid var(--p-content-border-color);
+  padding: 0.35rem 0.35rem 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+:host ::ng-deep .landing-mock-dash-tag.p-tag {
+  font-size: 0.6rem;
+  padding: 0.15rem 0.4rem;
+}
+
+.landing-mock-dash-user {
+  margin: 0.35rem 0 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--p-text-color);
+}
+
+.landing-mock-dash-login {
+  display: block;
+  font-size: 0.58rem;
+  color: var(--p-text-muted-color);
+  word-break: break-all;
+}
+
+.landing-mock-dash-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.landing-mock-dash-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 0.45rem;
+  padding: 0.4rem 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--p-text-color);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+
+  i {
+    font-size: 0.75rem;
+    opacity: 0.85;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--p-surface-500) 10%, transparent);
+  }
+
+  &--active {
+    border-color: var(--p-primary-color);
+    background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+    color: var(--p-primary-700);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--p-primary-color);
+    outline-offset: 2px;
+  }
+}
+
+.landing-mock-dash-content {
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.75rem 0.85rem;
+  min-height: 200px;
+}
+
+.landing-mock-dash-content-head {
+  margin-bottom: 0.5rem;
+}
+
+.landing-mock-dash-h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.landing-mock-dash-content-head p {
+  margin: 0.25rem 0 0;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  color: var(--p-text-muted-color);
+}
+
+.landing-mock-dash-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+:host ::ng-deep .landing-mock-dash-toolbar .p-button {
+  font-size: 0.6rem;
+  padding: 0.3rem 0.5rem;
+}
+
+:host ::ng-deep .landing-mock-table-card.p-card,
+:host ::ng-deep .landing-mock-employee-card.p-card {
+  font-size: 0.65rem;
+}
+
+:host ::ng-deep .landing-mock-table-card .p-card-body,
+:host ::ng-deep .landing-mock-employee-card .p-card-body {
+  padding: 0.65rem;
+}
+
+.landing-mock-stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.62rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid var(--p-content-border-color);
+
+  strong {
+    font-weight: 700;
+    color: var(--p-text-color);
+  }
+}
+
+.landing-mock-task-bars {
+  margin-top: 0.45rem;
+  font-size: 0.55rem;
+  color: var(--p-text-muted-color);
+}
+
+.landing-mock-task-bars-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  font-size: 0.6rem;
+  color: var(--p-text-color);
+}
+
+.landing-mock-bars {
+  display: flex;
+  height: 7px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.landing-mock-bar {
+  display: block;
+
+  &--done {
+    flex: 5;
+    background: var(--p-green-500);
+  }
+
+  &--wait {
+    flex: 2;
+    background: var(--p-amber-400, #fbbf24);
+  }
+
+  &--new {
+    flex: 1;
+    background: var(--p-surface-300);
+  }
+}
+
+.landing-mock-table-meta {
+  margin-top: 0.65rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--p-content-border-color);
+
+  h3 {
+    margin: 0 0 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  p {
+    font-size: 0.6rem;
+  }
+}
+
+.landing-mock-employee-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.landing-mock-avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--p-primary-color) 22%, transparent);
+  display: grid;
+  place-content: center;
+  font-weight: 700;
+  font-size: 0.65rem;
+  color: var(--p-primary-700);
+  flex-shrink: 0;
+}
+
+.landing-mock-employee-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.landing-mock-analytics-card {
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 0.5rem;
+  padding: 0.6rem;
+  background: var(--p-surface-50);
+}
+
+.landing-mock-analytics-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+
+  h3 {
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  small {
+    font-size: 0.55rem;
+  }
+}
+
+.landing-mock-mini-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.landing-mock-mini-chart {
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 0.45rem;
+  padding: 0.45rem;
+}
+
+.landing-mock-mini-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 3px;
+  height: 52px;
+  margin-top: 0.35rem;
+}
+
+.landing-mock-mini-bar {
+  flex: 1;
+  min-height: 12%;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, var(--p-primary-400), var(--p-primary-600));
+
+  &--alt {
+    background: linear-gradient(180deg, var(--p-green-400), var(--p-green-600));
+  }
+}
+
+:host ::ng-deep .landing-hero-cta-primary.p-button {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+:host ::ng-deep .landing-hero-cta-secondary.p-button {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}

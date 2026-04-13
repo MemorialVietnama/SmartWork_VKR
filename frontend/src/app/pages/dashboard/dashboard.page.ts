@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, ViewEncapsulation, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -7,9 +7,22 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputSwitchModule } from 'primeng/inputswitch';
+import { ChartModule } from 'primeng/chart';
+import { DialogModule } from 'primeng/dialog';
+import { DashboardSidebarComponent } from './components/sidebar/dashboard-sidebar.component';
+import { DashboardInviteDialogComponent } from './dialogs/invite-dialog/dashboard-invite-dialog.component';
+import { DashboardLogoutConfirmDialogComponent } from './dialogs/logout-confirm-dialog/dashboard-logout-confirm-dialog.component';
+import { DashboardTableMembersDialogComponent } from './dialogs/table-members-dialog/dashboard-table-members-dialog.component';
+import { DashboardEmployeeDialogComponent } from './dialogs/employee-dialog/dashboard-employee-dialog.component';
+import { DashboardTableCreateDialogComponent } from './dialogs/table-create-dialog/dashboard-table-create-dialog.component';
+import { TableCreateOtgComponent } from './components/table-create-otg/table-create-otg.component';
+import { DashboardTablesCategoryComponent } from './categories/tables/dashboard-tables-category.component';
+import { DashboardEmployeesCategoryComponent } from './categories/employees/dashboard-employees-category.component';
+import { DashboardAnalyticsCategoryComponent } from './categories/analytics/dashboard-analytics-category.component';
+import { DashboardSettingsCategoryComponent } from './categories/settings/dashboard-settings-category.component';
+import { DashboardSubscriptionCategoryComponent } from './categories/subscription/dashboard-subscription-category.component';
 
 import {
   AuthService,
@@ -31,12 +44,26 @@ import {
     TagModule,
     MessageModule,
     ProgressSpinnerModule,
-    DialogModule,
     InputTextModule,
     InputSwitchModule,
+    ChartModule,
+    DialogModule,
+    DashboardSidebarComponent,
+    DashboardInviteDialogComponent,
+    DashboardLogoutConfirmDialogComponent,
+    DashboardTableMembersDialogComponent,
+    DashboardEmployeeDialogComponent,
+    DashboardTableCreateDialogComponent,
+    TableCreateOtgComponent,
+    DashboardTablesCategoryComponent,
+    DashboardEmployeesCategoryComponent,
+    DashboardAnalyticsCategoryComponent,
+    DashboardSettingsCategoryComponent,
+    DashboardSubscriptionCategoryComponent,
   ],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss',
+  encapsulation: ViewEncapsulation.None,
 })
 export class DashboardPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
@@ -64,7 +91,19 @@ export class DashboardPageComponent implements OnInit {
   protected tableCodeDialogVisible = false;
   protected tableCreateCode = '';
   protected tableForm: TableCreateForm = this.createEmptyTableForm();
+  protected tableCreateStep = 1;
   protected analyticsTables: TableAnalytics[] = [];
+  protected analyticsPeriod: AnalyticsPeriod = '30d';
+  protected analyticsCompareWithPrevious = false;
+  protected analyticsSelectedTableId: number | null = null;
+  protected analyticsSelectedKpi: AnalyticsKpiKey = 'overview';
+  protected analyticsDrilldownChartTitle: string | null = null;
+  protected readonly analyticsPeriods: Array<{ id: AnalyticsPeriod; label: string }> = [
+    { id: '7d', label: '7 дней' },
+    { id: '30d', label: '30 дней' },
+    { id: '90d', label: '90 дней' },
+    { id: '365d', label: '365 дней' },
+  ];
   protected ownerEmployees: EmployeeCard[] = [];
   protected employeeTableSelections: Record<number, number[]> = {};
   protected employeeTableEditMode: Record<number, boolean> = {};
@@ -81,6 +120,12 @@ export class DashboardPageComponent implements OnInit {
   protected tableMembersDialogVisible = false;
   protected selectedTableForMembers: WorkspaceTableCard | null = null;
   protected tableMembersActionError: string | null = null;
+  protected tableDeleteDialogVisible = false;
+  protected tableDeleteCodeDialogVisible = false;
+  protected selectedTableForDelete: WorkspaceTableCard | null = null;
+  protected tableDeleteCode = '';
+  protected deletingTable = false;
+  protected tableDeleteError: string | null = null;
   protected formError: string | null = null;
   protected employeeForm: EmployeeForm = this.createEmptyEmployeeForm();
   protected editingEmployeeId: number | null = null;
@@ -135,6 +180,7 @@ export class DashboardPageComponent implements OnInit {
     account_analytics: false,
     account_tasks: false,
   };
+  protected readonly self = this;
 
   ngOnInit(): void {
     const section = this.route.snapshot.queryParamMap.get('section');
@@ -185,6 +231,14 @@ export class DashboardPageComponent implements OnInit {
     this.selectedCategory = categoryId;
   }
 
+  protected onSidebarCategorySelect(categoryId: string): void {
+    const matched = this.categories.find((item) => item.id === categoryId);
+    if (!matched) {
+      return;
+    }
+    this.selectCategory(matched.id);
+  }
+
   protected get isOwner(): boolean {
     return this.user?.role === 'owner';
   }
@@ -199,6 +253,30 @@ export class DashboardPageComponent implements OnInit {
 
   protected get sidebarCategories(): SidebarCategory[] {
     return this.isOwner ? this.categories : this.categories.filter((item) => item.id !== 'employees');
+  }
+
+  protected categoryBadge(categoryId: SidebarCategoryId): string | null {
+    if (categoryId === 'tables') {
+      return `${this.ownerTables.length}`;
+    }
+    if (categoryId === 'employees' && this.isOwner) {
+      return `${this.ownerEmployees.length}`;
+    }
+    if (categoryId === 'analytics') {
+      return `${this.analyticsTables.length}`;
+    }
+    return null;
+  }
+
+  protected sidebarBadges(): Record<string, string> {
+    const result: Record<string, string> = {};
+    this.sidebarCategories.forEach((category) => {
+      const badge = this.categoryBadge(category.id);
+      if (badge) {
+        result[category.id] = badge;
+      }
+    });
+    return result;
   }
 
   protected get hasOwnerEmployees(): boolean {
@@ -219,6 +297,18 @@ export class DashboardPageComponent implements OnInit {
       return 0;
     }
     return Math.round((taskStats.tasksDone / total) * 100);
+  }
+
+  protected totalActiveEmployees(): number {
+    return this.ownerTables.reduce((sum, table) => sum + table.stats.activeEmployees, 0);
+  }
+
+  protected totalQueuedOrders(): number {
+    return this.ownerTables.reduce((sum, table) => sum + table.stats.queuedOrders, 0);
+  }
+
+  protected totalNewTasks(): number {
+    return this.ownerTables.reduce((sum, table) => sum + table.stats.tasksNew, 0);
   }
 
   protected openCreateEmployeeDialog(): void {
@@ -409,6 +499,79 @@ export class DashboardPageComponent implements OnInit {
     this.openedTableMenuId = null;
   }
 
+  protected openDeleteTableDialog(tableId: number): void {
+    const table = this.ownerTables.find((item) => item.id === tableId);
+    if (!table) {
+      return;
+    }
+    this.selectedTableForDelete = table;
+    this.tableDeleteDialogVisible = true;
+    this.tableDeleteCodeDialogVisible = false;
+    this.tableDeleteCode = '';
+    this.tableDeleteError = null;
+    this.openedTableMenuId = null;
+  }
+
+  protected requestDeleteTableCode(): void {
+    if (!this.selectedTableForDelete) {
+      return;
+    }
+    this.deletingTable = true;
+    this.tableDeleteError = null;
+    this.auth.requestDeleteTableCode(this.selectedTableForDelete.id).subscribe({
+      next: () => {
+        this.deletingTable = false;
+        this.tableDeleteCodeDialogVisible = true;
+      },
+      error: (err) => {
+        this.deletingTable = false;
+        this.tableDeleteError = err?.error?.detail || 'Не удалось отправить код подтверждения удаления.';
+      },
+    });
+  }
+
+  protected confirmDeleteTableByCode(): void {
+    const code = this.tableDeleteCode.trim();
+    if (code.length < 4) {
+      this.tableDeleteError = 'Введите код подтверждения.';
+      return;
+    }
+    if (!this.selectedTableForDelete) {
+      return;
+    }
+    this.deletingTable = true;
+    this.tableDeleteError = null;
+    this.auth.confirmDeleteTable(this.selectedTableForDelete.id, code).subscribe({
+      next: () => {
+        const deletedTableId = this.selectedTableForDelete?.id ?? null;
+        this.ownerTables = this.ownerTables.filter((table) => table.id !== deletedTableId);
+        this.analyticsTables = this.analyticsTables.filter((table) => table.tableId !== deletedTableId);
+        this.tableSubscriptions = this.tableSubscriptions.filter((sub) => sub.tableId !== deletedTableId);
+        this.selectedTableForDelete = null;
+        this.tableDeleteDialogVisible = false;
+        this.tableDeleteCodeDialogVisible = false;
+        this.tableDeleteCode = '';
+        this.deletingTable = false;
+        if (this.analyticsSelectedTableId === deletedTableId) {
+          this.analyticsSelectedTableId = this.analyticsTables[0]?.tableId ?? null;
+        }
+      },
+      error: (err) => {
+        this.deletingTable = false;
+        this.tableDeleteError = err?.error?.detail || 'Не удалось удалить стол.';
+      },
+    });
+  }
+
+  protected closeDeleteTableDialog(): void {
+    this.tableDeleteDialogVisible = false;
+    this.tableDeleteCodeDialogVisible = false;
+    this.selectedTableForDelete = null;
+    this.tableDeleteCode = '';
+    this.tableDeleteError = null;
+    this.deletingTable = false;
+  }
+
   protected openTableMembers(tableId: number): void {
     const table = this.ownerTables.find((item) => item.id === tableId);
     if (!table) return;
@@ -484,23 +647,71 @@ export class DashboardPageComponent implements OnInit {
     this.tableCreateCode = '';
     this.tableCodeDialogVisible = false;
     this.tableForm = this.createEmptyTableForm();
+    this.tableCreateStep = 1;
     this.tableDialogVisible = true;
   }
 
+  protected goToTableCreateStep(step: number): void {
+    if (step < 1 || step > 6) {
+      return;
+    }
+    if (step > this.tableCreateStep) {
+      for (let index = this.tableCreateStep; index < step; index += 1) {
+        const error = this.validateTableStep(index);
+        if (error) {
+          this.tableFormError = error;
+          return;
+        }
+      }
+    }
+    this.tableFormError = null;
+    this.tableCreateStep = step;
+  }
+
+  protected nextTableCreateStep(): void {
+    this.goToTableCreateStep(this.tableCreateStep + 1);
+  }
+
+  protected prevTableCreateStep(): void {
+    this.goToTableCreateStep(this.tableCreateStep - 1);
+  }
+
+  protected selectedCreateEmployees(): EmployeeCard[] {
+    return this.ownerEmployees.filter((employee) => this.tableForm.selectedEmployeeIds.includes(employee.id));
+  }
+
+  protected createEmployeeInitials(employee: EmployeeCard): string {
+    const last = employee.lastName?.[0] ?? '';
+    const first = employee.firstName?.[0] ?? '';
+    return `${last}${first}`.toUpperCase();
+  }
+
+  protected presetDescription(preset: TableCreateForm['preset']): string {
+    if (preset === 'barbershop') {
+      return 'Календарь мастеров, очередь, повторные записи и смены для барбершопа.';
+    }
+    if (preset === 'grooming') {
+      return 'Карточки питомцев, интервалы обслуживания, напоминания и контроль загрузки.';
+    }
+    return 'Собственный сценарий: настройка структуры стола под ваш бизнес-процесс.';
+  }
+
+  protected createFormSelectedBonusesCount(): number {
+    return this.subscriptionBonuses.filter((bonus) => (this.tableForm.bonusValues[bonus.key] ?? 0) > 0).length;
+  }
+
   protected submitCreateTable(): void {
+    const validationError =
+      this.validateTableStep(1) ??
+      this.validateTableStep(2) ??
+      this.validateTableStep(3) ??
+      this.validateTableStep(4) ??
+      this.validateTableStep(5);
+    if (validationError) {
+      this.tableFormError = validationError;
+      return;
+    }
     const title = this.tableForm.title.trim();
-    if (title.length < 2) {
-      this.tableFormError = 'Название стола должно быть не короче 2 символов.';
-      return;
-    }
-    if (this.tableForm.preset === 'custom' && this.tableForm.customPresetName.trim().length < 2) {
-      this.tableFormError = 'Укажите название своей предустановки.';
-      return;
-    }
-    if (!this.tableForm.workDayStart || !this.tableForm.workDayEnd) {
-      this.tableFormError = 'Укажите рабочие часы.';
-      return;
-    }
 
     const selectedBonusKeys = this.subscriptionBonuses
       .filter((bonus) => {
@@ -604,6 +815,177 @@ export class DashboardPageComponent implements OnInit {
   protected chartAverage(values: number[]): number {
     const total = values.reduce((sum, value) => sum + value, 0);
     return Math.round((total / values.length) * 10) / 10;
+  }
+
+  protected analyticsAccessibleTables(): TableAnalytics[] {
+    if (!this.isOwner) {
+      return this.analyticsTables;
+    }
+    return this.analyticsTables.filter((table) => this.hasAnalyticsAccess(table.tableId));
+  }
+
+  protected selectedAnalyticsTable(): TableAnalytics | null {
+    const tables = this.analyticsAccessibleTables();
+    if (tables.length === 0) {
+      return null;
+    }
+    const selected = tables.find((table) => table.tableId === this.analyticsSelectedTableId);
+    return selected ?? tables[0];
+  }
+
+  protected selectAnalyticsTable(tableId: number): void {
+    this.analyticsSelectedTableId = tableId;
+    this.analyticsDrilldownChartTitle = null;
+  }
+
+  protected selectAnalyticsPeriod(period: AnalyticsPeriod): void {
+    this.analyticsPeriod = period;
+  }
+
+  protected toggleAnalyticsCompareMode(enabled: boolean): void {
+    this.analyticsCompareWithPrevious = enabled;
+  }
+
+  protected selectAnalyticsKpi(kpi: AnalyticsKpiKey): void {
+    this.analyticsSelectedKpi = kpi;
+  }
+
+  protected analyticsPeriodLabel(): string {
+    return this.analyticsPeriods.find((item) => item.id === this.analyticsPeriod)?.label ?? '30 дней';
+  }
+
+  protected analyticsKpis(table: TableAnalytics | null): AnalyticsKpiCard[] {
+    if (!table) {
+      return [];
+    }
+    const summary = this.analyticsSummary(table);
+    return [
+      {
+        key: 'overview',
+        title: 'Среднее значение',
+        value: `${summary.avgValue}`,
+        delta: this.formatSignedPercent(summary.deltaPercent),
+      },
+      {
+        key: 'employees',
+        title: 'Активные сотрудники',
+        value: `${table.activeEmployees}`,
+        delta: this.formatSignedPercent(summary.employeesDeltaPercent),
+      },
+      {
+        key: 'workload',
+        title: 'Очередь заказов',
+        value: `${table.queuedOrders}`,
+        delta: this.formatSignedPercent(summary.queueDeltaPercent),
+      },
+      {
+        key: 'tasks',
+        title: 'Пиковое значение',
+        value: `${summary.peakValue}`,
+        delta: this.formatSignedPercent(summary.peakDeltaPercent),
+      },
+    ];
+  }
+
+  protected analyticsTrendData(table: TableAnalytics | null): unknown {
+    if (!table) {
+      return { labels: [], datasets: [] };
+    }
+    const primary = this.analyticsPrimaryChart(table);
+    const values = this.limitByPeriod(primary.values);
+    return {
+      labels: this.analyticsLabels(values.length),
+      datasets: [
+        {
+          label: primary.title,
+          data: values,
+          tension: 0.35,
+          borderColor: '#4f46e5',
+          backgroundColor: 'rgba(79, 70, 229, 0.16)',
+          fill: true,
+        },
+      ],
+    };
+  }
+
+  protected analyticsDistributionData(table: TableAnalytics | null): unknown {
+    if (!table) {
+      return { labels: [], datasets: [] };
+    }
+    const values = table.charts.map((chart) => this.chartAverage(this.limitByPeriod(chart.values)));
+    return {
+      labels: table.charts.map((chart) => chart.title),
+      datasets: [
+        {
+          label: 'Средние значения',
+          data: values,
+          backgroundColor: ['#4f46e5', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'],
+        },
+      ],
+    };
+  }
+
+  protected analyticsTrendOptions(): unknown {
+    return {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true },
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true },
+      },
+    };
+  }
+
+  protected analyticsDistributionOptions(): unknown {
+    return {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { enabled: true },
+      },
+      scales: {
+        y: { beginAtZero: true },
+      },
+    };
+  }
+
+  protected analyticsTableInsights(table: TableAnalytics | null): string[] {
+    if (!table) {
+      return [];
+    }
+    const summary = this.analyticsSummary(table);
+    const topChart = this.analyticsTopChart(table);
+    return [
+      `За ${this.analyticsPeriodLabel()} среднее значение: ${summary.avgValue}.`,
+      `Пиковая активность: ${summary.peakValue}.`,
+      `Сильнейшая категория: ${topChart.title} (${topChart.avg}).`,
+      this.analyticsSelectedKpi === 'workload'
+        ? `Текущая очередь: ${table.queuedOrders}. Рекомендуется контролировать нагрузку по сотрудникам.`
+        : `Активных сотрудников: ${table.activeEmployees}. Рекомендуется сравнить пики по категориям.`,
+    ];
+  }
+
+  protected openAnalyticsDrilldown(chartTitle: string): void {
+    this.analyticsDrilldownChartTitle = chartTitle;
+  }
+
+  protected closeAnalyticsDrilldown(): void {
+    this.analyticsDrilldownChartTitle = null;
+  }
+
+  protected analyticsDrilldownRows(table: TableAnalytics | null): Array<{ label: string; value: number }> {
+    if (!table || !this.analyticsDrilldownChartTitle) {
+      return [];
+    }
+    const chart = table.charts.find((item) => item.title === this.analyticsDrilldownChartTitle);
+    if (!chart) {
+      return [];
+    }
+    const values = this.limitByPeriod(chart.values);
+    return values.map((value, index) => ({ label: `Точка ${index + 1}`, value }));
   }
 
   protected selectSettingsTab(tabId: SettingsTabId): void {
@@ -884,6 +1266,9 @@ export class DashboardPageComponent implements OnInit {
     this.auth.myTablesAnalytics().subscribe({
       next: (tables) => {
         this.analyticsTables = tables.map((table) => this.mapAnalyticsDto(table));
+        if (!this.analyticsSelectedTableId) {
+          this.analyticsSelectedTableId = this.analyticsTables[0]?.tableId ?? null;
+        }
       },
       error: () => {
         this.analyticsTables = [];
@@ -919,7 +1304,75 @@ export class DashboardPageComponent implements OnInit {
         subtitle: chart.subtitle,
         values: [...chart.values],
       })),
+      segments: table.segments ?? [],
+      periods: table.periods ?? [],
+      forecast: table.forecast ?? null,
+      anomalies: table.anomalies ?? [],
     };
+  }
+
+  private limitByPeriod(values: number[]): number[] {
+    const periodSize = this.analyticsPeriod === '7d' ? 7 : this.analyticsPeriod === '30d' ? 30 : this.analyticsPeriod === '90d' ? 90 : 365;
+    if (values.length <= periodSize) {
+      return values;
+    }
+    return values.slice(values.length - periodSize);
+  }
+
+  private analyticsPrimaryChart(table: TableAnalytics): AnalyticsMiniChart {
+    return table.charts[0] ?? { title: 'Нет данных', subtitle: '', values: [] };
+  }
+
+  private analyticsTopChart(table: TableAnalytics): { title: string; avg: number } {
+    if (table.charts.length === 0) {
+      return { title: 'Нет данных', avg: 0 };
+    }
+    const withAverage = table.charts.map((chart) => ({
+      title: chart.title,
+      avg: this.chartAverage(this.limitByPeriod(chart.values)),
+    }));
+    return withAverage.sort((a, b) => b.avg - a.avg)[0];
+  }
+
+  private analyticsSummary(table: TableAnalytics): {
+    avgValue: number;
+    peakValue: number;
+    deltaPercent: number;
+    employeesDeltaPercent: number;
+    queueDeltaPercent: number;
+    peakDeltaPercent: number;
+  } {
+    const primaryValues = this.limitByPeriod(this.analyticsPrimaryChart(table).values);
+    const avgValue = this.chartAverage(primaryValues);
+    const peakValue = this.chartMax(primaryValues);
+    const midpoint = Math.floor(primaryValues.length / 2);
+    const previous = primaryValues.slice(0, midpoint);
+    const current = primaryValues.slice(midpoint);
+    const prevAvg = this.chartAverage(previous.length > 0 ? previous : [0]);
+    const currAvg = this.chartAverage(current.length > 0 ? current : [0]);
+    const deltaPercent = prevAvg === 0 ? 0 : Math.round(((currAvg - prevAvg) / prevAvg) * 100);
+    return {
+      avgValue,
+      peakValue,
+      deltaPercent,
+      employeesDeltaPercent: deltaPercent > 0 ? Math.min(deltaPercent, 28) : Math.max(deltaPercent, -28),
+      queueDeltaPercent: deltaPercent > 0 ? Math.max(deltaPercent - 6, -30) : Math.min(deltaPercent + 6, 30),
+      peakDeltaPercent: deltaPercent > 0 ? Math.min(deltaPercent + 4, 32) : Math.max(deltaPercent - 4, -32),
+    };
+  }
+
+  private analyticsLabels(length: number): string[] {
+    return Array.from({ length }, (_, index) => `${index + 1}`);
+  }
+
+  private formatSignedPercent(value: number): string {
+    if (value > 0) {
+      return `+${value}%`;
+    }
+    if (value < 0) {
+      return `${value}%`;
+    }
+    return '0%';
   }
 
   private mapEmployeeDto(employee: EmployeeDto): EmployeeCard {
@@ -1082,6 +1535,34 @@ export class DashboardPageComponent implements OnInit {
     };
   }
 
+  private validateTableStep(step: number): string | null {
+    if (step === 1) {
+      if (this.tableForm.title.trim().length < 2) {
+        return 'Название стола должно быть не короче 2 символов.';
+      }
+      if (this.tableForm.description.trim().length > 0 && this.tableForm.description.trim().length < 10) {
+        return 'Описание должно содержать минимум 10 символов.';
+      }
+      return null;
+    }
+    if (step === 2) {
+      if (this.tableForm.preset === 'custom' && this.tableForm.customPresetName.trim().length < 2) {
+        return 'Укажите название своей предустановки.';
+      }
+      return null;
+    }
+    if (step === 3) {
+      if (!this.tableForm.workDayStart || !this.tableForm.workDayEnd) {
+        return 'Укажите рабочие часы.';
+      }
+      if (this.tableForm.workDayStart >= this.tableForm.workDayEnd) {
+        return 'Время окончания должно быть позже времени начала.';
+      }
+      return null;
+    }
+    return null;
+  }
+
 }
 
 type SidebarCategoryId =
@@ -1170,6 +1651,43 @@ interface TableAnalytics {
   activeEmployees: number;
   queuedOrders: number;
   charts: AnalyticsMiniChart[];
+  periods: AnalyticsPeriodPoint[];
+  segments: AnalyticsSegment[];
+  forecast: AnalyticsForecast | null;
+  anomalies: AnalyticsAnomaly[];
+}
+
+type AnalyticsPeriod = '7d' | '30d' | '90d' | '365d';
+
+type AnalyticsKpiKey = 'overview' | 'employees' | 'workload' | 'tasks';
+
+interface AnalyticsKpiCard {
+  key: AnalyticsKpiKey;
+  title: string;
+  value: string;
+  delta: string;
+}
+
+interface AnalyticsPeriodPoint {
+  period: string;
+  values: number[];
+}
+
+interface AnalyticsSegment {
+  key: string;
+  label: string;
+  value: number;
+}
+
+interface AnalyticsForecast {
+  horizon: string;
+  values: number[];
+}
+
+interface AnalyticsAnomaly {
+  date: string;
+  title: string;
+  severity: 'low' | 'medium' | 'high';
 }
 
 type SettingsTabId = 'account' | 'appearance';

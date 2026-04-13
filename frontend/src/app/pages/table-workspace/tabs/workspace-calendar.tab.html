@@ -1,216 +1,137 @@
 <div class="tw-tab tw-cal">
   <h2>Календарь</h2>
   <p class="tw-muted">Слоты записей по этому столу. Режим и период выберите в виджете ниже.</p>
+  <div class="tw-cal-actions">
+    <p-button label="Создать слот" icon="pi pi-plus" (onClick)="openCreateSlotDialog()" />
+  </div>
 
-  <section class="tw-cal-widget" aria-label="Календарь слотов">
-    <div class="tw-cal-toolbar">
-      <label class="tw-cal-select-wrap">
-        <span class="tw-sr-only">Режим отображения</span>
-        <select class="tw-cal-mode-select" [value]="viewMode()" (change)="onViewModeChange($event)">
-          <option value="year">Год</option>
-          <option value="month">Месяц</option>
-          <option value="week">Неделя</option>
-          <option value="day">День</option>
-        </select>
-      </label>
-      <div class="tw-cal-nav" role="group" aria-label="Навигация по периоду">
-        <button type="button" class="tw-cal-nav-btn" (click)="prevPeriod()" aria-label="Предыдущий период">←</button>
-        <span class="tw-cal-period" aria-live="polite">{{ periodLabel() }}</span>
-        <button type="button" class="tw-cal-nav-btn" (click)="nextPeriod()" aria-label="Следующий период">→</button>
-        <button type="button" class="tw-cal-today-btn" (click)="goToday()">Сегодня</button>
-      </div>
+  <app-workspace-calendar-widget
+    [slots]="slots()"
+    [slotsLoading]="slotsLoading()"
+    [loadError]="loadError()"
+    [promoTheme]="true"
+    [viewMode]="viewMode()"
+    (viewModeChange)="viewMode.set($event)"
+    [anchorDate]="anchorDate()"
+    (anchorChange)="onCalendarAnchorChange($event)"
+    [weekStartDay]="state.detail()?.week_start_day ?? null"
+    [workHours]="state.detail()?.work_hours ?? null"
+    (slotContextMenu)="onSlotContextMenu($event)"
+    (slotDateDrop)="onSlotDateDrop($event)"
+  />
+
+  @if (slotMenuVisible && selectedSlot) {
+    <div class="tw-slot-menu" [style.left.px]="slotMenuX" [style.top.px]="slotMenuY" (mouseleave)="closeSlotMenu()">
+      <button type="button" (click)="openEditSlotDialog()">Изменить</button>
+      <button type="button" class="danger" (click)="deleteSelectedSlot()">Удалить</button>
     </div>
+  }
 
-    @if (slotsLoading()) {
-      <p class="tw-cal-loading">Загрузка слотов…</p>
-    }
-    @if (loadError()) {
-      <p class="tw-tab-error" role="alert">{{ loadError() }}</p>
-    }
+  @if (actionError) {
+    <p class="tw-tab-error">{{ actionError }}</p>
+  }
+</div>
 
-    @switch (viewMode()) {
-      @case ('year') {
-        <div class="tw-cal-year-grid">
-          @for (block of yearMiniLayout(); track block.month) {
-            <div class="tw-cal-mini-month">
-              <h4 class="tw-cal-mini-title">{{ monthName(block.month) }}</h4>
-              <div class="tw-cal-mini-weekdays" role="row">
-                @for (h of monthHeaders(); track $index) {
-                  <span class="tw-cal-mini-wd" role="columnheader">{{ h }}</span>
-                }
-              </div>
-              <div class="tw-cal-mini-cells" role="grid" [attr.aria-label]="'Дни: ' + monthName(block.month)">
-                @for (r of block.rows; track r.rowKey) {
-                  <div role="row" class="tw-cal-mini-row">
-                    @for (item of r.cells; track item.cellKey) {
-                      @if (item.cell) {
-                        <button
-                          type="button"
-                          role="gridcell"
-                          class="tw-cal-mini-cell"
-                          [class.tw-cal-mini-cell--has]="slotsForDayKey(dayKey(item.cell)).length > 0"
-                          [attr.aria-label]="
-                            item.cell.getDate() +
-                            ' ' +
-                            monthName(item.cell.getMonth()) +
-                            ' ' +
-                            item.cell.getFullYear() +
-                            ', слотов: ' +
-                            slotsForDayKey(dayKey(item.cell)).length
-                          "
-                          (click)="pickDay(item.cell)"
-                        >
-                          <span class="tw-cal-mini-daynum">{{ item.cell.getDate() }}</span>
-                          @if (slotsForDayKey(dayKey(item.cell)).length > 0) {
-                            <span class="tw-cal-mini-dot" aria-hidden="true"></span>
-                          }
-                        </button>
-                      } @else {
-                        <span class="tw-cal-mini-cell tw-cal-mini-cell--empty" role="gridcell"></span>
-                      }
-                    }
-                  </div>
-                }
-              </div>
-            </div>
+<p-dialog
+  [visible]="createDialogVisible"
+  (visibleChange)="closeCreateSlotDialog()"
+  [modal]="true"
+  [style]="{ width: '52rem', maxWidth: '96vw' }"
+  header="Создание слота"
+>
+  <div class="tw-step-head">
+    <button type="button" [class.active]="createStep === 1">1. Название</button>
+    <button type="button" [class.active]="createStep === 2">2. Сотрудники</button>
+    <button type="button" [class.active]="createStep === 3">3. Дата и время</button>
+  </div>
+  @if (createStep === 1) {
+    <div class="tw-form-grid">
+      <label class="full">
+        <span>Название слота</span>
+        <input type="text" pInputText [(ngModel)]="newTitle" name="calTitle" placeholder="Например: Смена, Санитарные часы, Инвентаризация" />
+      </label>
+    </div>
+  }
+  @if (createStep === 2) {
+    <div class="tw-form-grid">
+      <label class="full">
+        <span>Сотрудники (необязательно)</span>
+        <div class="tw-employee-pills">
+          @for (member of state.members(); track member.user_id) {
+            @if (!member.is_owner) {
+              <label class="tw-employee-pill">
+                <input
+                  type="checkbox"
+                  [checked]="newSelectedEmployeeIds.includes(member.user_id)"
+                  (change)="toggleEmployeeSelection(member.user_id, $any($event.target).checked)"
+                />
+                <span>{{ member.short_name }}</span>
+              </label>
+            }
           }
         </div>
+      </label>
+      @if (activeEmployeeNames().length > 0) {
+        <p class="tw-muted full">Выбрано: {{ activeEmployeeNames().join(', ') }}</p>
       }
-      @case ('month') {
-        <div class="tw-cal-month-wrap">
-          <div class="tw-cal-month-weekdays" role="row">
-            @for (h of monthHeaders(); track $index) {
-              <span class="tw-cal-month-wd" role="columnheader">{{ h }}</span>
-            }
-          </div>
-          <div
-            class="tw-cal-month-grid"
-            role="grid"
-            [attr.aria-label]="'Календарь: ' + periodLabel()"
-          >
-            @for (row of monthViewGrid(); track $index) {
-              <div role="row" class="tw-cal-month-row">
-                @for (cell of row; track $index) {
-                  @if (cell) {
-                    <div
-                      role="gridcell"
-                      class="tw-cal-month-cell"
-                      [class.tw-cal-month-cell--today]="isToday(cell)"
-                    >
-                      <button
-                        type="button"
-                        class="tw-cal-month-daybtn"
-                        [attr.aria-label]="
-                          cell.getDate() +
-                          ' ' +
-                          monthName(cell.getMonth()) +
-                          ' ' +
-                          cell.getFullYear() +
-                          ', слотов: ' +
-                          slotsForDayKey(dayKey(cell)).length
-                        "
-                        (click)="pickDay(cell)"
-                      >
-                        {{ cell.getDate() }}
-                      </button>
-                      <ul class="tw-cal-month-slots">
-                        @for (s of slotsForDayKey(dayKey(cell)); track s.id) {
-                          <li>{{ formatTimeRange(s) }} · {{ s.title }}</li>
-                        }
-                      </ul>
-                    </div>
-                  } @else {
-                    <div class="tw-cal-month-cell tw-cal-month-cell--muted" role="gridcell"></div>
-                  }
-                }
-              </div>
-            }
-          </div>
-        </div>
-      }
-      @case ('week') {
-        <div class="tw-cal-week-row" role="list">
-          @for (d of weekDays(); track dayKey(d)) {
-            <article class="tw-cal-week-card" role="listitem">
-              <header class="tw-cal-week-card-head">
-                <span class="tw-cal-week-dow">{{ weekdayShort(d.getDay()) }}</span>
-                <span class="tw-cal-week-date">{{ d.getDate() }} {{ monthName(d.getMonth()).slice(0, 3) }}.</span>
-              </header>
-              <ul class="tw-cal-week-slots">
-                @for (s of slotsForDayKey(dayKey(d)); track s.id) {
-                  <li>
-                    <strong>{{ formatTimeRange(s) }}</strong>
-                    <span>{{ s.title }}</span>
-                  </li>
-                }
-              </ul>
-              @if (slotsForDayKey(dayKey(d)).length === 0) {
-                <p class="tw-cal-week-empty">Нет слотов</p>
-              }
-            </article>
-          }
-        </div>
-      }
-      @case ('day') {
-        <div class="tw-cal-day-card">
-          <p class="tw-cal-day-hint tw-muted">
-            Часы из настроек стола (рабочий день). Если не заданы — используется диапазон 08:00–20:00.
-          </p>
-          <ul class="tw-cal-day-hours" role="list">
-            @for (h of workHourIndices(); track h) {
-              <li class="tw-cal-day-hour-row" role="listitem">
-                <div class="tw-cal-day-hour-label">{{ h }}:00 — {{ h + 1 }}:00</div>
-                @if (slotsForHour(h).length === 0) {
-                  <span class="tw-cal-day-hour-empty">—</span>
-                } @else {
-                  <ul class="tw-cal-day-hour-slots">
-                    @for (s of slotsForHour(h); track s.id) {
-                      <li>{{ formatTimeRange(s) }} · {{ s.title }}</li>
-                    }
-                  </ul>
-                }
-              </li>
-            }
-          </ul>
-        </div>
-      }
-    }
-  </section>
-
-  <p-card header="Новый слот">
+    </div>
+  }
+  @if (createStep === 3) {
     <div class="tw-form-grid">
       <label>
-        <span>Название</span>
-        <input type="text" pInputText [(ngModel)]="newTitle" name="calTitle" />
+        <span>Дата с</span>
+        <input type="date" [(ngModel)]="newDateFrom" name="newDateFrom" />
       </label>
       <label>
-        <span>Начало</span>
-        <input type="datetime-local" [(ngModel)]="newStart" name="calStart" />
+        <span>Время с</span>
+        <input type="time" [(ngModel)]="newTimeFrom" name="newTimeFrom" />
       </label>
       <label>
-        <span>Конец</span>
-        <input type="datetime-local" [(ngModel)]="newEnd" name="calEnd" />
+        <span>Дата по</span>
+        <input type="date" [(ngModel)]="newDateTo" name="newDateTo" />
+      </label>
+      <label>
+        <span>Время по</span>
+        <input type="time" [(ngModel)]="newTimeTo" name="newTimeTo" />
       </label>
     </div>
-    @if (actionError) {
-      <p class="tw-tab-error">{{ actionError }}</p>
+  }
+  <div class="dialog-actions">
+    <p-button label="Закрыть" styleClass="p-button-text" (onClick)="closeCreateSlotDialog()" />
+    @if (createStep > 1) {
+      <p-button label="Назад" styleClass="p-button-text" (onClick)="prevCreateStep()" />
     }
-    <p-button label="Добавить" icon="pi pi-plus" (onClick)="addSlot()" />
-  </p-card>
-
-  <p-card header="Слоты в выбранном периоде">
-    @if (slots().length === 0 && !slotsLoading()) {
-      <p class="tw-muted">В этом периоде нет записей.</p>
+    @if (createStep < 3) {
+      <p-button label="Далее" icon="pi pi-angle-right" iconPos="right" (onClick)="nextCreateStep()" />
     } @else {
-      <ul class="tw-slot-list">
-        @for (s of slots(); track s.id) {
-          <li>
-            <strong>{{ s.title }}</strong>
-            <small>{{ s.starts_at | date: 'short' }} — {{ s.ends_at | date: 'short' }}</small>
-            <button type="button" class="tw-link-danger" (click)="removeSlot(s.id)">Удалить</button>
-          </li>
-        }
-      </ul>
+      <p-button label="Создать слот" icon="pi pi-check" (onClick)="addSlot()" />
     }
-  </p-card>
-</div>
+  </div>
+</p-dialog>
+
+<p-dialog
+  [visible]="editDialogVisible"
+  (visibleChange)="editDialogVisible = false"
+  [modal]="true"
+  [style]="{ width: '36rem', maxWidth: '96vw' }"
+  header="Изменение слота"
+>
+  <div class="tw-form-grid">
+    <label class="full">
+      <span>Название</span>
+      <input type="text" pInputText [(ngModel)]="editTitle" />
+    </label>
+    <label>
+      <span>Начало</span>
+      <input type="datetime-local" [(ngModel)]="editStart" />
+    </label>
+    <label>
+      <span>Конец</span>
+      <input type="datetime-local" [(ngModel)]="editEnd" />
+    </label>
+  </div>
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="editDialogVisible = false" />
+    <p-button label="Сохранить" icon="pi pi-check" (onClick)="saveEditedSlot()" />
+  </div>
+</p-dialog>

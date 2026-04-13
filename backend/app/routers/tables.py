@@ -3,6 +3,7 @@ import secrets
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -10,6 +11,10 @@ from app.db.session import get_db
 from app.models.table import Table
 from app.models.table_bonus import TableBonus
 from app.models.table_member import TableMember
+from app.models.table_directory import TableDirectory
+from app.models.table_order import TableOrder
+from app.models.table_task import TableTask
+from app.models.table_calendar_slot import TableCalendarSlot
 from app.models.user import User
 from app.routers.auth import get_current_user
 from app.config.directory_presets import ANIMAL_TYPES, normalize_table_preset
@@ -19,6 +24,7 @@ from app.schemas.table import (
     TableAnalyticsDto,
     TableCreateConfirmRequest,
     TableCreateRequest,
+    TableDeleteConfirmRequest,
     TableDto,
     TableStatDto,
     TableMemberAddRequest,
@@ -41,6 +47,7 @@ def _owner_short_name(user: User) -> str:
 
 
 TABLE_CREATE_CODE_TTL_SECONDS = 10 * 60
+TABLE_DELETE_CODE_TTL_SECONDS = 10 * 60
 
 
 async def _create_table_from_payload(db: AsyncSession, current_user: User, req: TableCreateRequest) -> TableDto:
@@ -146,6 +153,78 @@ async def confirm_create_table(
 
     payload = TableCreateRequest.model_validate_json(payload_raw)
     return await _create_table_from_payload(db=db, current_user=current_user, req=payload)
+
+
+@router.post("/{table_id}/delete/request-code")
+async def request_delete_table_code(
+    table_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if current_user.role != "owner":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner can delete table")
+    table_res = await db.execute(select(Table).where(Table.id == table_id, Table.owner_id == current_user.id))
+    table = table_res.scalar_one_or_none()
+    if not table:
+        raise HTTPException(status_code=404, detail="Стол не найден")
+
+    code = f"{secrets.randbelow(1000000):06d}"
+    r = redis.from_url(settings.REDIS_URL, decode_responses=True)
+    try:
+        await r.setex(f"table_delete_code:{current_user.id}:{table_id}", TABLE_DELETE_CODE_TTL_SECONDS, code)
+    finally:
+        await r.aclose()
+
+    try:
+        await send_email(
+            to_email=current_user.login,
+            subject="SmartWork: подтверждение удаления стола",
+            body_text=(
+                f"Код подтверждения удаления стола «{table.title}»:\n"
+                f"{code}\n\n"
+                "Код действует 10 минут."
+            ),
+        )
+    except Exception:
+        pass
+
+    return {"detail": "Код подтверждения отправлен на email."}
+
+
+@router.post("/{table_id}/delete/confirm")
+async def confirm_delete_table(
+    table_id: int,
+    req: TableDeleteConfirmRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if current_user.role != "owner":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner can delete table")
+    table_res = await db.execute(select(Table).where(Table.id == table_id, Table.owner_id == current_user.id))
+    table = table_res.scalar_one_or_none()
+    if not table:
+        raise HTTPException(status_code=404, detail="Стол не найден")
+
+    r = redis.from_url(settings.REDIS_URL, decode_responses=True)
+    try:
+        saved_code = await r.get(f"table_delete_code:{current_user.id}:{table_id}")
+        if not saved_code:
+            raise HTTPException(status_code=400, detail="Код истек. Запросите новый.")
+        if saved_code != req.code.strip():
+            raise HTTPException(status_code=400, detail="Неверный код подтверждения.")
+        await r.delete(f"table_delete_code:{current_user.id}:{table_id}")
+    finally:
+        await r.aclose()
+
+    await db.execute(delete(TableMember).where(TableMember.table_id == table_id))
+    await db.execute(delete(TableBonus).where(TableBonus.table_id == table_id))
+    await db.execute(delete(TableCalendarSlot).where(TableCalendarSlot.table_id == table_id))
+    await db.execute(delete(TableTask).where(TableTask.table_id == table_id))
+    await db.execute(delete(TableOrder).where(TableOrder.table_id == table_id))
+    await db.execute(delete(TableDirectory).where(TableDirectory.table_id == table_id))
+    await db.delete(table)
+    await db.commit()
+    return {"detail": "Стол удален"}
 
 
 @router.get("/directory-presets/animal-types", response_model=list[str])

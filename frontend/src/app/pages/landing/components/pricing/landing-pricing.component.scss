@@ -1,0 +1,60 @@
+:host {
+  display: block;
+}
+
+.landing-price-amount {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 1rem;
+  text-align: center;
+  color: var(--p-text-color);
+}
+
+.landing-price-period {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--p-text-muted-color);
+}
+
+:host ::ng-deep .landing-pricing-card.p-card {
+  border: 2px solid var(--p-content-border-color);
+  border-radius: 16px;
+  padding: 0.5rem;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+:host ::ng-deep .landing-pricing-card.p-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.08);
+}
+
+:host ::ng-deep .landing-pricing-card--featured.p-card {
+  position: relative;
+  border-color: var(--p-primary-color);
+  transform: scale(1.03);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  z-index: 1;
+}
+
+:host ::ng-deep .landing-pricing-card--featured.p-card:hover {
+  transform: scale(1.03) translateY(-5px);
+}
+
+:host ::ng-deep .landing-pricing-ribbon.p-tag {
+  position: absolute;
+  top: -0.65rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.landing-pricing-addon {
+  border-radius: 12px;
+  border: 1px solid var(--p-content-border-color);
+  background: var(--p-surface-50);
+}

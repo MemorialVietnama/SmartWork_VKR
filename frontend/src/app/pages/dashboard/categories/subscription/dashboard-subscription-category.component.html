@@ -1,0 +1,118 @@
+﻿<div class="content-head">
+  <h2>Подписка для столов</h2>
+  <p>Покупка бонусов по каждому столу отдельно. Сумма рассчитывается за месяц.</p>
+</div>
+
+@if (!$any(ctx())?.isOwner) {
+  <p-card>
+    <div class="settings-section-head">
+      <h3>Подписка аккаунта</h3>
+      <p>Управление доступом к аналитике и задачам сотрудника.</p>
+    </div>
+    <div class="sub-bonus-grid">
+      @for (plan of $any(ctx())?.accountSubscriptionPlans ?? []; track plan.key) {
+        <div class="sub-bonus-card">
+          <div>
+            <strong>{{ plan.title }}</strong>
+            <small>{{ plan.description }}</small>
+            <small>{{ $any(ctx())?.formatRub(plan.price) }} / мес</small>
+          </div>
+          <p-inputSwitch
+            [ngModel]="$any(ctx())?.accountSubscriptionEnabled(plan.key)"
+            (ngModelChange)="$any(ctx())?.setAccountSubscriptionEnabled(plan.key, $event)"
+          />
+        </div>
+      }
+    </div>
+    <p class="monthly-total">Итого к оплате в месяц: <strong>{{ $any(ctx())?.formatRub($any(ctx())?.accountSubscriptionMonthlyTotal() ?? 0) }}</strong></p>
+  </p-card>
+} @else if (!$any(ctx())?.hasSubscriptionTables) {
+  <p-card>
+    <p>У вас пока нет столов для подключения бонусов.</p>
+    <div class="table-toolbar">
+      <p-button label="Создать стол" icon="pi pi-plus" (onClick)="$any(ctx())?.openCreateTableDialog()" />
+    </div>
+  </p-card>
+} @else {
+  <div class="sub-accordion-list">
+    @for (table of $any(ctx())?.ownerTables ?? []; track table.id) {
+      <details class="sub-accordion">
+        <summary>
+          <div class="sub-accordion-summary">
+            <div>
+              <h3>{{ table.title }}</h3>
+              <small>Участников: {{ table.totalParticipants }} | Владелец: {{ table.ownerShortName }}</small>
+            </div>
+            <p-tag severity="success" [value]="'К оплате: ' + $any(ctx())?.formatRub($any(ctx())?.tableMonthlyTotal(table.id) ?? 0) + ' / мес'"></p-tag>
+          </div>
+        </summary>
+
+        <div class="sub-body">
+          <div class="sub-active">
+            <strong>Активированные бонусы:</strong>
+            @if (($any(ctx())?.activeBonusLabels(table.id) ?? []).length === 0) {
+              <p>Пока ничего не выбрано.</p>
+            } @else {
+              <ul>
+                @for (item of $any(ctx())?.activeBonusLabels(table.id) ?? []; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            }
+          </div>
+
+          <div class="sub-bonus-grid">
+            @for (bonus of $any(ctx())?.subscriptionBonuses ?? []; track bonus.key) {
+              <div class="sub-bonus-card">
+                <div>
+                  <strong>{{ bonus.title }}</strong>
+                  <small>{{ $any(ctx())?.formatRub(bonus.price) }} / мес</small>
+                </div>
+
+                @if (bonus.kind === 'quantity') {
+                  <div class="qty-controls">
+                    <button type="button" (click)="$any(ctx())?.changeBonusQuantity(table.id, bonus.key, ($any(ctx())?.bonusValue(table.id, bonus.key) ?? 0) - 1, bonus.maxQty ?? 0)">-</button>
+                    <span>{{ $any(ctx())?.bonusValue(table.id, bonus.key) }}</span>
+                    <button type="button" (click)="$any(ctx())?.changeBonusQuantity(table.id, bonus.key, ($any(ctx())?.bonusValue(table.id, bonus.key) ?? 0) + 1, bonus.maxQty ?? 0)">+</button>
+                  </div>
+                } @else {
+                  <p-inputSwitch
+                    [ngModel]="($any(ctx())?.bonusValue(table.id, bonus.key) ?? 0) > 0"
+                    (ngModelChange)="$any(ctx())?.setBonusToggle(table.id, bonus.key, $event)"
+                  />
+                }
+              </div>
+            }
+          </div>
+
+          <div class="promo-row">
+            <input
+              type="text"
+              pInputText
+              placeholder="Промокод"
+              [ngModel]="$any(ctx())?.getTableSubscription(table.id)?.promoCode"
+              (ngModelChange)="$any(ctx())?.setPromoCode(table.id, $event)"
+            />
+            <p-button label="Применить" size="small" (onClick)="$any(ctx())?.applyPromo(table.id)" />
+          </div>
+          @if ($any(ctx())?.getTableSubscription(table.id)?.promoError) {
+            <small class="promo-error">{{ $any(ctx())?.getTableSubscription(table.id)?.promoError }}</small>
+          }
+
+          <div class="sub-totals">
+            <p>Подытог: <strong>{{ $any(ctx())?.formatRub($any(ctx())?.tableSubtotal(table.id) ?? 0) }}</strong></p>
+            <p>
+              Скидка за 3+ пункта:
+              <strong>-{{ $any(ctx())?.formatRub($any(ctx())?.tableAutoDiscount(table.id) ?? 0) }}</strong>
+              @if (($any(ctx())?.selectedBonusesCount(table.id) ?? 0) > 3) {
+                <span class="discount-badge">-15%</span>
+              }
+            </p>
+            <p>Скидка по промокоду: <strong>-{{ $any(ctx())?.formatRub($any(ctx())?.tablePromoDiscount(table.id) ?? 0) }}</strong></p>
+            <p class="monthly-total">Итого к оплате в месяц: <strong>{{ $any(ctx())?.formatRub($any(ctx())?.tableMonthlyTotal(table.id) ?? 0) }}</strong></p>
+          </div>
+        </div>
+      </details>
+    }
+  </div>
+}

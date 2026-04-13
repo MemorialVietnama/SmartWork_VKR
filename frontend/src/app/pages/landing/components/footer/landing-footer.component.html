@@ -1,0 +1,46 @@
+<footer class="landing-footer">
+  <div class="landing-section-inner">
+    <div class="landing-footer-grid">
+      <div>
+        <div class="flex align-items-center gap-2 mb-3">
+          <p-button icon="pi pi-briefcase" [rounded]="true" severity="primary" size="small" [disabled]="true" />
+          <span class="text-xl font-bold text-primary">SmartWork</span>
+        </div>
+        <p class="landing-footer-lead text-sm">
+          Умное рабочее место для малого сервиса. Столы, люди, календарь, очередь, справочники и аналитика в одном контуре.
+        </p>
+        <div class="flex gap-2 mt-3">
+          <p-button icon="pi pi-send" [rounded]="true" [text]="true" ariaLabel="Telegram" />
+          <p-button icon="pi pi-envelope" [rounded]="true" [text]="true" ariaLabel="Контакт" />
+        </div>
+      </div>
+      <div>
+        <h4 class="mt-0">Продукт</h4>
+        <ul class="landing-footer-links">
+          <li><a routerLink="/welcome" fragment="features">Возможности</a></li>
+          <li><a routerLink="/welcome" fragment="industries">Для кого</a></li>
+          <li><a routerLink="/welcome" fragment="api">API</a></li>
+          <li><a routerLink="/welcome" fragment="pricing">Тарифы</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="mt-0">Компания</h4>
+        <ul class="landing-footer-links">
+          <li><a routerLink="/welcome" fragment="about">О нас</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="mt-0">Поддержка</h4>
+        <ul class="landing-footer-links">
+          <li><a routerLink="/welcome" fragment="faq">FAQ</a></li>
+          <li><a routerLink="/status">Статус системы</a></li>
+        </ul>
+      </div>
+    </div>
+    <p-divider />
+    <div class="flex flex-column md:flex-row justify-content-between gap-2 text-sm text-color-secondary">
+      <p class="m-0">© 2026 SmartWork. Все права защищены.</p>
+      <p class="m-0">Сделано с <span class="text-red-500" aria-hidden="true">♥</span> для малого бизнеса</p>
+    </div>
+  </div>
+</footer>

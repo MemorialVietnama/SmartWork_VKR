@@ -1,0 +1,132 @@
+﻿<div class="content-head">
+  <h2>Сотрудники</h2>
+  <p>Управление сотрудниками владельца: добавление, приглашение, редактирование и открепление.</p>
+</div>
+
+@if ($any(ctx())?.isOwner) {
+  @if (!$any(ctx())?.hasOwnerEmployees) {
+    <div class="owner-empty-actions">
+      <button type="button" class="square-action" (click)="$any(ctx())?.openCreateEmployeeDialog()">
+        <i class="pi pi-user-plus"></i>
+        <span>Добавить сотрудника</span>
+      </button>
+    </div>
+  } @else {
+    <div class="table-toolbar">
+      <p-button label="Добавить сотрудника" icon="pi pi-user-plus" (onClick)="$any(ctx())?.openCreateEmployeeDialog()" />
+    </div>
+
+    <div class="meta-line">
+      <small>Откреплено аккаунтов: {{ $any(ctx())?.detachedEmployeesCount }}</small>
+    </div>
+
+    <div class="employee-grid">
+      @for (employee of $any(ctx())?.ownerEmployees ?? []; track employee.id) {
+        <p-card class="employee-card">
+          <div class="employee-head">
+            <div class="avatar-wrap">
+              @if (employee.avatarDataUrl) {
+                <img [src]="employee.avatarDataUrl" alt="avatar" class="avatar" />
+              } @else {
+                <div class="avatar avatar-fallback">{{ employee.lastName[0] }}{{ employee.firstName[0] }}</div>
+              }
+            </div>
+            <div class="employee-title">
+              <h3>{{ employee.lastName }} {{ employee.firstName }} {{ employee.middleName ?? '' }}</h3>
+              <small>{{ employee.position }}</small>
+            </div>
+          </div>
+
+          <div class="employee-meta">
+            <p><strong>Дата рождения:</strong> {{ employee.birthDate }}</p>
+            <p><strong>Телефон:</strong> {{ employee.phone }}</p>
+            <p><strong>Email:</strong> {{ employee.email || 'не указан' }}</p>
+            @if (employee.note) {
+              <p><strong>Примечание:</strong> {{ employee.note }}</p>
+            }
+          </div>
+
+          @if (employee.tempCredentials) {
+            <div class="temp-credentials">
+              <div class="temp-head">
+                <strong>Временные данные входа</strong>
+                <p-tag
+                  [severity]="$any(ctx())?.isTempCredentialsActive(employee.tempCredentials.expiresAt) ? 'success' : 'danger'"
+                  [value]="$any(ctx())?.isTempCredentialsActive(employee.tempCredentials.expiresAt) ? 'действуют' : 'истекли'"
+                />
+              </div>
+              <p>Логин: <code>{{ employee.tempCredentials.login }}</code></p>
+              <p>Пароль: <code>{{ employee.tempCredentials.password }}</code></p>
+              <p>До: {{ $any(ctx())?.formatDateTime(employee.tempCredentials.expiresAt) }}</p>
+            </div>
+          }
+
+          <div class="employee-table-binding">
+            <div class="binding-head">
+              <strong>Привязка к столам</strong>
+              <button
+                type="button"
+                class="key-edit-btn"
+                [class.active]="$any(ctx())?.employeeTableEditMode?.[employee.id]"
+                (click)="$any(ctx())?.toggleEmployeeTableBindingEdit(employee.id)"
+                [title]="$any(ctx())?.employeeTableEditMode?.[employee.id] ? 'Заблокировать' : 'Изменить привязку'"
+              >
+                <i class="pi pi-key"></i>
+              </button>
+            </div>
+            <select
+              multiple
+              class="employee-tables-select"
+              [disabled]="!$any(ctx())?.employeeTableEditMode?.[employee.id]"
+              [ngModel]="$any(ctx())?.employeeTableSelections?.[employee.id]"
+              (change)="$any(ctx())?.onEmployeeTablesSelectChange(employee.id, $event)"
+            >
+              @for (table of $any(ctx())?.ownerTables ?? []; track table.id) {
+                <option [value]="table.id">{{ table.title }}</option>
+              }
+            </select>
+            <div class="binding-actions">
+              <p-button
+                size="small"
+                label="Сохранить"
+                icon="pi pi-save"
+                [disabled]="!$any(ctx())?.employeeTableEditMode?.[employee.id]"
+                (onClick)="$any(ctx())?.saveEmployeeTableBindings(employee.id)"
+              />
+              @if ($any(ctx())?.employeeTableBindingMessage?.[employee.id]) {
+                <small>{{ $any(ctx())?.employeeTableBindingMessage?.[employee.id] }}</small>
+              }
+            </div>
+          </div>
+
+          <div class="employee-actions">
+            <p-button label="Редактировать" icon="pi pi-pencil" (onClick)="$any(ctx())?.openEditEmployeeDialog(employee)" />
+            <p-button
+              label="Открепить"
+              icon="pi pi-times"
+              severity="danger"
+              styleClass="p-button-outlined"
+              (onClick)="$any(ctx())?.detachEmployee(employee.id)"
+            />
+          </div>
+        </p-card>
+      }
+    </div>
+  }
+} @else {
+  <p-card>
+    <p>Сотрудник может принять приглашение к столу и привязаться к владельцу.</p>
+    <div class="employee-form-grid">
+      <label class="full">
+        <span>Код приглашения</span>
+        <input type="text" pInputText [(ngModel)]="$any(ctx()).staffInviteCode" />
+      </label>
+    </div>
+    <div class="dialog-actions">
+      <p-button label="Принять приглашение" icon="pi pi-check" (onClick)="$any(ctx())?.acceptInviteAsStaff()" />
+    </div>
+    @if ($any(ctx())?.staffInviteMessage) {
+      <small>{{ $any(ctx())?.staffInviteMessage }}</small>
+    }
+  </p-card>
+}

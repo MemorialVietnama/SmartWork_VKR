@@ -1,0 +1,200 @@
+<div class="landing-section-inner">
+  <h2 class="landing-template-title">Возможности проекта</h2>
+  <div class="landing-features-interactive">
+    <div class="landing-features-shell">
+      <aside class="landing-features-aside">
+        <nav class="landing-features-nav" aria-label="Разделы возможностей">
+          <ul class="landing-features-nav-list">
+            @for (opt of featureOptions(); track opt.value) {
+              <li>
+                <button
+                  type="button"
+                  class="landing-features-nav-item"
+                  [class.landing-features-nav-item--active]="featureId() === opt.value"
+                  [attr.aria-current]="featureId() === opt.value ? 'true' : null"
+                  (click)="selectFeature(opt.value)"
+                >
+                  <i [class]="opt.icon + ' landing-features-nav-icon'" aria-hidden="true"></i>
+                  <span>{{ opt.label }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </nav>
+      </aside>
+
+      <div class="landing-features-main">
+    @if (featureId() === 'calendar') {
+      <div class="landing-feature-grid">
+        <div class="landing-feature-description">
+          <h3 class="landing-h3">Умный календарь</h3>
+          <p>Планирование записей с визуализацией загрузки. Интеграция с очередью заказов, настройка рабочих часов и формата времени.</p>
+          <ul class="landing-list">
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Почасовое отображение загрузки</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Уведомления клиентам</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Блокировка для перерывов</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>СМС и email</li>
+          </ul>
+        </div>
+        <div class="landing-feature-demo landing-feature-demo--calendar">
+          <app-workspace-calendar-widget
+            [slots]="demoCalendarSlots()"
+            [slotsLoading]="false"
+            [loadError]="null"
+            [viewMode]="calViewMode()"
+            (viewModeChange)="calViewMode.set($event)"
+            [anchorDate]="calAnchor()"
+            (anchorChange)="calAnchor.set($event)"
+            [weekStartDay]="'monday'"
+            [workHours]="'09:00-18:00'"
+            [promoTheme]="true"
+          />
+        </div>
+      </div>
+    }
+
+    @if (featureId() === 'tasks') {
+      <div class="landing-feature-grid">
+        <div class="landing-feature-description">
+          <h3 class="landing-h3">Управление задачами</h3>
+          <p>Создание и назначение задач с отслеживанием прогресса. Статусы и сроки помогают команде работать синхронно.</p>
+          <ul class="landing-list">
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Статусы: новая / в работе / выполнена</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Назначение ответственных</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Комментарии и вложения</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Уведомления</li>
+          </ul>
+        </div>
+        <div class="landing-feature-demo align-items-stretch">
+          <div class="w-full">
+            <div class="landing-task-item">
+              <span class="landing-task-dot" aria-hidden="true"></span>
+              <span>Переделать макет главной</span>
+            </div>
+            <div class="landing-task-item">
+              <span class="landing-task-dot" aria-hidden="true"></span>
+              <span>Установить шрифты</span>
+            </div>
+            <div class="landing-task-item">
+              <span class="landing-task-dot landing-task-dot--done" aria-hidden="true"></span>
+              <span>Создать меню</span>
+            </div>
+            <div class="landing-task-item">
+              <span class="landing-task-dot landing-task-dot--done" aria-hidden="true"></span>
+              <span>Добавить футер</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (featureId() === 'analytics') {
+      <div class="landing-feature-grid">
+        <div class="landing-feature-description">
+          <h3 class="landing-h3">Аналитика и отчёты</h3>
+          <p>Сводки по столам, графики загрузки и статистика. Экспорт данных для анализа.</p>
+          <ul class="landing-list">
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Автоматические отчёты</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Графики доходов</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Эффективность сотрудников</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Тренды</li>
+          </ul>
+        </div>
+        <div class="landing-feature-demo align-items-stretch">
+          <div class="w-full">
+            <div class="landing-chart-mock border-round-md p-3 mb-3 text-white font-semibold text-sm text-right">+ 24% YoY</div>
+            <div class="grid">
+              <div class="col-6">
+                <div class="surface-100 border-round-md p-3">
+                  <div class="text-sm text-color-secondary">Доход</div>
+                  <div class="text-green-600 font-semibold">125 500 ₽</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="surface-100 border-round-md p-3">
+                  <div class="text-sm text-color-secondary">Средний чек</div>
+                  <div class="text-primary font-semibold">2 850 ₽</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (featureId() === 'staff') {
+      <div class="landing-feature-grid">
+        <div class="landing-feature-description">
+          <h3 class="landing-h3">Управление сотрудниками</h3>
+          <p>Приглашение команды, роли, контроль доступа по столам и функциям.</p>
+          <ul class="landing-list">
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Роли владелец / сотрудник</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Приглашения</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Личная статистика (расширение)</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>История действий</li>
+          </ul>
+        </div>
+        <div class="landing-feature-demo align-items-stretch">
+          <div class="flex flex-column gap-2 w-full">
+            <div class="landing-staff-row surface-0 border-1 surface-border border-round-md p-3 flex align-items-center gap-3">
+              <span class="w-2rem h-2rem border-circle bg-primary inline-block flex-shrink-0" aria-hidden="true"></span>
+              <div>
+                <div class="font-semibold">Мария К.</div>
+                <div class="text-sm text-color-secondary">Барбер</div>
+              </div>
+            </div>
+            <div class="landing-staff-row surface-0 border-1 surface-border border-round-md p-3 flex align-items-center gap-3">
+              <span class="w-2rem h-2rem border-circle bg-green-500 inline-block flex-shrink-0" aria-hidden="true"></span>
+              <div>
+                <div class="font-semibold">Иван В.</div>
+                <div class="text-sm text-color-secondary">Администратор</div>
+              </div>
+            </div>
+            <div class="landing-staff-row surface-0 border-1 surface-border border-round-md p-3 flex align-items-center gap-3">
+              <span class="w-2rem h-2rem border-circle bg-amber-400 inline-block flex-shrink-0" aria-hidden="true"></span>
+              <div>
+                <div class="font-semibold">Ольга П.</div>
+                <div class="text-sm text-color-secondary">Барбер</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (featureId() === 'references') {
+      <div class="landing-feature-grid">
+        <div class="landing-feature-description">
+          <h3 class="landing-h3">Справочники и каталоги</h3>
+          <p>Услуги, клиенты, кастомные поля в JSON payload, импорт и экспорт.</p>
+          <ul class="landing-list">
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Каталог услуг с ценами</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Карточки клиентов</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Кастомные поля</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Импорт / экспорт</li>
+          </ul>
+        </div>
+        <div class="landing-feature-demo align-items-stretch">
+          <p-table [value]="serviceDemoRows" styleClass="p-datatable-sm w-full">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Услуга</th>
+                <th>Цена</th>
+                <th>Время</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+              <tr>
+                <td>{{ row.s }}</td>
+                <td>{{ row.p }}</td>
+                <td>{{ row.t }}</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+    }
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,10 @@
+<div class="landing-section-inner landing-faq-wrap">
+  <h2 class="landing-template-title">Часто задаваемые вопросы</h2>
+  <p-accordion [multiple]="false" styleClass="landing-faq-accordion">
+    @for (item of faqItems(); track $index) {
+      <p-accordionTab [header]="item.q">
+        <p class="m-0 text-color-secondary">{{ item.a }}</p>
+      </p-accordionTab>
+    }
+  </p-accordion>
+</div>

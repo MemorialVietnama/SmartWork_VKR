@@ -1,0 +1,110 @@
+<div class="landing-section-inner">
+  <h2 class="landing-template-title landing-api-heading">Возможности API</h2>
+  <div class="landing-api-shell">
+    <div class="landing-api-sidebar-col">
+      <p-selectButton
+        [options]="apiOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="apiId()"
+        (ngModelChange)="apiChange.emit($event)"
+        styleClass="landing-select-api-vertical"
+        [allowEmpty]="false"
+      >
+        <ng-template let-item pTemplate="item">
+          <i [class]="item.icon + ' mr-2'" aria-hidden="true"></i>
+          <span>{{ item.label }}</span>
+        </ng-template>
+      </p-selectButton>
+    </div>
+    <div class="landing-api-demo">
+      @if (apiId() === 'booking') {
+        <h4 class="landing-api-demo-title mt-0 flex align-items-center gap-2">
+          <i class="pi pi-calendar-plus" aria-hidden="true"></i>Создание записи
+        </h4>
+        <p class="landing-api-demo-text">Запишите клиента на услугу, управляйте временем и уведомлениями.</p>
+        <pre class="landing-api-code" role="region" aria-label="Пример запроса">POST /api/v1/tables/&#123;table_id&#125;/workspace/...
+&#123; "starts_at": "...", "ends_at": "..." &#125;</pre>
+        <div class="grid">
+          <div class="col-12 md:col-6">
+            <p-card styleClass="landing-api-response-card p-3">
+              <h5 class="mt-0 landing-api-response-title">201 Created</h5>
+              <p class="mb-0 text-sm">Запись создана</p>
+            </p-card>
+          </div>
+          <div class="col-12 md:col-6">
+            <p-card styleClass="landing-api-response-card p-3">
+              <h5 class="mt-0 landing-api-response-title">id</h5>
+              <p class="mb-0 text-sm">Идентификатор слота</p>
+            </p-card>
+          </div>
+        </div>
+      }
+      @if (apiId() === 'tasks') {
+        <h4 class="landing-api-demo-title mt-0 flex align-items-center gap-2">
+          <i class="pi pi-list" aria-hidden="true"></i>Создание задачи
+        </h4>
+        <p class="landing-api-demo-text">Интеграции для постановки задач в SmartWork.</p>
+        <pre class="landing-api-code" role="region" aria-label="Пример запроса">POST /api/v1/tables/&#123;table_id&#125;/workspace/tasks
+&#123; "title": "...", "status": "new" &#125;</pre>
+        <div class="grid">
+          <div class="col-12 md:col-6">
+            <p-card styleClass="landing-api-response-card p-3">
+              <h5 class="mt-0 landing-api-response-title">201 Created</h5>
+              <p class="mb-0 text-sm">Задача в очереди</p>
+            </p-card>
+          </div>
+          <div class="col-12 md:col-6">
+            <p-card styleClass="landing-api-response-card p-3">
+              <h5 class="mt-0 landing-api-response-title">task id</h5>
+              <p class="mb-0 text-sm">В ответе DTO</p>
+            </p-card>
+          </div>
+        </div>
+      }
+      @if (apiId() === 'analytics') {
+        <h4 class="landing-api-demo-title mt-0 flex align-items-center gap-2">
+          <i class="pi pi-chart-pie" aria-hidden="true"></i>Аналитика
+        </h4>
+        <p class="landing-api-demo-text">Выгрузка показателей за период (по тарифу и бонусам).</p>
+        <pre class="landing-api-code" role="region" aria-label="Пример запроса">GET /api/v1/tables/&#123;id&#125;/workspace/analytics</pre>
+        <div class="grid">
+          <div class="col-12 md:col-6">
+            <p-card styleClass="landing-api-response-card p-3">
+              <h5 class="mt-0 landing-api-response-title">200 OK</h5>
+              <p class="mb-0 text-sm">Данные по столу</p>
+            </p-card>
+          </div>
+          <div class="col-12 md:col-6">
+            <p-card styleClass="landing-api-response-card p-3">
+              <h5 class="mt-0 landing-api-response-title">графики</h5>
+              <p class="mb-0 text-sm">В составе ответа</p>
+            </p-card>
+          </div>
+        </div>
+      }
+      @if (apiId() === 'webhook') {
+        <h4 class="landing-api-demo-title mt-0 flex align-items-center gap-2">
+          <i class="pi pi-link" aria-hidden="true"></i>Webhooks
+        </h4>
+        <p class="landing-api-demo-text">События в реальном времени на ваш URL (на дорожной карте продукта).</p>
+        <pre class="landing-api-code" role="region" aria-label="Пример запроса">POST https://your-app.com/hooks/smartwork
+&#123; "event": "...", "data": &#123;&#125; &#125;</pre>
+        <div class="grid">
+          <div class="col-12 md:col-6">
+            <p-card styleClass="landing-api-response-card p-3">
+              <h5 class="mt-0 landing-api-response-title">События</h5>
+              <p class="mb-0 text-sm">По мере внедрения</p>
+            </p-card>
+          </div>
+          <div class="col-12 md:col-6">
+            <p-card styleClass="landing-api-response-card p-3">
+              <h5 class="mt-0 landing-api-response-title">Доставка</h5>
+              <p class="mb-0 text-sm">С retry</p>
+            </p-card>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

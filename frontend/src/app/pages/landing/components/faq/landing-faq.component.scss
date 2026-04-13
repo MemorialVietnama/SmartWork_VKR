@@ -1,0 +1,30 @@
+:host {
+  display: block;
+}
+
+::ng-deep .landing-faq-accordion.p-accordion .p-accordionpanel {
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  background: var(--p-content-background);
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+::ng-deep .landing-faq-accordion.p-accordion .p-accordionpanel:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.08);
+  border-color: color-mix(in srgb, var(--p-primary-300) 45%, var(--p-content-border-color));
+}
+
+::ng-deep .landing-faq-accordion .p-accordionheader {
+  padding: 1.5rem;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+::ng-deep .landing-faq-accordion .p-accordioncontent-content {
+  padding: 0 1.5rem 1.5rem;
+  line-height: 1.7;
+}

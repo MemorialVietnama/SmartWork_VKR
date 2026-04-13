@@ -17,6 +17,10 @@ class TableCreateConfirmRequest(BaseModel):
     code: str = Field(min_length=4, max_length=12)
 
 
+class TableDeleteConfirmRequest(BaseModel):
+    code: str = Field(min_length=4, max_length=12)
+
+
 class TableStatDto(BaseModel):
     active_employees: int = 0
     queued_orders: int = 0

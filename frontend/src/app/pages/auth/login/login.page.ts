@@ -2,18 +2,28 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
-import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { IconField } from 'primeng/iconfield';
+import { InputIcon } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
-import { MessageModule } from 'primeng/message';
 
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, RouterLink, CardModule, ButtonModule, InputTextModule, PasswordModule, MessageModule],
+  imports: [
+    FormsModule,
+    RouterLink,
+    CardModule,
+    ButtonModule,
+    InputTextModule,
+    PasswordModule,
+    IconField,
+    InputIcon,
+  ],
   templateUrl: './login.page.html',
   styleUrl: './login.page.scss',
 })
@@ -30,9 +40,14 @@ export class LoginPageComponent {
   protected onLogin(): void {
     if (this.loading) return;
     this.error = null;
+    const email = this.login.trim();
+    if (!email || !this.password) {
+      this.error = 'Введите email и пароль.';
+      return;
+    }
     this.loading = true;
 
-    this.auth.login(this.login, this.password).subscribe({
+    this.auth.login(email, this.password).subscribe({
       next: (resp) => {
         this.auth.saveToken(resp);
         void this.router.navigate(['/dashboard']);
@@ -42,7 +57,7 @@ export class LoginPageComponent {
         const status = e?.status as number | undefined;
         if (status === 0 || status === 502 || status === 503 || status === 504) {
           this.error =
-            'Сервер API недоступен (часто сразу после перезапуска Docker). Подождите 10–30 секунд и обновите страницу. Убедитесь, что контейнер smartwork-api в состоянии healthy.';
+            'Сервер сейчас недоступен. Подождите немного и попробуйте снова. Если используете Docker — дождитесь состояния healthy у API.';
           return;
         }
         const detail = e?.error?.detail;
@@ -53,30 +68,8 @@ export class LoginPageComponent {
           return;
         }
         const msg = typeof detail === 'string' ? detail : null;
-        this.error = msg ?? 'Не удалось войти. Проверьте логин/пароль.';
+        this.error = msg ?? 'Неверный email или пароль. Проверьте данные и попробуйте ещё раз.';
       },
     });
-  }
-
-  protected onSocial(provider: 'vk' | 'yandex' | 'mailru' | 'google'): void {
-    if (this.loading) return;
-    this.error = null;
-    this.loading = true;
-
-    this.auth.socialLogin(provider).subscribe({
-      next: (resp) => {
-        this.auth.saveToken(resp);
-        void this.router.navigate(['/dashboard']);
-      },
-      error: () => {
-        this.loading = false;
-        this.error = 'Социальный вход временно недоступен.';
-      },
-    });
-  }
-
-  protected forgot(): void {
-    void this.router.navigate(['/auth/forgot-password']);
   }
 }
-

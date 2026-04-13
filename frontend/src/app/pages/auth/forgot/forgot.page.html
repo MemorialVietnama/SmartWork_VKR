@@ -1,42 +1,77 @@
-<div class="page">
-  <p-card header="Забыли пароль">
-    <div class="lead">Введите ваш логин (email). Мы отправим письмо с инструкциями.</div>
+<div class="forgot-page">
+  <p-card styleClass="forgot-card">
+    <div class="forgot-card-body">
+      <a routerLink="/welcome" class="forgot-brand" aria-label="SmartWork — на главную">
+        <span class="forgot-brand__icon" aria-hidden="true">
+          <i class="pi pi-briefcase"></i>
+        </span>
+        <span class="forgot-brand__text">SmartWork</span>
+      </a>
 
-    @if (message) {
-      <p-message severity="success" [text]="message" [closable]="false" />
-    }
-
-    @if (error) {
-      <p-message severity="error" [text]="error" [closable]="false" />
-    }
-
-    <form class="form" (ngSubmit)="onSubmit()">
-      <div class="field">
-        <label for="login">Логин (email)</label>
-        <input
-          id="login"
-          type="email"
-          pInputText
-          name="login"
-          required
-          [(ngModel)]="login"
-        />
+      <div class="forgot-heading">
+        <h1 class="forgot-title">Восстановление пароля</h1>
+        <p class="forgot-lead">Введите email, и мы отправим ссылку и инструкции.</p>
       </div>
 
-      <div class="actions">
-        <p-button type="submit" label="Отправить" icon="pi pi-envelope" [loading]="loading" />
-      </div>
-
-      @if (loading) {
-        <div class="spinner">
-          <p-progressSpinner strokeWidth="4" ariaLabel="Отправка" />
+      @if (message) {
+        <div class="forgot-alert forgot-alert--success" role="status" aria-live="polite">
+          <i class="pi pi-check-circle forgot-alert__icon" aria-hidden="true"></i>
+          <p class="forgot-alert__text">{{ message }}</p>
         </div>
       }
-    </form>
 
-    <div class="links">
-      <a (click)="back(); $event.preventDefault()" href="">Назад к входу</a>
+      @if (error) {
+        <div class="forgot-alert forgot-alert--error" role="alert" aria-live="assertive">
+          <i class="pi pi-times-circle forgot-alert__icon" aria-hidden="true"></i>
+          <p class="forgot-alert__text">{{ error }}</p>
+        </div>
+      }
+
+      <form class="forgot-form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="forgot-field">
+          <label class="forgot-label" for="forgot-email">Email</label>
+          <p-iconfield iconPosition="left" styleClass="forgot-iconfield w-full">
+            <p-inputicon class="pi pi-envelope" />
+            <input
+              id="forgot-email"
+              type="email"
+              pInputText
+              fluid
+              name="login"
+              [(ngModel)]="login"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="name@example.com"
+              aria-required="true"
+              [attr.aria-invalid]="error ? 'true' : null"
+              aria-describedby="forgot-email-hint"
+            />
+          </p-iconfield>
+          <p id="forgot-email-hint" class="forgot-hint">Укажите адрес, который использовали при регистрации.</p>
+        </div>
+
+        <p-button
+          type="submit"
+          label="Отправить письмо"
+          icon="pi pi-envelope"
+          styleClass="forgot-submit w-full"
+          [loading]="loading"
+          [disabled]="loading"
+        />
+      </form>
+
+      <div class="forgot-links" role="navigation" aria-label="Переходы">
+        <a routerLink="/auth/login" class="forgot-link-card forgot-link-card--muted">
+          <span class="forgot-link-card__icon" aria-hidden="true">
+            <i class="pi pi-arrow-left"></i>
+          </span>
+          <span class="forgot-link-card__content">
+            <span class="forgot-link-card__title">Назад ко входу</span>
+            <span class="forgot-link-card__desc">Вернуться на страницу авторизации</span>
+          </span>
+          <i class="pi pi-arrow-right forgot-link-card__chevron" aria-hidden="true"></i>
+        </a>
+      </div>
     </div>
   </p-card>
 </div>
-

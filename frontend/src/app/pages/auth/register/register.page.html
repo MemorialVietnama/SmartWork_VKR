@@ -1,80 +1,187 @@
-<div class="page">
-  <p-card header="Регистрация">
-    <div class="lead">Заполните данные и получите код подтверждения на email.</div>
+<div class="register-page">
+  <p-card styleClass="register-card">
+    <div class="register-card-body">
+      <a routerLink="/welcome" class="register-brand" aria-label="SmartWork — на главную">
+        <span class="register-brand__icon" aria-hidden="true">
+          <i class="pi pi-briefcase"></i>
+        </span>
+        <span class="register-brand__text">SmartWork</span>
+      </a>
 
-    @if (error) {
-      <p-message severity="error" [text]="error" [closable]="false" />
-    }
-    @if (message) {
-      <p-message severity="success" [text]="message" [closable]="false" />
-    }
-
-    <form class="form" (ngSubmit)="onRegister()">
-      <div class="field">
-        <label for="firstName">Имя</label>
-        <input id="firstName" pInputText name="firstName" required [(ngModel)]="firstName" />
+      <div class="register-heading">
+        <h1 class="register-title">Регистрация</h1>
+        <p class="register-lead">Укажите свой email и создайте аккаунт.</p>
       </div>
 
-      <div class="field">
-        <label for="lastName">Фамилия</label>
-        <input id="lastName" pInputText name="lastName" required [(ngModel)]="lastName" />
-      </div>
+      @if (error) {
+        <div class="register-alert register-alert--error" role="alert" aria-live="assertive">
+          <i class="pi pi-times-circle register-alert__icon" aria-hidden="true"></i>
+          <p class="register-alert__text">{{ error }}</p>
+        </div>
+      }
+      @if (message) {
+        <div class="register-alert register-alert--success" role="status" aria-live="polite">
+          <i class="pi pi-check-circle register-alert__icon" aria-hidden="true"></i>
+          <p class="register-alert__text">{{ message }}</p>
+        </div>
+      }
 
-      <div class="field">
-        <label for="login">Логин (email)</label>
-        <input
-          id="login"
-          type="email"
-          pInputText
-          name="login"
-          required
-          [(ngModel)]="login"
+      <form class="register-form" (ngSubmit)="onRegister()" novalidate>
+        <div class="register-field">
+          <label class="register-label" for="reg-first-name">Имя</label>
+          <p-iconfield iconPosition="left" styleClass="register-iconfield w-full">
+            <p-inputicon class="pi pi-user" />
+            <input
+              id="reg-first-name"
+              type="text"
+              pInputText
+              fluid
+              name="firstName"
+              [(ngModel)]="firstName"
+              placeholder="Имя"
+              autocomplete="given-name"
+              aria-required="true"
+            />
+          </p-iconfield>
+        </div>
+
+        <div class="register-field">
+          <label class="register-label" for="reg-last-name">Фамилия</label>
+          <p-iconfield iconPosition="left" styleClass="register-iconfield w-full">
+            <p-inputicon class="pi pi-id-card" />
+            <input
+              id="reg-last-name"
+              type="text"
+              pInputText
+              fluid
+              name="lastName"
+              [(ngModel)]="lastName"
+              placeholder="Фамилия"
+              autocomplete="family-name"
+              aria-required="true"
+            />
+          </p-iconfield>
+        </div>
+
+        <div class="register-field">
+          <label class="register-label" for="reg-email">Email</label>
+          <p-iconfield iconPosition="left" styleClass="register-iconfield w-full">
+            <p-inputicon class="pi pi-envelope" />
+            <input
+              id="reg-email"
+              type="email"
+              pInputText
+              fluid
+              name="login"
+              [(ngModel)]="login"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="name@example.com"
+              aria-required="true"
+              [attr.aria-invalid]="error ? 'true' : null"
+              aria-describedby="reg-email-hint"
+            />
+          </p-iconfield>
+          <p id="reg-email-hint" class="register-hint">Укажите свой email и создайте аккаунт.</p>
+        </div>
+
+        <div class="register-field">
+          <label class="register-label" for="reg-role">Роль</label>
+          <p-iconfield iconPosition="left" styleClass="register-iconfield w-full">
+            <p-inputicon class="pi pi-briefcase" />
+            <p-select
+              inputId="reg-role"
+              styleClass="register-role-select w-full"
+              name="role"
+              [options]="roleOptions"
+              optionLabel="label"
+              optionValue="value"
+              [(ngModel)]="role"
+              aria-required="true"
+              appendTo="body"
+            >
+              <ng-template pTemplate="selectedItem" let-selectedRole>
+                @if (selectedRole) {
+                  <span class="register-role-option">
+                    <i [class]="selectedRole.icon" aria-hidden="true"></i>
+                    <span>{{ selectedRole.label }}</span>
+                  </span>
+                }
+              </ng-template>
+              <ng-template pTemplate="item" let-roleItem>
+                <span class="register-role-option">
+                  <i [class]="roleItem.icon" aria-hidden="true"></i>
+                  <span>{{ roleItem.label }}</span>
+                </span>
+              </ng-template>
+            </p-select>
+          </p-iconfield>
+        </div>
+
+        <div class="register-field">
+          <label class="register-label" for="reg-password">Пароль</label>
+          <p-iconfield iconPosition="left" styleClass="register-iconfield register-iconfield--password w-full">
+            <p-inputicon class="pi pi-lock" />
+            <p-password
+              inputId="reg-password"
+              name="password"
+              [(ngModel)]="password"
+              [toggleMask]="true"
+              [feedback]="false"
+              fluid
+              styleClass="register-password-input"
+              placeholder="Введите пароль"
+              autocomplete="new-password"
+              aria-required="true"
+              [attr.aria-invalid]="error ? 'true' : null"
+              aria-describedby="reg-password-hint"
+            />
+          </p-iconfield>
+          <p id="reg-password-hint" class="register-hint">Пароль должен содержать 8 символов, заглавные буквы, маленькие буквы, цифры и специальные символы.</p>
+        </div>
+
+        <div class="register-field">
+          <label class="register-label" for="reg-confirm-password">Подтверждение пароля</label>
+          <p-iconfield iconPosition="left" styleClass="register-iconfield register-iconfield--password w-full">
+            <p-inputicon class="pi pi-shield" />
+            <p-password
+              inputId="reg-confirm-password"
+              name="confirmPassword"
+              [(ngModel)]="confirmPassword"
+              [toggleMask]="true"
+              [feedback]="false"
+              fluid
+              styleClass="register-password-input"
+              placeholder="Подтверждение пароля"
+              autocomplete="new-password"
+              aria-required="true"
+              [attr.aria-invalid]="error ? 'true' : null"
+            />
+          </p-iconfield>
+        </div>
+
+        <p-button
+          type="submit"
+          label="Зарегистрироваться"
+          icon="pi pi-send"
+          styleClass="register-submit w-full"
+          [loading]="loading"
+          [disabled]="loading"
         />
-      </div>
+      </form>
 
-      <div class="field">
-        <label for="password">Пароль</label>
-        <p-password
-          id="password"
-          name="password"
-          required
-          [(ngModel)]="password"
-          [toggleMask]="true"
-          [feedback]="false"
-          styleClass="w-full"
-        />
-        <small class="hint">Мин. 8 символов, заглавная, строчная, цифра и спецсимвол.</small>
+      <div class="register-links" role="navigation" aria-label="Дополнительные действия">
+        <a routerLink="/auth/login" class="register-link-card register-link-card--muted">
+          <span class="register-link-card__icon" aria-hidden="true">
+            <i class="pi pi-sign-in"></i>
+          </span>
+          <span class="register-link-card__content">
+              <span class="register-link-card__title">Уже зарегистрированы?</span>
+            <span class="register-link-card__desc">Войдите в аккаунт</span>
+          </span>
+          <i class="pi pi-arrow-right register-link-card__chevron" aria-hidden="true"></i>
+        </a>
       </div>
-
-      <div class="field">
-        <label for="role">Роль</label>
-        <select id="role" name="role" [(ngModel)]="role">
-          <option value="owner">Владелец</option>
-          <option value="staff">Сотрудник</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label for="confirmPassword">Повтор пароля</label>
-        <p-password
-          id="confirmPassword"
-          name="confirmPassword"
-          required
-          [(ngModel)]="confirmPassword"
-          [toggleMask]="true"
-          [feedback]="false"
-          styleClass="w-full"
-        />
-      </div>
-
-      <div class="actions">
-        <p-button type="submit" label="Отправить код" icon="pi pi-send" [loading]="loading" />
-      </div>
-
-      <div class="links">
-        <a routerLink="/auth/login">Уже есть аккаунт? Вход</a>
-      </div>
-    </form>
+    </div>
   </p-card>
 </div>
-

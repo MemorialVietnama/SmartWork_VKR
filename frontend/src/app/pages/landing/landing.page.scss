@@ -1,0 +1,42 @@
+:host.landing-page {
+  display: block;
+  min-height: 100%;
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+}
+
+.landing-shell {
+  min-height: 100%;
+}
+
+.landing-main {
+  padding-top: 5.5rem;
+}
+
+/* Section anchor offset under fixed toolbar */
+:host.landing-page #features,
+:host.landing-page #industries,
+:host.landing-page #pricing,
+:host.landing-page #api,
+:host.landing-page #about,
+:host.landing-page #faq {
+  scroll-margin-top: 5.5rem;
+}
+
+.landing-tpl--pricing {
+  background: linear-gradient(
+    180deg,
+    var(--p-surface-50) 0%,
+    var(--p-content-background) 100%
+  );
+}
+
+.landing-tpl--industries,
+.landing-tpl--about {
+  background: var(--p-content-background);
+}
+
+.landing-tpl--api {
+  background: var(--p-surface-900);
+  color: var(--p-surface-0);
+}

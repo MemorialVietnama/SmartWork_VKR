@@ -1,0 +1,400 @@
+:host {
+  display: block;
+}
+
+// —— Шапка (как в template.html: fixed, blur, 72px, max-width 1200) ——
+.landing-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  background: color-mix(in srgb, var(--p-content-background, #ffffff) 95%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease;
+
+  &--scrolled {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+
+  &--mobile-open {
+    background: color-mix(in srgb, var(--p-content-background, #ffffff) 98%, transparent);
+  }
+
+  &__container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--p-primary-700, var(--p-primary-color));
+    text-decoration: none;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      transform: scale(1.02);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--p-primary-color);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+  }
+
+  &__logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--p-primary-600), var(--p-primary-800));
+    border-radius: var(--p-border-radius-md, 8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+  }
+
+  &__logo-text {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  &__nav {
+    display: none;
+    align-items: center;
+    gap: 2.5rem;
+
+    @media (min-width: 1024px) {
+      display: flex;
+    }
+  }
+
+  &__nav-link {
+    color: var(--p-text-muted-color, #475569);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+    position: relative;
+    white-space: nowrap;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--p-primary-color);
+      transition: width 0.3s ease;
+    }
+
+    &:hover {
+      color: var(--p-primary-600, var(--p-primary-color));
+    }
+
+    &:hover::after {
+      width: 100%;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--p-primary-color);
+      outline-offset: 6px;
+      border-radius: 2px;
+    }
+
+    &--active {
+      color: var(--p-primary-600, var(--p-primary-color));
+
+      &::after {
+        width: 100%;
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+}
+
+// —— PrimeNG: переключатель языка (pill как .lang-switcher) ——
+:host ::ng-deep .landing-header__lang.p-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--p-text-muted-color, #475569);
+  background: var(--p-surface-100, #f1f5f9);
+  border: 1px solid transparent;
+  border-radius: var(--p-border-radius-md, 8px);
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
+
+  &:not(:disabled):hover {
+    background: var(--p-surface-200, #e2e8f0);
+    border-color: var(--p-content-border-color, #cbd5e1);
+    color: var(--p-text-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--p-primary-color);
+    outline-offset: 2px;
+  }
+
+  .p-button-label {
+    padding: 0;
+  }
+}
+
+.landing-header__lang-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.landing-header__lang-chevron {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+// —— PrimeNG: CTA как .btn-primary ——
+:host ::ng-deep .landing-header__cta.p-button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: var(--p-border-radius-md, 8px);
+  background: var(--p-primary-600, var(--p-primary-color));
+  color: var(--p-primary-contrast-color, #fff);
+  box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--p-primary-color) 39%, transparent);
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+
+  @media (min-width: 768px) {
+    display: inline-flex;
+  }
+
+  &:not(:disabled):hover {
+    background: var(--p-primary-700, var(--p-primary-color));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--p-primary-color) 23%, transparent);
+  }
+
+  .p-button-icon {
+    color: inherit;
+    font-size: 1.05rem;
+  }
+}
+
+// —— PrimeNG: гамбургер ——
+:host ::ng-deep .landing-header__menu-btn.p-button {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  color: var(--p-text-color);
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--p-primary-color);
+    outline-offset: 2px;
+  }
+}
+
+// —— Drawer ——
+.landing-header__drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1099;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    visibility 0s linear 0.3s,
+    opacity 0.3s ease;
+
+  &--open {
+    visibility: visible;
+    opacity: 1;
+    transition-delay: 0s;
+
+    .landing-header__drawer-backdrop {
+      opacity: 1;
+    }
+
+    .landing-header__drawer-panel {
+      transform: translateX(0);
+    }
+
+    .landing-header__drawer-link {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+.landing-header__drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.landing-header__drawer-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 380px;
+  height: 100%;
+  background: color-mix(in srgb, var(--p-content-background, #ffffff) 98%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+  transform: translateX(100%);
+  transition: transform 0.35s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-header__drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
+}
+
+.landing-header__drawer-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+:host ::ng-deep .landing-header__drawer-close.p-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  color: var(--p-primary-color);
+}
+
+.landing-header__drawer-nav {
+  flex: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.landing-header__drawer-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  color: var(--p-text-color);
+  text-decoration: none;
+  font-size: 1.05rem;
+  font-weight: 500;
+  border-radius: var(--p-border-radius-md, 8px);
+  transition:
+    background 0.3s ease,
+    color 0.3s ease,
+    padding-left 0.3s ease;
+  opacity: 0;
+  transform: translateX(12px);
+  animation: landing-header-drawer-in 0.4s ease forwards;
+
+  &:hover {
+    background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+    color: var(--p-primary-color);
+    padding-left: 1.5rem;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--p-primary-color);
+    outline-offset: 2px;
+  }
+}
+
+.landing-header__drawer-link-icon {
+  font-size: 0.9rem;
+  opacity: 0.5;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.landing-header__drawer-link:hover .landing-header__drawer-link-icon {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+.landing-header__drawer-foot {
+  padding: 1.5rem;
+  border-top: 1px solid var(--p-content-border-color, #e2e8f0);
+}
+
+:host ::ng-deep .landing-header__drawer-cta.p-button {
+  font-weight: 600;
+  justify-content: center;
+  padding: 0.85rem 1rem;
+  background: var(--p-primary-600, var(--p-primary-color));
+  color: var(--p-primary-contrast-color, #fff);
+  box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--p-primary-color) 35%, transparent);
+
+  &:not(:disabled):hover {
+    transform: translateY(-2px);
+    background: var(--p-primary-700, var(--p-primary-color));
+  }
+
+  .p-button-icon {
+    color: inherit;
+    font-size: 1.05rem;
+  }
+}
+
+@keyframes landing-header-drawer-in {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 639px) {
+  .landing-header__container {
+    padding: 0 1.25rem;
+  }
+}

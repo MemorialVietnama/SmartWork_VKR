@@ -1,0 +1,2648 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartWork - Умное рабочее место для малого сервиса</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-200: #bfdbfe;
+            --primary-300: #93c5fd;
+            --primary-400: #60a5fa;
+            --primary-500: #3b82f6;
+            --primary-600: #2563eb;
+            --primary-700: #1d4ed8;
+            --primary-800: #1e40af;
+            --primary-900: #1e3a8a;
+            
+            --green-50: #f0fdf4;
+            --green-100: #dcfce7;
+            --green-400: #4ade80;
+            --green-500: #22c55e;
+            --green-600: #16a34a;
+            --green-700: #15803d;
+            
+            --amber-400: #fbbf24;
+            --purple-500: #a855f7;
+            --pink-500: #ec4899;
+            
+            --surface-0: #ffffff;
+            --surface-50: #f8fafc;
+            --surface-100: #f1f5f9;
+            --surface-200: #e2e8f0;
+            --surface-300: #cbd5e1;
+            --surface-400: #94a3b8;
+            --surface-500: #64748b;
+            --surface-600: #475569;
+            --surface-700: #334155;
+            --surface-800: #1e293b;
+            --surface-900: #0f172a;
+            
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-display: 'Plus Jakarta Sans', sans-serif;
+            --border-radius: 8px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            color: var(--surface-700);
+            line-height: 1.6;
+            background: var(--surface-0);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--surface-200);
+            transition: all 0.3s ease;
+        }
+
+        .header.scrolled {
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-700);
+            text-decoration: none;
+            transition: transform 0.3s ease;
+            font-family: var(--font-display);
+        }
+
+        .logo:hover {
+            transform: scale(1.02);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--surface-600);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary-500);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-600);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            text-decoration: none;
+            font-family: var(--font-family);
+        }
+
+        .btn-primary {
+            background: var(--primary-600);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-700);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.23);
+        }
+
+        .btn-secondary {
+            background: var(--surface-100);
+            color: var(--surface-700);
+            border: 1px solid var(--surface-300);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-200);
+            border-color: var(--surface-400);
+        }
+
+        .btn-success {
+            background: var(--green-500);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(34, 197, 94, 0.39);
+        }
+
+        .btn-success:hover {
+            background: var(--green-600);
+            transform: translateY(-2px);
+        }
+
+        .lang-switcher {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--surface-100);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--surface-600);
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .lang-switcher:hover {
+            background: var(--surface-200);
+            border-color: var(--surface-300);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 140px 2rem 100px;
+            background: linear-gradient(135deg, var(--primary-50) 0%, var(--surface-0) 50%, var(--green-50) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--primary-200) 0%, transparent 70%);
+            opacity: 0.5;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            color: var(--surface-900);
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--surface-900) 0%, var(--primary-700) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: var(--font-display);
+        }
+
+        .hero-content p {
+            font-size: 1.25rem;
+            color: var(--surface-600);
+            margin-bottom: 2rem;
+            line-height: 1.7;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .hero-visual {
+            position: relative;
+        }
+
+        .dashboard-preview {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            padding: 1.5rem;
+            transform: perspective(1000px) rotateY(-5deg) rotateX(5deg);
+            transition: transform 0.5s ease;
+            border: 1px solid var(--surface-200);
+        }
+
+        .dashboard-preview:hover {
+            transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+        }
+
+        .preview-header {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #eab308; }
+        .dot-green { background: var(--green-500); }
+
+        .preview-content {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 1rem;
+        }
+
+        .sidebar-mock {
+            background: var(--surface-100);
+            border-radius: 8px;
+            height: 300px;
+            padding: 1rem;
+        }
+
+        .sidebar-item {
+            height: 32px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            font-size: 0.875rem;
+            color: var(--surface-600);
+        }
+
+        .sidebar-item.active {
+            background: var(--primary-100);
+            color: var(--primary-700);
+            border-left: 3px solid var(--primary-500);
+        }
+
+        .main-mock {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .mock-card {
+            background: var(--surface-50);
+            border-radius: 8px;
+            height: 140px;
+            border: 1px solid var(--surface-200);
+            padding: 1rem;
+        }
+
+        .mock-card-header {
+            height: 20px;
+            background: var(--surface-300);
+            border-radius: 4px;
+            width: 60%;
+            margin-bottom: 0.75rem;
+        }
+
+        .mock-card-body {
+            height: 8px;
+            background: var(--surface-200);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Features Interactive Section */
+        .features-section {
+            padding: 100px 2rem;
+            background: var(--surface-50);
+        }
+
+        .features-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--surface-900);
+            margin-bottom: 3rem;
+            text-align: center;
+            font-family: var(--font-display);
+        }
+
+        .features-interactive {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--surface-200);
+        }
+
+        .features-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            border-bottom: 2px solid var(--surface-200);
+            padding-bottom: 1rem;
+        }
+
+        .feature-tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--surface-600);
+            transition: all 0.3s ease;
+            position: relative;
+            font-size: 1rem;
+        }
+
+        .feature-tab::after {
+            content: '';
+            position: absolute;
+            bottom: -1rem;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-600);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-tab:hover {
+            color: var(--primary-700);
+        }
+
+        .feature-tab.active {
+            color: var(--primary-700);
+        }
+
+        .feature-tab.active::after {
+            transform: scaleX(1);
+        }
+
+        .feature-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .feature-content.active {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .feature-description h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--surface-900);
+            margin-bottom: 1rem;
+            font-family: var(--font-display);
+        }
+
+        .feature-description p {
+            color: var(--surface-600);
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 1.5rem;
+        }
+
+        .feature-list li {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            color: var(--surface-700);
+        }
+
+        .feature-list i {
+            color: var(--green-500);
+            margin-top: 2px;
+        }
+
+        .feature-demo {
+            background: var(--surface-50);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--surface-200);
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mock-calendar {
+            width: 100%;
+        }
+
+        .calendar-day {
+            display: inline-block;
+            width: 14%;
+            aspect-ratio: 1;
+            background: var(--primary-50);
+            border: 1px solid var(--surface-200);
+            margin: 2px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover {
+            background: var(--primary-200);
+            transform: scale(1.1);
+        }
+
+        .calendar-day.today {
+            background: var(--primary-600);
+            color: white;
+        }
+
+        .mock-task-list {
+            width: 100%;
+        }
+
+        .task-item {
+            background: white;
+            border: 1px solid var(--surface-200);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .task-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--amber-400);
+        }
+
+        .task-status.done {
+            background: var(--green-500);
+        }
+
+        /* Industries Interactive Section */
+        .industries-section {
+            padding: 100px 2rem;
+            background: white;
+        }
+
+        .industries-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .industry-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .industry-btn {
+            padding: 1.5rem;
+            background: white;
+            border: 2px solid var(--surface-200);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            color: var(--surface-700);
+        }
+
+        .industry-btn:hover,
+        .industry-btn.active {
+            border-color: var(--primary-600);
+            background: var(--primary-50);
+            color: var(--primary-700);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .industry-btn i {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.75rem;
+        }
+
+        .industry-content {
+            display: none;
+            animation: slideIn 0.4s ease;
+        }
+
+        .industry-content.active {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .industry-info h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--surface-900);
+            margin-bottom: 1rem;
+            font-family: var(--font-display);
+        }
+
+        .industry-info p {
+            color: var(--surface-600);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+
+        .industry-features {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        .industry-feature {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--surface-700);
+        }
+
+        .industry-feature i {
+            color: var(--green-500);
+            font-weight: bold;
+        }
+
+        .industry-image-demo {
+            background: linear-gradient(135deg, var(--primary-100), var(--green-100));
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .industry-image-demo i {
+            font-size: 4rem;
+            color: var(--primary-600);
+            margin-bottom: 1rem;
+        }
+
+        .industry-image-demo p {
+            color: var(--surface-600);
+            font-weight: 500;
+        }
+
+        .custom-business-section {
+            background: linear-gradient(135deg, var(--purple-500), var(--pink-500));
+            border-radius: 12px;
+            padding: 2rem;
+            color: white;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .custom-business-section h4 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            font-family: var(--font-display);
+        }
+
+        .custom-business-section p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 1rem;
+        }
+
+        /* Pricing Section with Extensions */
+        .pricing-section {
+            padding: 100px 2rem;
+            background: linear-gradient(180deg, var(--surface-50) 0%, white 100%);
+        }
+
+        .pricing-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .pricing-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            align-items: center;
+        }
+
+        .toggle-label {
+            font-weight: 500;
+            color: var(--surface-600);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 32px;
+            background: var(--primary-600);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(28px);
+        }
+
+        .pricing-intro {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--green-50);
+            border-radius: 12px;
+            border-left: 4px solid var(--green-500);
+        }
+
+        .pricing-intro p {
+            color: var(--surface-700);
+            line-height: 1.6;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            align-items: start;
+            margin-bottom: 3rem;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            border: 2px solid var(--surface-200);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--primary-500);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-xl);
+            z-index: 1;
+        }
+
+        .pricing-card.featured::before {
+            content: 'Популярный';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary-600);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--surface-900);
+            margin-bottom: 0.5rem;
+            font-family: var(--font-display);
+        }
+
+        .pricing-desc {
+            color: var(--surface-500);
+            font-size: 0.9rem;
+        }
+
+        .pricing-price {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .price {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--surface-900);
+            line-height: 1;
+            font-family: var(--font-display);
+        }
+
+        .price span {
+            font-size: 1rem;
+            color: var(--surface-500);
+            font-weight: 400;
+        }
+
+        .price-free {
+            color: var(--green-600);
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-features li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--surface-100);
+            color: var(--surface-700);
+            font-size: 0.95rem;
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features i {
+            font-size: 1.1rem;
+        }
+
+        .pricing-features .included i {
+            color: var(--green-500);
+        }
+
+        .pricing-features .not-included {
+            color: var(--surface-400);
+        }
+
+        .pricing-features .not-included i {
+            color: var(--surface-300);
+        }
+
+        .extension-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: var(--primary-100);
+            color: var(--primary-700);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        .pricing-addon {
+            background: var(--surface-50);
+            border: 1px solid var(--surface-200);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .addon-title {
+            font-weight: 600;
+            color: var(--surface-900);
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .addon-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .addon-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--surface-600);
+        }
+
+        .table-mock {
+            background: white;
+            border: 1px solid var(--surface-200);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            background: var(--surface-100);
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--surface-700);
+        }
+
+        .table-cell {
+            padding: 0.75rem;
+            border-right: 1px solid var(--surface-200);
+        }
+
+        .table-cell:last-child {
+            border-right: none;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            border-top: 1px solid var(--surface-200);
+            font-size: 0.85rem;
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        .table-cell {
+            padding: 0.75rem;
+            color: var(--surface-700);
+        }
+
+        .extension-cost {
+            font-weight: 600;
+            color: var(--primary-700);
+        }
+
+        /* API Section */
+        .api-section {
+            padding: 100px 2rem;
+            background: var(--surface-900);
+            color: white;
+        }
+
+        .api-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .api-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            text-align: center;
+            font-family: var(--font-display);
+        }
+
+        .api-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+        }
+
+        .api-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .api-method {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .api-method:hover,
+        .api-method.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-left-color: var(--primary-400);
+        }
+
+        .api-demo {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .api-demo h4 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            font-family: var(--font-display);
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            color: var(--primary-300);
+        }
+
+        .api-response {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .response-item {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .response-item h5 {
+            color: var(--green-400);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .response-item p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* About Section */
+        .about-section {
+            padding: 100px 2rem;
+            background: white;
+        }
+
+        .about-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .about-content h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--surface-900);
+            margin-bottom: 1.5rem;
+            font-family: var(--font-display);
+        }
+
+        .about-content p {
+            color: var(--surface-600);
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+
+        .about-benefits {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .benefit-card {
+            background: var(--surface-50);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--surface-200);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .benefit-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-300);
+        }
+
+        .benefit-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            min-height: 2.5rem;
+        }
+
+        .benefit-title {
+            font-weight: 600;
+            color: var(--surface-900);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .benefit-desc {
+            font-size: 0.9rem;
+            color: var(--surface-600);
+            line-height: 1.5;
+        }
+
+        .about-visual {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .tech-item {
+            background: white;
+            border: 1px solid var(--surface-200);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tech-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-300);
+        }
+
+        .tech-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-50);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-600);
+            font-size: 1.5rem;
+        }
+
+        .tech-info h4 {
+            font-weight: 600;
+            color: var(--surface-900);
+            margin-bottom: 0.25rem;
+        }
+
+        .tech-info p {
+            font-size: 0.875rem;
+            color: var(--surface-500);
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            padding: 100px 2rem;
+            background: var(--surface-50);
+        }
+
+        .faq-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .faq-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--surface-900);
+            margin-bottom: 3rem;
+            text-align: center;
+            font-family: var(--font-display);
+        }
+
+        .faq-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .faq-item {
+            background: white;
+            border: 1px solid var(--surface-200);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .faq-item:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-300);
+        }
+
+        .faq-header {
+            padding: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .faq-item.active .faq-header {
+            background: var(--primary-50);
+            border-bottom: 1px solid var(--primary-200);
+        }
+
+        .faq-question {
+            font-weight: 600;
+            color: var(--surface-900);
+            font-size: 1.05rem;
+        }
+
+        .faq-icon {
+            color: var(--primary-600);
+            transition: transform 0.3s ease;
+            font-size: 1.25rem;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            padding: 0 1.5rem;
+            color: var(--surface-600);
+            line-height: 1.7;
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 500px;
+            padding: 1.5rem;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--surface-900);
+            color: white;
+            padding: 60px 2rem 30px;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-brand {
+            max-width: 300px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: white;
+            font-family: var(--font-display);
+        }
+
+        .footer-desc {
+            color: var(--surface-400);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .social-link {
+            width: 40px;
+            height: 40px;
+            background: var(--surface-800);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--surface-400);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .social-link:hover {
+            background: var(--primary-600);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .footer-column h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: white;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-links a {
+            color: var(--surface-400);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-400);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--surface-800);
+            padding-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--surface-500);
+            font-size: 0.9rem;
+        }
+
+        /* Animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .hero-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-visual {
+                order: -1;
+            }
+
+            .dashboard-preview {
+                transform: none;
+            }
+
+            .features-interactive {
+                padding: 1.5rem;
+            }
+
+            .feature-content.active {
+                grid-template-columns: 1fr;
+            }
+
+            .industry-content.active {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-card.featured {
+                transform: none;
+            }
+
+            .api-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .about-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .nav {
+                display: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+
+            .features-tabs {
+                flex-direction: column;
+            }
+
+            .feature-tab {
+                padding: 1rem;
+            }
+
+            .industry-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .about-benefits {
+                grid-template-columns: 1fr;
+            }
+
+            .about-visual {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--surface-700);
+            cursor: pointer;
+        }
+
+        @media (max-width: 968px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="header-container">
+            <a href="#" class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                SmartWork
+            </a>
+            
+            <nav class="nav">
+                <a href="#features" class="nav-link">Возможности</a>
+                <a href="#industries" class="nav-link">Для кого</a>
+                <a href="#pricing" class="nav-link">Расширения</a>
+                <a href="#api" class="nav-link">API</a>
+                <a href="#faq" class="nav-link">Помощь</a>
+                <a href="#about" class="nav-link">О нас</a>
+            </nav>
+
+            <div class="header-actions">
+                <div class="lang-switcher" onclick="toggleLanguage()">
+                    <i class="fas fa-globe"></i>
+                    <span>RU</span>
+                    <i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
+                </div>
+                <button class="btn btn-primary">
+                    <i class="fas fa-rocket"></i>
+                    Начать
+                </button>
+                <button class="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content fade-in">
+                <h1>Умное рабочее место для малого сервиса</h1>
+                <p>Один владелец, команда сотрудников, несколько «столов» — отдельных рабочих контуров под точку или направление. Календарь, очередь заказов, задачи и аналитика в одном интерфейсе.</p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                        <i class="fas fa-play"></i>
+                        Начать бесплатно
+                    </button>
+                    <button class="btn btn-secondary" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                        <i class="fas fa-info-circle"></i>
+                        Узнать больше
+                    </button>
+                </div>
+            </div>
+            <div class="hero-visual fade-in">
+                <div class="dashboard-preview">
+                    <div class="preview-header">
+                        <div class="dot dot-red"></div>
+                        <div class="dot dot-yellow"></div>
+                        <div class="dot dot-green"></div>
+                    </div>
+                    <div class="preview-content">
+                        <div class="sidebar-mock">
+                            <div class="sidebar-item active"><i class="fas fa-calendar" style="margin-right: 8px;"></i> Календарь</div>
+                            <div class="sidebar-item"><i class="fas fa-tasks" style="margin-right: 8px;"></i> Задачи</div>
+                            <div class="sidebar-item"><i class="fas fa-book" style="margin-right: 8px;"></i> Справочники</div>
+                            <div class="sidebar-item"><i class="fas fa-chart-bar" style="margin-right: 8px;"></i> Аналитика</div>
+                            <div class="sidebar-item"><i class="fas fa-users" style="margin-right: 8px;"></i> Сотрудники</div>
+                        </div>
+                        <div class="main-mock">
+                            <div class="mock-card">
+                                <div class="mock-card-header"></div>
+                                <div class="mock-card-body"></div>
+                                <div class="mock-card-body" style="width: 80%;"></div>
+                                <div class="mock-card-body" style="width: 60%;"></div>
+                            </div>
+                            <div class="mock-card">
+                                <div class="mock-card-header"></div>
+                                <div class="mock-card-body"></div>
+                                <div class="mock-card-body" style="width: 70%;"></div>
+                            </div>
+                            <div class="mock-card">
+                                <div class="mock-card-header"></div>
+                                <div class="mock-card-body"></div>
+                                <div class="mock-card-body" style="width: 90%;"></div>
+                                <div class="mock-card-body" style="width: 50%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Interactive Section -->
+    <section class="features-section" id="features">
+        <div class="features-container">
+            <h2 class="section-title fade-in">Возможности проекта</h2>
+            <div class="features-interactive fade-in">
+                <div class="features-tabs">
+                    <button class="feature-tab active" onclick="switchFeature(event, 'calendar')">
+                        <i class="fas fa-calendar-alt"></i> Календарь
+                    </button>
+                    <button class="feature-tab" onclick="switchFeature(event, 'tasks')">
+                        <i class="fas fa-tasks"></i> Задачи
+                    </button>
+                    <button class="feature-tab" onclick="switchFeature(event, 'analytics')">
+                        <i class="fas fa-chart-line"></i> Аналитика
+                    </button>
+                    <button class="feature-tab" onclick="switchFeature(event, 'staff')">
+                        <i class="fas fa-users"></i> Сотрудники
+                    </button>
+                    <button class="feature-tab" onclick="switchFeature(event, 'references')">
+                        <i class="fas fa-book"></i> Справочники
+                    </button>
+                </div>
+
+                <!-- Calendar Feature -->
+                <div id="calendar" class="feature-content active">
+                    <div class="feature-description">
+                        <h3>Умный календарь</h3>
+                        <p>Планирование записей с визуализацией загрузки. Интеграция с очередью заказов, настройка рабочих часов и формата времени под ваши нужды.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Почасовое отображение загрузки</li>
+                            <li><i class="fas fa-check"></i> Автоматическое уведомление клиентов</li>
+                            <li><i class="fas fa-check"></i> Блокировка для перерывов</li>
+                            <li><i class="fas fa-check"></i> Интеграция с СМС и email</li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="mock-calendar">
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 1rem;">
+                                <div class="calendar-day" style="font-size: 0.7rem; color: #94a3b8;">ПН</div>
+                                <div class="calendar-day" style="font-size: 0.7rem; color: #94a3b8;">ВТ</div>
+                                <div class="calendar-day" style="font-size: 0.7rem; color: #94a3b8;">СР</div>
+                                <div class="calendar-day" style="font-size: 0.7rem; color: #94a3b8;">ЧТ</div>
+                                <div class="calendar-day" style="font-size: 0.7rem; color: #94a3b8;">ПТ</div>
+                                <div class="calendar-day" style="font-size: 0.7rem; color: #94a3b8;">СБ</div>
+                                <div class="calendar-day" style="font-size: 0.7rem; color: #94a3b8;">ВС</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">
+                                <div class="calendar-day">1</div>
+                                <div class="calendar-day">2</div>
+                                <div class="calendar-day">3</div>
+                                <div class="calendar-day">4</div>
+                                <div class="calendar-day today">5</div>
+                                <div class="calendar-day" style="background: var(--green-100);">6</div>
+                                <div class="calendar-day" style="background: var(--surface-100);">7</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Feature -->
+                <div id="tasks" class="feature-content">
+                    <div class="feature-description">
+                        <h3>Управление задачами</h3>
+                        <p>Создание и назначение задач с отслеживанием прогресса. Статусы, приоритеты и сроки помогают команде работать синхронно.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Статусы: новая/в работе/выполнена</li>
+                            <li><i class="fas fa-check"></i> Назначение ответственных</li>
+                            <li><i class="fas fa-check"></i> Комментарии и вложения</li>
+                            <li><i class="fas fa-check"></i> Уведомления в реальном времени</li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo">
+                        <div class="mock-task-list">
+                            <div class="task-item">
+                                <div class="task-status"></div>
+                                <div>Переделать макет главной</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-status"></div>
+                                <div>Установить шрифты</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-status done"></div>
+                                <div>Создать меню</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-status done"></div>
+                                <div>Добавить футер</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Feature -->
+                <div id="analytics" class="feature-content">
+                    <div class="feature-description">
+                        <h3>Аналитика и отчеты</h3>
+                        <p>Подробные сводки по столам, графики загрузки и финансовая статистика. Экспорт данных для бухгалтерии и анализа.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Автоматические отчеты</li>
+                            <li><i class="fas fa-check"></i> Графики доходов и расходов</li>
+                            <li><i class="fas fa-check"></i> Анализ эффективности сотрудников</li>
+                            <li><i class="fas fa-check"></i> Прогнозирование тренда</li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo" style="padding: 1rem;">
+                        <div style="width: 100%;">
+                            <div style="height: 120px; background: linear-gradient(90deg, var(--primary-300) 0%, var(--primary-500) 30%, var(--green-500) 60%, var(--amber-400) 100%); border-radius: 8px; margin-bottom: 1rem; position: relative;">
+                                <div style="position: absolute; bottom: 10px; right: 10px; color: white; font-size: 0.8rem; font-weight: 600;">+ 24% YoY</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div style="background: var(--surface-100); padding: 0.75rem; border-radius: 6px; font-size: 0.8rem;">
+                                    <div style="color: var(--surface-500); margin-bottom: 0.25rem;">Доход</div>
+                                    <div style="color: var(--green-600); font-weight: 600;">125 500 ₽</div>
+                                </div>
+                                <div style="background: var(--surface-100); padding: 0.75rem; border-radius: 6px; font-size: 0.8rem;">
+                                    <div style="color: var(--surface-500); margin-bottom: 0.25rem;">Средний чек</div>
+                                    <div style="color: var(--primary-600); font-weight: 600;">2 850 ₽</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Staff Feature -->
+                <div id="staff" class="feature-content">
+                    <div class="feature-description">
+                        <h3>Управление сотрудниками</h3>
+                        <p>Приглашение команды, распределение ролей, личная статистика за доплату. Контроль доступа по столам и функциям.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Разные роли (владелец, сотрудник)</li>
+                            <li><i class="fas fa-check"></i> Приглашение по email</li>
+                            <li><i class="fas fa-check"></i> Личная статистика сотрудников</li>
+                            <li><i class="fas fa-check"></i> История действий и логи</li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo" style="padding: 1rem;">
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem; background: white; padding: 0.75rem; border-radius: 6px;">
+                                <div style="width: 32px; height: 32px; background: var(--primary-500); border-radius: 50%; flex-shrink: 0;"></div>
+                                <div style="flex: 1; font-size: 0.85rem;">
+                                    <div style="font-weight: 600; color: var(--surface-900);">Мария К.</div>
+                                    <div style="color: var(--surface-500);">Барбер</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; background: white; padding: 0.75rem; border-radius: 6px;">
+                                <div style="width: 32px; height: 32px; background: var(--green-500); border-radius: 50%; flex-shrink: 0;"></div>
+                                <div style="flex: 1; font-size: 0.85rem;">
+                                    <div style="font-weight: 600; color: var(--surface-900);">Иван В.</div>
+                                    <div style="color: var(--surface-500);">Администратор</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; background: white; padding: 0.75rem; border-radius: 6px;">
+                                <div style="width: 32px; height: 32px; background: var(--amber-400); border-radius: 50%; flex-shrink: 0;"></div>
+                                <div style="flex: 1; font-size: 0.85rem;">
+                                    <div style="font-weight: 600; color: var(--surface-900);">Ольга П.</div>
+                                    <div style="color: var(--surface-500);">Барбер</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- References Feature -->
+                <div id="references" class="feature-content">
+                    <div class="feature-description">
+                        <h3>Справочники и каталоги</h3>
+                        <p>Управление услугами, клиентами, питомцами и другими данными. Расширяемые поля под ваш бизнес, импорт и экспорт.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Каталог услуг с ценами</li>
+                            <li><i class="fas fa-check"></i> Карточки клиентов и питомцев</li>
+                            <li><i class="fas fa-check"></i> Кастомные поля</li>
+                            <li><i class="fas fa-check"></i> Импорт/экспорт данных</li>
+                        </ul>
+                    </div>
+                    <div class="feature-demo" style="padding: 1rem;">
+                        <div style="width: 100%;">
+                            <div class="table-mock">
+                                <div class="table-header">
+                                    <div class="table-cell">Услуга</div>
+                                    <div class="table-cell">Цена</div>
+                                    <div class="table-cell">Время</div>
+                                </div>
+                                <div class="table-row">
+                                    <div class="table-cell" style="font-weight: 500;">Стрижка</div>
+                                    <div class="table-cell">500 ₽</div>
+                                    <div class="table-cell">30 мин</div>
+                                </div>
+                                <div class="table-row">
+                                    <div class="table-cell" style="font-weight: 500;">Бритьё</div>
+                                    <div class="table-cell">400 ₽</div>
+                                    <div class="table-cell">20 мин</div>
+                                </div>
+                                <div class="table-row">
+                                    <div class="table-cell" style="font-weight: 500;">Уход за бородой</div>
+                                    <div class="table-cell">350 ₽</div>
+                                    <div class="table-cell">15 мин</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Industries Interactive Section -->
+    <section class="industries-section" id="industries">
+        <div class="industries-container">
+            <h2 class="section-title fade-in">Для кого сделано</h2>
+            
+            <div class="industry-selector fade-in">
+                <button class="industry-btn active" onclick="switchIndustry(event, 'barber')">
+                    <i class="fas fa-cut"></i>
+                    Барбершоп
+                </button>
+                <button class="industry-btn" onclick="switchIndustry(event, 'grooming')">
+                    <i class="fas fa-paw"></i>
+                    Груминг-салон
+                </button>
+                <button class="industry-btn" onclick="switchIndustry(event, 'beauty')">
+                    <i class="fas fa-spa"></i>
+                    Косметология
+                </button>
+                <button class="industry-btn" onclick="switchIndustry(event, 'confectionery')">
+                    <i class="fas fa-birthday-cake"></i>
+                    Кондитерская
+                </button>
+                <button class="industry-btn" onclick="switchIndustry(event, 'fitness')">
+                    <i class="fas fa-dumbbell"></i>
+                    Фитнес-клуб
+                </button>
+                <button class="industry-btn" onclick="switchIndustry(event, 'custom')">
+                    <i class="fas fa-star"></i>
+                    Свой бизнес
+                </button>
+            </div>
+
+            <!-- Barber Industry -->
+            <div id="barber" class="industry-content active fade-in">
+                <div class="industry-info">
+                    <h3>Для барбершопов</h3>
+                    <p>SmartWork помогает организовать работу барбершопа от расписания мастеров до анализа доходности. Ведите учет услуг, управляйте клиентами и отслеживайте загрузку каждого мастера.</p>
+                    <div class="industry-features">
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Онлайн-запись на услуги</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Журнал клиентов с историей</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Управление расписанием мастеров</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Аналитика доходов и предпочтений</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="industry-image-demo">
+                    <i class="fas fa-cut"></i>
+                    <p>Полная система управления барбершопом</p>
+                </div>
+            </div>
+
+            <!-- Grooming Industry -->
+            <div id="grooming" class="industry-content">
+                <div class="industry-info">
+                    <h3>Для груминг-салонов</h3>
+                    <p>Специализированное управление салоном груминга с карточками питомцев, историей процедур, отметками о вакцинации и аллергиях. Удобный учет всех особенностей животных.</p>
+                    <div class="industry-features">
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Электронные карточки питомцев</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>История процедур и фото до/после</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Учет вакцинации и здоровья</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Уведомления владельцам</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="industry-image-demo">
+                    <i class="fas fa-paw"></i>
+                    <p>Управление груминг-салоном с карточками питомцев</p>
+                </div>
+            </div>
+
+            <!-- Beauty Industry -->
+            <div id="beauty" class="industry-content">
+                <div class="industry-info">
+                    <h3>Для косметологии</h3>
+                    <p>Система для управления косметологической клиникой с учетом процедур, материалов, результатов. Отслеживайте прогресс клиентов и управляйте товарным остатком.</p>
+                    <div class="industry-features">
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Запись на процедуры</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Отслеживание результатов лечения</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Управление товаром и расходниками</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Программы лояльности</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="industry-image-demo">
+                    <i class="fas fa-spa"></i>
+                    <p>Полный контроль косметологической клиники</p>
+                </div>
+            </div>
+
+            <!-- Confectionery Industry -->
+            <div id="confectionery" class="industry-content">
+                <div class="industry-info">
+                    <h3>Для кондитерской</h3>
+                    <p>Управление заказами десертов, расчет стоимости, учет ингредиентов. Платформа поддерживает сезонные меню и систему доставки.</p>
+                    <div class="industry-features">
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Прием заказов десертов</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Управление рецептами и ингредиентами</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Планирование доставки</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Калькуляция себестоимости</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="industry-image-demo">
+                    <i class="fas fa-birthday-cake"></i>
+                    <p>Система управления кондитерской</p>
+                </div>
+            </div>
+
+            <!-- Fitness Industry -->
+            <div id="fitness" class="industry-content">
+                <div class="industry-info">
+                    <h3>Для фитнес-клубов</h3>
+                    <p>Управление абонементами, расписанием тренировок, личными тренерами. Отслеживайте прогресс клиентов и планируйте сессии.</p>
+                    <div class="industry-features">
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Управление абонементами</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Расписание групповых занятий</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Персональные тренировки</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Отслеживание прогресса</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="industry-image-demo">
+                    <i class="fas fa-dumbbell"></i>
+                    <p>Платформа для управления фитнес-клубом</p>
+                </div>
+            </div>
+
+            <!-- Custom Business -->
+            <div id="custom" class="industry-content">
+                <div class="industry-info">
+                    <h3>Для вашего бизнеса</h3>
+                    <p>SmartWork — это гибкая платформа, которая подходит для любого вида услугового бизнеса. Благодаря кастомизируемым полям, справочникам и процессам, вы можете адаптировать систему под особенности вашего бизнеса.</p>
+                    <div class="industry-features">
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Полная кастомизация под ваш бизнес</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Расширяемые справочники и поля</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Интеграция с вашими инструментами</span>
+                        </div>
+                        <div class="industry-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Техническая поддержка в настройке</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="custom-business-section">
+                    <h4>Идея вашего бизнеса уникальна</h4>
+                    <p>Мы готовы помочь вам настроить SmartWork под особенности вашего сервиса. Обратитесь к нам для консультации по кастомизации.</p>
+                    <button class="btn btn-primary" style="margin-top: 1rem;">
+                        <i class="fas fa-comment-dots"></i>
+                        Получить консультацию
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section with Extensions -->
+    <section class="pricing-section" id="pricing">
+        <div class="pricing-container">
+            <h2 class="section-title fade-in">Система расширений</h2>
+            
+            <div class="pricing-intro fade-in">
+                <p><strong>Новый подход!</strong> Расширения покупаются для конкретных столов, а не как бонусы к аккаунту. Это позволяет платить только за то, что вы используете. Сотрудники могут приобрести личную статистику за доплату.</p>
+            </div>
+            
+            <div class="pricing-toggle fade-in">
+                <span class="toggle-label">Ежемесячно</span>
+                <div class="toggle-switch" id="billingToggle" onclick="toggleBilling()"></div>
+                <span class="toggle-label">Ежегодно <span style="color: var(--green-600); font-weight: 600;">-20%</span></span>
+            </div>
+
+            <div class="pricing-grid fade-in">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Старт</h3>
+                        <p class="pricing-desc">Для тестирования</p>
+                    </div>
+                    <div class="pricing-price">
+                        <div class="price price-free">0 ₽<span>/мес</span></div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li class="included"><i class="fas fa-check"></i> 1 рабочий стол</li>
+                        <li class="included"><i class="fas fa-check"></i> До 3 сотрудников</li>
+                        <li class="included"><i class="fas fa-check"></i> Базовый календарь</li>
+                        <li class="included"><i class="fas fa-check"></i> Справочники</li>
+                        <li class="not-included"><i class="fas fa-times"></i> Аналитика</li>
+                        <li class="not-included"><i class="fas fa-times"></i> API доступ</li>
+                    </ul>
+                    <button class="btn btn-secondary" style="width: 100%;">Начать бесплатно</button>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Базовый</h3>
+                        <p class="pricing-desc">Для среднего салона</p>
+                    </div>
+                    <div class="pricing-price">
+                        <div class="price">990 ₽<span>/мес</span></div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li class="included"><i class="fas fa-check"></i> Неограничено столов</li>
+                        <li class="included"><i class="fas fa-check"></i> Неограничено сотрудников</li>
+                        <li class="included"><i class="fas fa-check"></i> Расширенная аналитика</li>
+                        <li class="included"><i class="fas fa-check"></i> Экспорт отчетов</li>
+                        <li class="included"><i class="fas fa-check"></i> Поддержка</li>
+                        <li class="not-included"><i class="fas fa-times"></i> API доступ</li>
+                    </ul>
+                    <button class="btn btn-primary" style="width: 100%;">Выбрать тариф</button>
+                    <div class="pricing-addon">
+                        <div class="addon-title">📊 Личная статистика сотрудника</div>
+                        <div class="addon-options">
+                            <div class="addon-option">
+                                <span>+150 ₽/месяц</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Профессиональный</h3>
+                        <p class="pricing-desc">С API интеграциями</p>
+                    </div>
+                    <div class="pricing-price">
+                        <div class="price">2 490 ₽<span>/мес</span></div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li class="included"><i class="fas fa-check"></i> Все возможности Базового</li>
+                        <li class="included"><i class="fas fa-check"></i> REST API доступ</li>
+                        <li class="included"><i class="fas fa-check"></i> WebSocket подписки</li>
+                        <li class="included"><i class="fas fa-check"></i> Интеграция с 1С</li>
+                        <li class="included"><i class="fas fa-check"></i> Приоритетная поддержка</li>
+                        <li class="included"><i class="fas fa-check"></i> White-label опция</li>
+                    </ul>
+                    <button class="btn btn-success" style="width: 100%;">Связаться с нами</button>
+                </div>
+            </div>
+
+            <!-- Demo Table with Extensions -->
+            <div style="margin-top: 3rem; padding: 2rem; background: white; border-radius: 12px; border: 1px solid var(--surface-200);">
+                <h3 style="margin-bottom: 1.5rem; font-weight: 700; color: var(--surface-900);">Пример: Стол барбершопа "Ноябрь" на Базовом тарифе</h3>
+                <div class="table-mock">
+                    <div class="table-header">
+                        <div class="table-cell"><strong>Расширение</strong></div>
+                        <div class="table-cell"><strong>Описание</strong></div>
+                        <div class="table-cell"><strong>Стоимость</strong></div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell"><i class="fas fa-calendar"></i> Календарь</div>
+                        <div class="table-cell">Базовая функция (входит в Базовый)</div>
+                        <div class="table-cell" style="color: var(--green-600); font-weight: 600;">Включено</div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell"><i class="fas fa-chart-bar"></i> Аналитика стола</div>
+                        <div class="table-cell">Статистика по доходам и нагрузке</div>
+                        <div class="table-cell extension-cost">+200 ₽/мес</div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell"><i class="fas fa-qrcode"></i> QR для клиентов</div>
+                        <div class="table-cell">Онлайн-запись через QR код</div>
+                        <div class="table-cell extension-cost">+150 ₽/мес</div>
+                    </div>
+                    <div class="table-row">
+                        <div class="table-cell"><i class="fas fa-mobile-alt"></i> Мобильное приложение</div>
+                        <div class="table-cell">Приложение для сотрудников стола</div>
+                        <div class="table-cell extension-cost">+300 ₽/мес</div>
+                    </div>
+                </div>
+                <p style="margin-top: 1rem; color: var(--surface-600); font-size: 0.9rem;"><i class="fas fa-lightbulb" style="color: var(--amber-400);"></i> Итого для этого стола: 990 ₽ (базовый) + 650 ₽ (расширения) = <strong>1 640 ₽/месяц</strong></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Section -->
+    <section class="api-section" id="api">
+        <div class="api-container">
+            <h2 class="api-title fade-in">Возможности API</h2>
+            
+            <div class="api-layout fade-in">
+                <div class="api-sidebar">
+                    <button class="api-method active" onclick="switchApiMethod(event, 'booking')">
+                        <i class="fas fa-calendar-check"></i> Запись на услугу
+                    </button>
+                    <button class="api-method" onclick="switchApiMethod(event, 'tasks')">
+                        <i class="fas fa-list-check"></i> Создание задач
+                    </button>
+                    <button class="api-method" onclick="switchApiMethod(event, 'analytics')">
+                        <i class="fas fa-chart-pie"></i> Получение статистики
+                    </button>
+                    <button class="api-method" onclick="switchApiMethod(event, 'webhook')">
+                        <i class="fas fa-webhook"></i> Webhooks
+                    </button>
+                </div>
+
+                <div style="flex: 1;">
+                    <!-- Booking API -->
+                    <div id="booking" class="api-demo">
+                        <h4><i class="fas fa-calendar-check"></i> Создание записи</h4>
+                        <p style="margin-bottom: 1rem; opacity: 0.9;">Запишите клиента на услугу, автоматически управляйте временем и отправляйте уведомления.</p>
+                        <div class="code-block">POST /api/v1/tables/{table_id}/bookings
+{
+  "client_id": "client_123",
+  "service_id": "service_456",
+  "staff_id": "staff_789",
+  "datetime": "2026-04-15T14:30:00Z"
+}</div>
+                        <div class="api-response">
+                            <div class="response-item">
+                                <h5>✓ Статус 201 Created</h5>
+                                <p>Запись успешно создана, клиент получит уведомление</p>
+                            </div>
+                            <div class="response-item">
+                                <h5>booking_id</h5>
+                                <p>"booking_abc123def456"</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tasks API -->
+                    <div id="tasks" class="api-demo" style="display: none;">
+                        <h4><i class="fas fa-list-check"></i> Создание задачи</h4>
+                        <p style="margin-bottom: 1rem; opacity: 0.9;">Интегрируйте свои системы для создания задач в SmartWork.</p>
+                        <div class="code-block">POST /api/v1/tables/{table_id}/tasks
+{
+  "title": "Переделать макет",
+  "description": "Обновить главную страницу",
+  "assigned_to": "staff_789",
+  "priority": "high",
+  "due_date": "2026-04-20"
+}</div>
+                        <div class="api-response">
+                            <div class="response-item">
+                                <h5>✓ Статус 201 Created</h5>
+                                <p>Задача создана и назначена сотруднику</p>
+                            </div>
+                            <div class="response-item">
+                                <h5>task_id</h5>
+                                <p>"task_xyz789abc123"</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics API -->
+                    <div id="analytics" class="api-demo" style="display: none;">
+                        <h4><i class="fas fa-chart-pie"></i> Получение аналитики</h4>
+                        <p style="margin-bottom: 1rem; opacity: 0.9;">Выгружайте данные аналитики за нужный период.</p>
+                        <div class="code-block">GET /api/v1/tables/{table_id}/analytics?
+  period=month&
+  start_date=2026-04-01&
+  end_date=2026-04-30</div>
+                        <div class="api-response">
+                            <div class="response-item">
+                                <h5>✓ Статус 200 OK</h5>
+                                <p>Получены полные данные по столу</p>
+                            </div>
+                            <div class="response-item">
+                                <h5>total_revenue</h5>
+                                <p>125500 ₽ (за период)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Webhooks API -->
+                    <div id="webhook" class="api-demo" style="display: none;">
+                        <h4><i class="fas fa-webhook"></i> Webhooks</h4>
+                        <p style="margin-bottom: 1rem; opacity: 0.9;">Получайте уведомления о событиях в реальном времени.</p>
+                        <div class="code-block">POST https://your-app.com/webhooks/smartwork
+{
+  "event": "booking.created",
+  "timestamp": "2026-04-15T14:30:00Z",
+  "data": {
+    "booking_id": "booking_abc123",
+    "client_id": "client_456"
+  }
+}</div>
+                        <div class="api-response">
+                            <div class="response-item">
+                                <h5>✓ Доступные события</h5>
+                                <p>booking.created, task.completed, staff.status_changed</p>
+                            </div>
+                            <div class="response-item">
+                                <h5>📡 Доставка</h5>
+                                <p>Гарантирована с retry механизмом</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="about-container">
+            <div class="about-grid">
+                <div class="about-content fade-in">
+                    <h2>О проекте SmartWork</h2>
+                    <p>SmartWork — это учебно-продуктовый проект для организации работы малого сервиса, разработанный с использованием современного стека технологий (Angular, FastAPI, PostgreSQL).</p>
+                    <p>Мы создали не просто систему управления, а правильное рабочее место для владельцев услуговых бизнесов. От календаря и задач до аналитики — всё, что нужно для эффективной работы.</p>
+
+                    <div class="about-benefits">
+                        <div class="benefit-card">
+                            <div class="benefit-icon">⚡</div>
+                            <div class="benefit-title">Быстро внедрить</div>
+                            <div class="benefit-desc">Настраивается за день, сотрудники осваивают за час</div>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-icon">💰</div>
+                            <div class="benefit-title">Экономит время</div>
+                            <div class="benefit-desc">На 10+ часов в неделю на администрирование</div>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-icon">📊</div>
+                            <div class="benefit-title">Видность бизнеса</div>
+                            <div class="benefit-desc">Полная аналитика доходов и нагрузки</div>
+                        </div>
+                        <div class="benefit-card">
+                            <div class="benefit-icon">🔒</div>
+                            <div class="benefit-title">Безопасность</div>
+                            <div class="benefit-desc">99.9% uptime, шифрование данных, GDPR</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="about-visual fade-in">
+                    <div class="tech-item">
+                        <div class="tech-icon"><i class="fab fa-angular"></i></div>
+                        <div class="tech-info">
+                            <h4>Angular 19</h4>
+                            <p>Современный фронтенд</p>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon"><i class="fab fa-python"></i></div>
+                        <div class="tech-info">
+                            <h4>FastAPI</h4>
+                            <p>Быстрый бэкенд</p>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon"><i class="fas fa-database"></i></div>
+                        <div class="tech-info">
+                            <h4>PostgreSQL</h4>
+                            <p>Надежная база</p>
+                        </div>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon"><i class="fab fa-docker"></i></div>
+                        <div class="tech-info">
+                            <h4>Docker</h4>
+                            <p>Масштабирование</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="faq-container">
+            <h2 class="faq-title fade-in">Часто задаваемые вопросы</h2>
+            
+            <div class="faq-list fade-in">
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Как быстро начать использовать SmartWork?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">Вы можете зарегистрироваться и создать первый стол за 5 минут. Базовая настройка справочников (услуги, сотрудники) займет еще 15-30 минут. Сотрудники обычно осваивают систему за час работы. Полная настройка под все процессы вашего бизнеса займет 1-2 дня.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Какие данные будут доступны в бесплатном плане?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">На бесплатном тарифе (Старт) вы получаете 1 рабочий стол, до 3 сотрудников, базовый календарь и справочники. Этого достаточно для пробного периода малого бизнеса. Для расширенной аналитики и API нужно перейти на платный тариф.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Как работает система расширений для столов?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">Расширения (дополнительные возможности) покупаются для конкретного стола, а не для всего аккаунта. Например, вы платите 990₽/месяц за базовый тариф и можете добавить аналитику (+200₽) только для нужного стола. Другие столы могут не иметь эти расширения, что позволяет оптимизировать затраты.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Что такое личная статистика сотрудника?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">Это опциональное расширение за 150₽/месяц на сотрудника. Оно позволяет сотруднику видеть свою личную статистику: количество клиентов, доход, рейтинг. Владелец всегда видит все данные, это расширение только для сотрудников.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Как интегрировать SmartWork с моей системой 1С?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">Интеграция с 1С доступна на тарифе Профессиональный (2490₽/месяц). Мы предоставляем REST API и документацию для синхронизации данных. Вы можете автоматически выгружать данные о доходах, клиентах и услугах из SmartWork в 1С.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Какой уровень поддержки вы предоставляете?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">На тарифе Старт и Базовый — стандартная поддержка по email (ответ в течение 24 часов). На тарифе Профессиональный — приоритетная поддержка с ответом в течение 2 часов. Все вопросы по использованию решаются бесплатно и быстро.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Как защищены данные мои и клиентов?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">Все данные зашифрованы при передаче (HTTPS) и хранении. Мы используем PostgreSQL с автоматическими резервными копиями. Система имеет 99.9% uptime, регулярное резервное копирование и соответствует стандартам GDPR и защиты персональных данных.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Можно ли пригласить неограниченно сотрудников?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">Да! На тарифах Базовый и Профессиональный можно приглашать неограниченное количество сотрудников. На бесплатном тарифе (Старт) ограничение 3 сотрудника. Каждого сотрудника можно привязать к определенным столам и ограничить его права доступа.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Как происходит оплата и можно ли отменить подписку?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">Оплата ежемесячно или ежегодно (с 20% скидкой). Можно отменить подписку в любой момент без каких-либо штрафов. Данные остаются доступны в течение 30 дней после отмены. Для годовой подписки есть гарантия возврата за первые 14 дней.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Есть ли мобильное приложение?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">SmartWork полностью адаптирован под мобильные устройства — работает в мобильном браузере. Дополнительное мобильное приложение для сотрудников доступно как расширение (+300₽/месяц за стол). Оно позволяет быстро получать уведомления и обновления прямо на телефон.</div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header" onclick="toggleFaq(this)">
+                        <span class="faq-question">Можно ли экспортировать мои данные?</span>
+                        <i class="fas fa-chevron-down faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">Да! На всех платных тарифах доступна функция экспорта отчетов в PDF и Excel. Вы можете выгружать аналитику, справочники и истории операций. Если вы захотите перейти на другую систему, мы можете экспортировать все ваши данные в стандартном формате.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <div class="logo-icon" style="width: 32px; height: 32px; font-size: 1rem;">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        SmartWork
+                    </div>
+                    <p class="footer-desc">Умное рабочее место для малого сервиса. Столы, люди, календарь, очередь, справочники и аналитика в одном контуре.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+                        <a href="#" class="social-link"><i class="fas fa-envelope"></i></a>
+                    </div>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Продукт</h4>
+                    <ul class="footer-links">
+                        <li><a href="#features"><i class="fas fa-chevron-right"></i> Возможности</a></li>
+                        <li><a href="#industries"><i class="fas fa-chevron-right"></i> Для кого</a></li>
+                        <li><a href="#api"><i class="fas fa-chevron-right"></i> API</a></li>
+                        <li><a href="#pricing"><i class="fas fa-chevron-right"></i> Тарифы</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Компания</h4>
+                    <ul class="footer-links">
+                        <li><a href="#about"><i class="fas fa-chevron-right"></i> О нас</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Блог</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Карьера</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Контакты</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-column">
+                    <h4>Поддержка</h4>
+                    <ul class="footer-links">
+                        <li><a href="#faq"><i class="fas fa-chevron-right"></i> FAQ</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Статус системы</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Конфиденциальность</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Условия</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 SmartWork. Все права защищены.</p>
+                <p>Сделано с <i class="fas fa-heart" style="color: #ef4444;"></i> для малого бизнеса</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('header');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        // Features Tab Switching
+        function switchFeature(event, featureName) {
+            event.target.closest('.feature-tab').parentElement.querySelectorAll('.feature-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.closest('.feature-tab').classList.add('active');
+
+            document.querySelectorAll('.feature-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(featureName).classList.add('active');
+        }
+
+        // Industries Switching
+        function switchIndustry(event, industryName) {
+            event.target.parentElement.querySelectorAll('.industry-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.industry-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(industryName).classList.add('active');
+        }
+
+        // API Method Switching
+        function switchApiMethod(event, methodName) {
+            event.target.parentElement.querySelectorAll('.api-method').forEach(method => {
+                method.classList.remove('active');
+            });
+            event.target.closest('.api-method').classList.add('active');
+
+            document.querySelectorAll('.api-demo').forEach(demo => {
+                demo.style.display = 'none';
+            });
+            document.getElementById(methodName).style.display = 'block';
+        }
+
+        // FAQ Toggle
+        function toggleFaq(element) {
+            const faqItem = element.parentElement;
+            faqItem.classList.toggle('active');
+        }
+
+        // Billing Toggle
+        let isYearly = false;
+        function toggleBilling() {
+            isYearly = !isYearly;
+            document.getElementById('billingToggle').classList.toggle('active');
+        }
+
+        // Language Toggle
+        let currentLang = 'RU';
+        function toggleLanguage() {
+            const langSpan = document.querySelector('.lang-switcher span');
+            currentLang = currentLang === 'RU' ? 'EN' : 'RU';
+            langSpan.textContent = currentLang;
+        }
+
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                if (this.getAttribute('href') !== '#') {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Mobile menu toggle
+        document.querySelector('.mobile-menu-btn').addEventListener('click', () => {
+            const nav = document.querySelector('.nav');
+            nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
+            nav.style.position = 'absolute';
+            nav.style.top = '72px';
+            nav.style.left = '0';
+            nav.style.right = '0';
+            nav.style.background = 'white';
+            nav.style.flexDirection = 'column';
+            nav.style.padding = '1rem';
+            nav.style.boxShadow = 'var(--shadow-lg)';
+        });
+
+        // Dashboard preview hover effect
+        const dashboard = document.querySelector('.dashboard-preview');
+        if (dashboard) {
+            dashboard.addEventListener('mousemove', (e) => {
+                const rect = dashboard.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = (y - centerY) / 20;
+                const rotateY = (centerX - x) / 20;
+                
+                dashboard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+            
+            dashboard.addEventListener('mouseleave', () => {
+                dashboard.style.transform = 'perspective(1000px) rotateY(-5deg) rotateX(5deg)';
+            });
+        }
+    </script>
+</body>
+</html>

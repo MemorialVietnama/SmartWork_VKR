@@ -1,0 +1,105 @@
+:host {
+  display: block;
+}
+
+:host-context(.landing-tpl--api) {
+  .landing-api-heading {
+    color: var(--p-surface-0);
+  }
+
+  .landing-api-demo-text {
+    color: color-mix(in srgb, var(--p-surface-0) 82%, transparent);
+  }
+
+  .landing-api-demo-title {
+    color: var(--p-surface-0);
+  }
+}
+
+.landing-api-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .landing-api-shell {
+    grid-template-columns: minmax(200px, 280px) 1fr;
+    align-items: start;
+  }
+}
+
+.landing-api-demo {
+  background: color-mix(in srgb, var(--p-surface-0) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--p-surface-0) 12%, transparent);
+  border-radius: 12px;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.landing-api-demo-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.landing-api-code {
+  display: block;
+  padding: 1rem;
+  border-radius: var(--p-content-border-radius);
+  background: color-mix(in srgb, var(--p-surface-950) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--p-surface-0) 12%, transparent);
+  color: var(--p-primary-200);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  overflow: auto;
+  margin: 0 0 1rem;
+  font-family: ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+}
+
+:host ::ng-deep .landing-api-response-card.p-card {
+  background: color-mix(in srgb, var(--p-green-500) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--p-green-400) 35%, transparent);
+}
+
+.landing-api-response-title {
+  color: var(--p-green-300);
+  font-size: 0.9rem;
+}
+
+:host ::ng-deep .landing-api-response-card .text-sm {
+  color: color-mix(in srgb, var(--p-surface-0) 78%, transparent);
+}
+
+::ng-deep .landing-select-api-vertical {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+::ng-deep .landing-select-api-vertical .p-togglebutton,
+::ng-deep .landing-select-api-vertical .p-button {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 1rem;
+  border-radius: var(--p-content-border-radius);
+  border: none;
+  background: color-mix(in srgb, var(--p-surface-0) 10%, transparent);
+  color: color-mix(in srgb, var(--p-surface-0) 88%, transparent);
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
+}
+
+::ng-deep .landing-select-api-vertical .p-togglebutton.p-highlight,
+::ng-deep .landing-select-api-vertical .p-togglebutton.p-button-checked {
+  background: color-mix(in srgb, var(--p-primary-400) 22%, transparent);
+  border-left-color: var(--p-primary-300);
+  color: var(--p-surface-0);
+}
+
+::ng-deep .landing-select-api-vertical .p-togglebutton:not(.p-disabled):hover,
+::ng-deep .landing-select-api-vertical .p-button:not(.p-disabled):hover {
+  background: color-mix(in srgb, var(--p-surface-0) 14%, transparent);
+}

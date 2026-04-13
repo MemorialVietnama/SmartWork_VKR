@@ -1,6 +1,16 @@
 <div class="page">
-  <p-card header="Подтверждение регистрации">
-    <div class="lead">Введите код из письма, отправленного на вашу почту.</div>
+  <p-card header="Подтверждение кода">
+    <div class="verify-hero">
+      <div class="verify-hero-copy">
+        <div class="lead">Введите код из письма, отправленного на вашу почту.</div>
+        <small>Код одноразовый и действует ограниченное время.</small>
+      </div>
+      <div class="otp-preview" aria-hidden="true">
+        @for (slot of codePreviewSlots(); track $index) {
+          <span>{{ slot }}</span>
+        }
+      </div>
+    </div>
 
     @if (error) {
       <p-message severity="error" [text]="error" [closable]="false" />
@@ -12,11 +22,27 @@
     <form class="form" (ngSubmit)="confirm()">
       <div class="field">
         <label for="login">Почта</label>
-        <input id="login" pInputText name="login" required [(ngModel)]="login" />
+        <input id="login" pInputText name="login" type="email" autocomplete="email" required [(ngModel)]="login" />
       </div>
       <div class="field">
-        <label for="code">Код подтверждения</label>
-        <input id="code" pInputText name="code" required maxlength="6" [(ngModel)]="code" />
+        <div class="field-head">
+          <label for="code">Код подтверждения</label>
+          <small>6 символов</small>
+        </div>
+        <input
+          id="code"
+          pInputText
+          name="code"
+          required
+          maxlength="6"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          [(ngModel)]="code"
+        />
+      </div>
+      <div class="hint-chip">
+        <i class="pi pi-envelope"></i>
+        <span>{{ normalizedLogin() || 'Укажите почту для получения кода' }}</span>
       </div>
       <div class="actions">
         <p-button type="submit" label="Подтвердить" icon="pi pi-check" [loading]="loading" />

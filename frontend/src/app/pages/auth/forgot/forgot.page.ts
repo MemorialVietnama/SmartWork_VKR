@@ -1,25 +1,24 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
-import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { IconField } from 'primeng/iconfield';
+import { InputIcon } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-forgot',
   standalone: true,
-  imports: [FormsModule, CardModule, ButtonModule, InputTextModule, MessageModule, ProgressSpinnerModule],
+  imports: [FormsModule, RouterLink, CardModule, ButtonModule, InputTextModule, IconField, InputIcon],
   templateUrl: './forgot.page.html',
   styleUrl: './forgot.page.scss',
 })
 export class ForgotPasswordPageComponent {
   private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
 
   protected login = '';
   protected loading = false;
@@ -28,24 +27,26 @@ export class ForgotPasswordPageComponent {
 
   protected onSubmit(): void {
     if (this.loading) return;
-    this.loading = true;
+
+    const email = this.login.trim();
     this.message = null;
     this.error = null;
 
-    this.auth.forgotPassword(this.login).subscribe({
+    if (!email) {
+      this.error = 'Введите email.';
+      return;
+    }
+
+    this.loading = true;
+    this.auth.forgotPassword(email).subscribe({
       next: (r) => {
         this.message = r.detail;
         this.loading = false;
       },
       error: () => {
-        this.error = 'РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ Р·Р°РїСЂРѕСЃ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.';
+        this.error = 'Не удалось отправить запрос. Попробуйте позже.';
         this.loading = false;
       },
     });
   }
-
-  protected back(): void {
-    void this.router.navigate(['/auth/login']);
-  }
 }
-

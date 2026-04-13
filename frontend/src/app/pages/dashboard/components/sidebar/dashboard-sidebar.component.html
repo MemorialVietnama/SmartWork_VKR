@@ -1,0 +1,25 @@
+<aside class="sidebar">
+  <div class="sidebar-head">
+    <p-tag [severity]="'info'" [value]="isOwner() ? 'owner' : 'staff'" />
+    <h3>{{ user()?.last_name }} {{ user()?.first_name }}</h3>
+    <small>{{ user()?.login }}</small>
+  </div>
+
+  <nav class="menu">
+    @for (category of categories(); track category.id) {
+      <button
+        type="button"
+        class="menu-item"
+        [class.active]="selectedCategory() === category.id"
+        [class.logout-item]="category.id === 'logout'"
+        (click)="onSelect(category.id)"
+      >
+        <i [class]="category.icon"></i>
+        <span>{{ category.label }}</span>
+        @if (badges()[category.id]) {
+          <small class="menu-badge">{{ badges()[category.id] }}</small>
+        }
+      </button>
+    }
+  </nav>
+</aside>

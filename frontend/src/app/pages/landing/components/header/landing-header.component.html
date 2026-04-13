@@ -1,0 +1,115 @@
+<header
+  class="landing-header"
+  [class.landing-header--scrolled]="headerScrolled()"
+  [class.landing-header--mobile-open]="mobileNavOpen()"
+>
+  <div class="landing-header__container">
+    <a routerLink="/welcome" class="landing-header__logo" aria-label="SmartWork — главная">
+      <div class="landing-header__logo-icon" aria-hidden="true">
+        <i class="pi pi-briefcase"></i>
+      </div>
+      <span class="landing-header__logo-text">SmartWork</span>
+    </a>
+
+    <nav class="landing-header__nav" aria-label="Основная навигация">
+      @for (item of navItems; track item.fragment ?? item.label) {
+        <a
+          [routerLink]="item.link"
+          [fragment]="item.fragment"
+          class="landing-header__nav-link"
+          [class.landing-header__nav-link--active]="isActive(item.fragment)"
+        >
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+
+    <div class="landing-header__actions">
+      <p-button
+        type="button"
+        styleClass="landing-header__lang"
+        [attr.aria-label]="'Текущий язык: ' + langLabel() + '. Нажмите, чтобы сменить'"
+        (onClick)="langToggle.emit()"
+      >
+        <span class="landing-header__lang-inner">
+          <i class="pi pi-globe" aria-hidden="true"></i>
+          <span>{{ langLabel() }}</span>
+          <i class="pi pi-chevron-down landing-header__lang-chevron" aria-hidden="true"></i>
+        </span>
+      </p-button>
+
+      <p-button
+        type="button"
+        label="Начать"
+        icon="pi pi-bolt"
+        iconPos="left"
+        styleClass="landing-header__cta"
+        (onClick)="goLogin()"
+        ariaLabel="Начать — войти"
+      />
+
+      <p-button
+        type="button"
+        icon="pi pi-bars"
+        [text]="true"
+        styleClass="landing-header__menu-btn"
+        (onClick)="mobileNavToggle.emit()"
+        [attr.aria-expanded]="mobileNavOpen()"
+        [attr.aria-controls]="'mobile-menu'"
+        ariaLabel="Открыть меню"
+      />
+    </div>
+  </div>
+</header>
+
+<div
+  id="mobile-menu"
+  class="landing-header__drawer"
+  [class.landing-header__drawer--open]="mobileNavOpen()"
+  role="dialog"
+  aria-label="Мобильное меню"
+  aria-modal="true"
+>
+  <div class="landing-header__drawer-backdrop" (click)="closeMobile.emit()" role="presentation"></div>
+
+  <div class="landing-header__drawer-panel" (click)="$event.stopPropagation()">
+    <div class="landing-header__drawer-head">
+      <span class="landing-header__drawer-title">Меню</span>
+      <p-button
+        type="button"
+        icon="pi pi-times"
+        [text]="true"
+        [rounded]="true"
+        styleClass="landing-header__drawer-close"
+        (onClick)="closeMobile.emit()"
+        ariaLabel="Закрыть меню"
+      />
+    </div>
+
+    <nav class="landing-header__drawer-nav" aria-label="Мобильная навигация">
+      @for (item of navItems; track item.fragment ?? item.label; let i = $index) {
+        <a
+          [routerLink]="item.link"
+          [fragment]="item.fragment"
+          class="landing-header__drawer-link"
+          [style.animation-delay]="i * 50 + 'ms'"
+          (click)="closeMobile.emit()"
+        >
+          <span>{{ item.label }}</span>
+          <i class="pi pi-arrow-right landing-header__drawer-link-icon" aria-hidden="true"></i>
+        </a>
+      }
+    </nav>
+
+    <div class="landing-header__drawer-foot">
+      <p-button
+        type="button"
+        label="Начать бесплатно"
+        icon="pi pi-bolt"
+        iconPos="left"
+        styleClass="landing-header__drawer-cta w-full"
+        (onClick)="goLogin(); closeMobile.emit()"
+      />
+    </div>
+  </div>
+</div>

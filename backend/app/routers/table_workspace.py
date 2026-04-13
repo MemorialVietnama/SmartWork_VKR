@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from datetime import time as dtime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import delete, func, select
@@ -23,6 +24,7 @@ from app.config.directory_presets import empty_payload_for_kind, preset_has_dire
 from app.services.directory_bootstrap import repair_preset_directories as run_preset_directories_repair
 from app.schemas.table_workspace import (
     CalendarSlotCreateRequest,
+    CalendarSlotPatchRequest,
     CalendarSlotDto,
     DirectoryItemCreateRequest,
     DirectoryItemDto,
@@ -39,6 +41,8 @@ from app.schemas.table_workspace import (
     TableTaskCreateRequest,
     TableTaskDto,
     TableTaskUpdateRequest,
+    ShiftScheduleApplyRequest,
+    ShiftScheduleApplyResponse,
 )
 
 router = APIRouter()
@@ -317,6 +321,112 @@ async def delete_calendar_slot(
     await db.execute(delete(TableCalendarSlot).where(TableCalendarSlot.id == slot_id, TableCalendarSlot.table_id == table_id))
     await db.commit()
     return {"detail": "Удалено"}
+
+
+@router.post("/{table_id}/workspace/shifts/apply", response_model=ShiftScheduleApplyResponse)
+async def apply_shift_schedule(
+    table_id: int,
+    req: ShiftScheduleApplyRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ShiftScheduleApplyResponse:
+    table, is_owner = await _require_table_access(db, current_user, table_id)
+    if req.employee_user_id == table.owner_id:
+        raise HTTPException(status_code=400, detail="Для владельца смены задаются отдельно")
+    employee_name = ""
+    if is_owner:
+        user_res = await db.execute(select(User).where(User.id == req.employee_user_id))
+        employee_user = user_res.scalar_one_or_none()
+        if not employee_user:
+            raise HTTPException(status_code=404, detail="Сотрудник не найден")
+        mem_res = await db.execute(
+            select(TableMember).where(TableMember.table_id == table_id, TableMember.user_id == req.employee_user_id),
+        )
+        if not mem_res.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Сотрудник не найден в этом столе")
+        employee_name = _member_name(employee_user)
+    elif current_user.id != req.employee_user_id:
+        raise HTTPException(status_code=403, detail="Можно задавать смены только для своего аккаунта")
+    else:
+        employee_name = _member_name(current_user)
+
+    if not req.weekdays:
+        raise HTTPException(status_code=400, detail="Выберите хотя бы один день недели")
+
+    start_h, start_m = req.start_time.split(":")
+    end_h, end_m = req.end_time.split(":")
+    start_time = dtime(hour=int(start_h), minute=int(start_m), tzinfo=UTC)
+    end_time = dtime(hour=int(end_h), minute=int(end_m), tzinfo=UTC)
+    if (end_time.hour, end_time.minute) <= (start_time.hour, start_time.minute):
+        raise HTTPException(status_code=400, detail="Время окончания должно быть позже времени начала")
+
+    today = datetime.now(UTC).date()
+    last_day = today.replace(day=today.day)
+    if req.weeks_ahead > 0:
+        from datetime import timedelta
+        last_day = today + timedelta(days=(req.weeks_ahead * 7) - 1)
+
+    existing_res = await db.execute(
+        select(TableCalendarSlot).where(
+            TableCalendarSlot.table_id == table_id,
+            TableCalendarSlot.starts_at >= datetime.combine(today, dtime(0, 0, tzinfo=UTC)),
+            TableCalendarSlot.starts_at <= datetime.combine(last_day, dtime(23, 59, tzinfo=UTC)),
+        ),
+    )
+    existing = existing_res.scalars().all()
+    existing_key = {(item.title, item.starts_at.isoformat(), item.ends_at.isoformat()) for item in existing}
+
+    from datetime import timedelta
+    created_count = 0
+    skipped_duplicates = 0
+    for offset in range(req.weeks_ahead * 7):
+        current_day = today + timedelta(days=offset)
+        js_weekday = (current_day.weekday() + 1) % 7
+        if js_weekday not in req.weekdays:
+            continue
+        starts_at = datetime.combine(current_day, start_time)
+        ends_at = datetime.combine(current_day, end_time)
+        title = f"Смена: {employee_name}"
+        key = (title, starts_at.isoformat(), ends_at.isoformat())
+        if key in existing_key:
+            skipped_duplicates += 1
+            continue
+        db.add(TableCalendarSlot(table_id=table_id, title=title, starts_at=starts_at, ends_at=ends_at))
+        existing_key.add(key)
+        created_count += 1
+
+    await db.commit()
+    return ShiftScheduleApplyResponse(
+        detail="График смен применен",
+        created_count=created_count,
+        skipped_duplicates=skipped_duplicates,
+    )
+
+
+@router.patch("/{table_id}/workspace/calendar/slots/{slot_id}", response_model=CalendarSlotDto)
+async def patch_calendar_slot(
+    table_id: int,
+    slot_id: int,
+    req: CalendarSlotPatchRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> CalendarSlotDto:
+    await _require_table_access(db, current_user, table_id)
+    res = await db.execute(select(TableCalendarSlot).where(TableCalendarSlot.id == slot_id, TableCalendarSlot.table_id == table_id))
+    slot = res.scalar_one_or_none()
+    if not slot:
+        raise HTTPException(status_code=404, detail="Слот не найден")
+    if req.title is not None:
+        slot.title = req.title.strip()
+    starts = req.starts_at if req.starts_at is not None else slot.starts_at
+    ends = req.ends_at if req.ends_at is not None else slot.ends_at
+    if ends <= starts:
+        raise HTTPException(status_code=400, detail="Время окончания должно быть позже начала")
+    slot.starts_at = starts
+    slot.ends_at = ends
+    await db.commit()
+    await db.refresh(slot)
+    return CalendarSlotDto(id=slot.id, title=slot.title, starts_at=slot.starts_at, ends_at=slot.ends_at)
 
 
 # --- Tasks ---
