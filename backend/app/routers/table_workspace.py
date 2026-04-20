@@ -19,9 +19,10 @@ from app.models.table_task import TableTask
 from app.models.user import User
 from app.routers.auth import get_current_user
 from app.routers.tables import _owner_short_name
-from app.schemas.table import AnalyticsMiniChartDto, TableAnalyticsDto, TableBonusDto, TableStatDto
+from app.schemas.table import TableAnalyticsDto, TableBonusDto, TableStatDto
 from app.config.directory_presets import empty_payload_for_kind, preset_has_directory_template
 from app.services.directory_bootstrap import repair_preset_directories as run_preset_directories_repair
+from app.services.analytics import build_analytics_range, build_table_analytics, table_members_count
 from app.schemas.table_workspace import (
     CalendarSlotCreateRequest,
     CalendarSlotPatchRequest,
@@ -215,55 +216,23 @@ async def get_table_workspace_analytics(
     table_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    from_ts: datetime | None = Query(None, alias="from"),
+    to_ts: datetime | None = Query(None, alias="to"),
+    bucket: str = Query("day"),
 ) -> TableAnalyticsDto:
     if await _bonus_qty(db, table_id, "unlock_analytics") <= 0:
         raise HTTPException(status_code=403, detail="Аналитика для стола не подключена")
 
     table, _ = await _require_table_access(db, current_user, table_id)
-    detail = await get_table_detail(table_id, db, current_user)
-    stats = detail.stats
-    load_base = max(stats.tasks_done + stats.tasks_waiting + stats.tasks_new, 1)
-    queued_base = max(stats.queued_orders, 1)
-    active_base = max(stats.active_employees, 1)
-
-    return TableAnalyticsDto(
+    members_count = await table_members_count(db, table_id)
+    rng = build_analytics_range(from_ts=from_ts, to_ts=to_ts, bucket=bucket)
+    return await build_table_analytics(
+        db=db,
         table_id=table.id,
         table_name=table.title,
-        participants=detail.total_participants,
-        active_employees=stats.active_employees,
-        queued_orders=stats.queued_orders,
-        charts=[
-            AnalyticsMiniChartDto(
-                title="Заказы за 7 дней",
-                subtitle="шт / день",
-                values=[queued_base + i % 3 for i in range(7)],
-            ),
-            AnalyticsMiniChartDto(
-                title="Новые задачи",
-                subtitle="шт / день",
-                values=[stats.tasks_new + i % 2 for i in range(7)],
-            ),
-            AnalyticsMiniChartDto(
-                title="Закрытые задачи",
-                subtitle="шт / день",
-                values=[stats.tasks_done + i % 2 for i in range(7)],
-            ),
-            AnalyticsMiniChartDto(
-                title="Загрузка сотрудников",
-                subtitle="усл. индекс",
-                values=[active_base + (load_base // 4) + i for i in range(7)],
-            ),
-            AnalyticsMiniChartDto(
-                title="Записи в очереди",
-                subtitle="шт / день",
-                values=[queued_base + (i % 2) for i in range(7)],
-            ),
-            AnalyticsMiniChartDto(
-                title="Нагрузка стола",
-                subtitle="усл. индекс",
-                values=[load_base + i % 3 for i in range(7)],
-            ),
-        ],
+        participants=1 + members_count,
+        active_employees=members_count,
+        rng=rng,
     )
 
 
@@ -542,6 +511,8 @@ async def list_directories(
         TableDirectoryDto(
             id=d.id,
             name=d.name,
+            description=d.description,
+            schema_fields=d.schema_fields or [],
             kind=d.kind,
             items=[_directory_item_dto(i) for i in d.items],
         )
@@ -599,11 +570,25 @@ async def create_directory(
     current_count = int(count_res.scalar() or 0)
     if current_count >= max_n:
         raise HTTPException(status_code=403, detail="Достигнут лимит справочников для стола")
-    d = TableDirectory(table_id=table_id, name=req.name.strip(), kind=None)
+    schema_fields = req.schema_fields or []
+    d = TableDirectory(
+        table_id=table_id,
+        name=req.name.strip(),
+        description=req.description.strip() if req.description else None,
+        schema_fields=schema_fields,
+        kind=None,
+    )
     db.add(d)
     await db.commit()
     await db.refresh(d)
-    return TableDirectoryDto(id=d.id, name=d.name, kind=d.kind, items=[])
+    return TableDirectoryDto(
+        id=d.id,
+        name=d.name,
+        description=d.description,
+        schema_fields=d.schema_fields or [],
+        kind=d.kind,
+        items=[],
+    )
 
 
 @router.post("/{table_id}/workspace/directories/{directory_id}/items", response_model=DirectoryItemDto)

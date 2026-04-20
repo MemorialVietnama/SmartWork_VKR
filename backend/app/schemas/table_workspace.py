@@ -117,12 +117,16 @@ class DirectoryItemDto(BaseModel):
 class TableDirectoryDto(BaseModel):
     id: int
     name: str
+    description: str | None = None
+    schema_fields: list[dict[str, Any]] = Field(default_factory=list)
     kind: str | None = None
     items: list[DirectoryItemDto]
 
 
 class TableDirectoryCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=500)
+    schema_fields: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class DirectoryItemCreateRequest(BaseModel):

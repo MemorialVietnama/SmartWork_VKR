@@ -9,9 +9,15 @@
   } @else {
     <div class="tw-employee-accordion">
       @for (member of members(); track member.user_id) {
-        <details class="tw-employee-item">
+        <details class="tw-employee-item" [class]="memberColorClass(member)">
           <summary>
-            <span>{{ member.short_name }}</span>
+            <div class="tw-employee-summary-main">
+              <span class="tw-employee-avatar">{{ memberInitials(member) }}</span>
+              <div class="tw-employee-meta">
+                <span>{{ member.short_name }}</span>
+                <small>{{ memberDescription(member) }}</small>
+              </div>
+            </div>
             <small>id: {{ member.user_id }}</small>
           </summary>
           <div class="tw-employee-content">

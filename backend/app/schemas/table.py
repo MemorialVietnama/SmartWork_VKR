@@ -45,6 +45,41 @@ class AnalyticsMiniChartDto(BaseModel):
     values: list[int]
 
 
+class AnalyticsKpiDto(BaseModel):
+    key: str
+    title: str
+    value: float
+    unit: str | None = None
+    delta_percent: float | None = None
+
+
+class AnalyticsPeriodPointDto(BaseModel):
+    period: str
+    values: list[int]
+
+
+class AnalyticsSegmentDto(BaseModel):
+    key: str
+    label: str
+    value: float
+
+
+class AnalyticsForecastDto(BaseModel):
+    horizon: str
+    values: list[int]
+
+
+class AnalyticsAnomalyDto(BaseModel):
+    date: str
+    title: str
+    severity: str
+
+
+class AnalyticsBreakdownRowDto(BaseModel):
+    label: str
+    value: float
+
+
 class TableAnalyticsDto(BaseModel):
     table_id: int
     table_name: str
@@ -52,6 +87,12 @@ class TableAnalyticsDto(BaseModel):
     active_employees: int
     queued_orders: int
     charts: list[AnalyticsMiniChartDto]
+    kpis: list[AnalyticsKpiDto] = Field(default_factory=list)
+    periods: list[AnalyticsPeriodPointDto] = Field(default_factory=list)
+    segments: list[AnalyticsSegmentDto] = Field(default_factory=list)
+    forecast: AnalyticsForecastDto | None = None
+    anomalies: list[AnalyticsAnomalyDto] = Field(default_factory=list)
+    breakdown: list[AnalyticsBreakdownRowDto] = Field(default_factory=list)
 
 
 class TableBonusDto(BaseModel):

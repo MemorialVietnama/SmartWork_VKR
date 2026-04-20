@@ -858,32 +858,20 @@ export class DashboardPageComponent implements OnInit {
     if (!table) {
       return [];
     }
+    if (table.kpis.length > 0) {
+      return table.kpis.slice(0, 4).map((kpi, idx) => ({
+        key: (['overview', 'employees', 'workload', 'tasks'][idx] ?? 'overview') as AnalyticsKpiKey,
+        title: kpi.title,
+        value: `${this.formatMetric(kpi.value)}${kpi.unit ? ` ${kpi.unit}` : ''}`,
+        delta: this.formatSignedPercent(kpi.deltaPercent ?? 0),
+      }));
+    }
     const summary = this.analyticsSummary(table);
     return [
-      {
-        key: 'overview',
-        title: 'Среднее значение',
-        value: `${summary.avgValue}`,
-        delta: this.formatSignedPercent(summary.deltaPercent),
-      },
-      {
-        key: 'employees',
-        title: 'Активные сотрудники',
-        value: `${table.activeEmployees}`,
-        delta: this.formatSignedPercent(summary.employeesDeltaPercent),
-      },
-      {
-        key: 'workload',
-        title: 'Очередь заказов',
-        value: `${table.queuedOrders}`,
-        delta: this.formatSignedPercent(summary.queueDeltaPercent),
-      },
-      {
-        key: 'tasks',
-        title: 'Пиковое значение',
-        value: `${summary.peakValue}`,
-        delta: this.formatSignedPercent(summary.peakDeltaPercent),
-      },
+      { key: 'overview', title: 'Среднее значение', value: `${summary.avgValue}`, delta: this.formatSignedPercent(summary.deltaPercent) },
+      { key: 'employees', title: 'Активные сотрудники', value: `${table.activeEmployees}`, delta: '0%' },
+      { key: 'workload', title: 'Очередь заказов', value: `${table.queuedOrders}`, delta: '0%' },
+      { key: 'tasks', title: 'Пиковое значение', value: `${summary.peakValue}`, delta: '0%' },
     ];
   }
 
@@ -912,9 +900,12 @@ export class DashboardPageComponent implements OnInit {
     if (!table) {
       return { labels: [], datasets: [] };
     }
-    const values = table.charts.map((chart) => this.chartAverage(this.limitByPeriod(chart.values)));
+    const labels = table.segments.length ? table.segments.map((seg) => seg.label) : table.charts.map((chart) => chart.title);
+    const values = table.segments.length
+      ? table.segments.map((seg) => seg.value)
+      : table.charts.map((chart) => this.chartAverage(this.limitByPeriod(chart.values)));
     return {
-      labels: table.charts.map((chart) => chart.title),
+      labels,
       datasets: [
         {
           label: 'Средние значения',
@@ -956,6 +947,9 @@ export class DashboardPageComponent implements OnInit {
     if (!table) {
       return [];
     }
+    if (table.breakdown.length > 0) {
+      return table.breakdown.slice(0, 4).map((row) => `${row.label}: ${this.formatMetric(row.value)}`);
+    }
     const summary = this.analyticsSummary(table);
     const topChart = this.analyticsTopChart(table);
     return [
@@ -985,7 +979,8 @@ export class DashboardPageComponent implements OnInit {
       return [];
     }
     const values = this.limitByPeriod(chart.values);
-    return values.map((value, index) => ({ label: `Точка ${index + 1}`, value }));
+    const periods = table.periods.map((item) => item.period);
+    return values.map((value, index) => ({ label: periods[index] ?? `Точка ${index + 1}`, value }));
   }
 
   protected selectSettingsTab(tabId: SettingsTabId): void {
@@ -1304,10 +1299,18 @@ export class DashboardPageComponent implements OnInit {
         subtitle: chart.subtitle,
         values: [...chart.values],
       })),
+      kpis: (table.kpis ?? []).map((kpi) => ({
+        key: kpi.key,
+        title: kpi.title,
+        value: kpi.value,
+        unit: kpi.unit ?? null,
+        deltaPercent: kpi.delta_percent ?? null,
+      })),
       segments: table.segments ?? [],
       periods: table.periods ?? [],
       forecast: table.forecast ?? null,
       anomalies: table.anomalies ?? [],
+      breakdown: table.breakdown ?? [],
     };
   }
 
@@ -1351,14 +1354,7 @@ export class DashboardPageComponent implements OnInit {
     const prevAvg = this.chartAverage(previous.length > 0 ? previous : [0]);
     const currAvg = this.chartAverage(current.length > 0 ? current : [0]);
     const deltaPercent = prevAvg === 0 ? 0 : Math.round(((currAvg - prevAvg) / prevAvg) * 100);
-    return {
-      avgValue,
-      peakValue,
-      deltaPercent,
-      employeesDeltaPercent: deltaPercent > 0 ? Math.min(deltaPercent, 28) : Math.max(deltaPercent, -28),
-      queueDeltaPercent: deltaPercent > 0 ? Math.max(deltaPercent - 6, -30) : Math.min(deltaPercent + 6, 30),
-      peakDeltaPercent: deltaPercent > 0 ? Math.min(deltaPercent + 4, 32) : Math.max(deltaPercent - 4, -32),
-    };
+    return { avgValue, peakValue, deltaPercent, employeesDeltaPercent: 0, queueDeltaPercent: 0, peakDeltaPercent: 0 };
   }
 
   private analyticsLabels(length: number): string[] {
@@ -1373,6 +1369,11 @@ export class DashboardPageComponent implements OnInit {
       return `${value}%`;
     }
     return '0%';
+  }
+
+  private formatMetric(value: number): string {
+    const rounded = Math.round(value * 100) / 100;
+    return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(2);
   }
 
   private mapEmployeeDto(employee: EmployeeDto): EmployeeCard {
@@ -1651,10 +1652,12 @@ interface TableAnalytics {
   activeEmployees: number;
   queuedOrders: number;
   charts: AnalyticsMiniChart[];
+  kpis: AnalyticsKpi[];
   periods: AnalyticsPeriodPoint[];
   segments: AnalyticsSegment[];
   forecast: AnalyticsForecast | null;
   anomalies: AnalyticsAnomaly[];
+  breakdown: AnalyticsBreakdownRow[];
 }
 
 type AnalyticsPeriod = '7d' | '30d' | '90d' | '365d';
@@ -1666,6 +1669,14 @@ interface AnalyticsKpiCard {
   title: string;
   value: string;
   delta: string;
+}
+
+interface AnalyticsKpi {
+  key: string;
+  title: string;
+  value: number;
+  unit: string | null;
+  deltaPercent: number | null;
 }
 
 interface AnalyticsPeriodPoint {
@@ -1688,6 +1699,11 @@ interface AnalyticsAnomaly {
   date: string;
   title: string;
   severity: 'low' | 'medium' | 'high';
+}
+
+interface AnalyticsBreakdownRow {
+  label: string;
+  value: number;
 }
 
 type SettingsTabId = 'account' | 'appearance';

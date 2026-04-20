@@ -14,6 +14,8 @@ class TableDirectory(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     table_id: Mapped[int] = mapped_column(ForeignKey("tables.id"), index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    schema_fields: Mapped[list[dict] | None] = mapped_column(JSON, nullable=True)
     # services | clients | pets — задан при создании стола; NULL = произвольный справочник
     kind: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

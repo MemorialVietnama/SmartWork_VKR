@@ -5,34 +5,95 @@
       <p>Аналитика не подключена для этого стола.</p>
       <p class="tw-muted">Включите бонус в разделе «Подписка».</p>
     </p-card>
+  } @else if (loading) {
+    <p class="tw-muted">Загрузка аналитики…</p>
   } @else if (err) {
     <p class="tw-tab-error">{{ err }}</p>
   } @else if (data) {
-    <p class="tw-muted"
-      >{{ data.table_name }} — участников: {{ data.participants }}, активных: {{ data.active_employees }}</p
-    >
-    <div class="tw-mini-grid">
-      @for (ch of data.charts; track ch.title) {
-        <div class="tw-mini-chart">
-          <div class="tw-mini-head">
-            <strong>{{ ch.title }}</strong>
-            <small>{{ ch.subtitle }}</small>
-          </div>
-          <div class="tw-mini-bars">
-            @for (v of ch.values; track $index) {
-              <div class="tw-mini-bar-wrap">
-                <div class="tw-mini-bar" [style.height.%]="(v / chartMax(ch.values)) * 100"></div>
-              </div>
-            }
-          </div>
-          <div class="tw-mini-meta">
-            <span>Ср: {{ chartAvg(ch.values) }}</span>
-            <span>Пик: {{ chartMax(ch.values) }}</span>
-          </div>
-        </div>
+    <section class="wa-head">
+      <div>
+        <h3>{{ data.table_name }}</h3>
+        <p class="tw-muted">Участников: {{ data.participants }}, активных сотрудников: {{ data.active_employees }}</p>
+      </div>
+      <div class="wa-period-switch">
+        @for (p of periods; track p.id) {
+          <button type="button" [class.active]="period === p.id" (click)="selectPeriod(p.id)">{{ p.label }}</button>
+        }
+      </div>
+    </section>
+
+    <section class="wa-kpi-grid">
+      @for (kpi of kpis(); track kpi.key) {
+        <button type="button" class="wa-kpi-card" [class.active]="selectedKpiKey === kpi.key" (click)="selectKpi(kpi.key)">
+          <small>{{ kpi.title }}</small>
+          <strong>{{ kpi.value }}</strong>
+          <span [class.positive]="kpi.delta.startsWith('+')" [class.negative]="kpi.delta.startsWith('-')">{{ kpi.delta }}</span>
+        </button>
       }
-    </div>
+    </section>
+
+    <section class="wa-grid">
+      <div class="wa-panel">
+        <div class="wa-panel-head">
+          <h4>Тренд</h4>
+        </div>
+        <div class="wa-chart-wrap">
+          <p-chart type="line" [data]="trendData()" [options]="trendOptions()" />
+        </div>
+      </div>
+
+      <div class="wa-panel">
+        <div class="wa-panel-head">
+          <h4>Распределение</h4>
+        </div>
+        <div class="wa-chart-wrap">
+          <p-chart type="bar" [data]="distributionData()" [options]="distributionOptions()" />
+        </div>
+      </div>
+    </section>
+
+    <section class="wa-grid wa-grid-bottom">
+      <div class="wa-panel">
+        <div class="wa-panel-head">
+          <h4>Категории</h4>
+        </div>
+        <div class="wa-chip-list">
+          @for (item of chartLabels(); track item.title) {
+            <button type="button" class="wa-chip" [class.active]="selectedChartTitle === item.title" (click)="selectChart(item.title)">
+              <span>{{ item.title }}</span>
+              <small>{{ item.subtitle }}</small>
+            </button>
+          }
+        </div>
+      </div>
+      <div class="wa-panel">
+        <div class="wa-panel-head">
+          <h4>Сводка</h4>
+        </div>
+        <ul class="wa-insights">
+          @for (row of insightRows(); track row.label) {
+            <li><span>{{ row.label }}</span><strong>{{ row.value }}</strong></li>
+          }
+        </ul>
+      </div>
+    </section>
+
+    @if (selectedChartTitle) {
+      <section class="wa-drilldown">
+        <div class="wa-panel-head">
+          <h4>Детализация: {{ selectedChartTitle }}</h4>
+        </div>
+        <div class="wa-drill-grid">
+          @for (row of drilldownRows(); track row.label) {
+            <div class="wa-drill-row">
+              <span>{{ row.label }}</span>
+              <strong>{{ row.value }}</strong>
+            </div>
+          }
+        </div>
+      </section>
+    }
   } @else {
-    <p class="tw-muted">Загрузка…</p>
+    <p class="tw-muted">Нет данных для отображения.</p>
   }
 </div>

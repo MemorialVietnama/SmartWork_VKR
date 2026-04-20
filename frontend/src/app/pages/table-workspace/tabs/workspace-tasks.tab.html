@@ -1,33 +1,275 @@
-<div class="tw-tab">
-  <h2>Задачи</h2>
+<div class="tw-tab tw-task-themed">
+  <div class="tw-kanban-header">
+    <div>
+      <h2>Kanban задачи</h2>
+      <p class="tw-muted">Колонки, ответственные, приоритеты, сроки и drag-and-drop.</p>
+    </div>
+    <div class="tw-kanban-actions">
+      <p-button label="Новая задача" icon="pi pi-plus" (onClick)="openCreateDialog()" />
+      <p-button
+        label="Обновить"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [outlined]="true"
+        [loading]="loading()"
+        (onClick)="refresh()"
+      />
+    </div>
+  </div>
   @if (!tasksUnlocked) {
     <p-card>
       <p>Раздел «Задачи» не подключён для этого стола.</p>
       <p class="tw-muted">Включите бонус в разделе «Подписка» в дашборде.</p>
     </p-card>
   } @else {
-    @if (err) {
-      <p class="tw-tab-error">{{ err }}</p>
+    @if (err()) {
+      <p class="tw-tab-error">{{ err() }}</p>
     }
-    <p-card header="Новая задача">
-      <input type="text" pInputText [(ngModel)]="newTitle" name="taskTitle" placeholder="Название" />
-      <p-button class="tw-mt" label="Добавить" icon="pi pi-plus" (onClick)="addTask()" />
-    </p-card>
-    <p-card header="Список">
-      @if (tasks.length === 0) {
-        <p class="tw-muted">Задач пока нет.</p>
-      } @else {
-        <ul class="tw-task-list">
-          @for (t of tasks; track t.id) {
-            <li>
-              <span class="tw-status" [class]="'st-' + t.status">{{ t.status }}</span>
-              <strong>{{ t.title }}</strong>
-              <button type="button" class="tw-link" (click)="cycleStatus(t)">Статус</button>
-              <button type="button" class="tw-link-danger" (click)="removeTask(t.id)">Удалить</button>
-            </li>
-          }
-        </ul>
+    <section class="tw-monitoring">
+      <h3>Статистика задач</h3>
+      <div class="tw-monitoring-cards">
+        <article class="tw-monitor-card total">
+          <span class="tw-monitor-title">Всего</span>
+          <strong>{{ monitoringStats().total }}</strong>
+          <small>Все задачи</small>
+        </article>
+        <article class="tw-monitor-card urgent">
+          <span class="tw-monitor-title">Срочные</span>
+          <strong>{{ monitoringStats().urgent }}</strong>
+          <small>High + просроченные</small>
+        </article>
+        <article class="tw-monitor-card work">
+          <span class="tw-monitor-title">В работе</span>
+          <strong>{{ monitoringStats().inWork }}</strong>
+          <small>Статус Wait</small>
+        </article>
+        <article class="tw-monitor-card done">
+          <span class="tw-monitor-title">Готово</span>
+          <strong>{{ monitoringStats().done }}</strong>
+          <small>Статус Done</small>
+        </article>
+      </div>
+    </section>
+    <div class="tw-kanban-meta">
+      <span>Всего задач: <strong>{{ totalCount() }}</strong></span>
+      <span>Участников: <strong>{{ state.members().length }}</strong></span>
+    </div>
+    <div class="tw-kanban-filters">
+      <input
+        pInputText
+        type="search"
+        placeholder="Поиск по названию, описанию, тегам"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="setSearchQuery($event)"
+      />
+      <select [ngModel]="assigneeFilter()?.toString() ?? ''" (ngModelChange)="setAssigneeFilter($event)">
+        <option value="">Все ответственные</option>
+        @for (member of state.members(); track member.user_id) {
+          <option [value]="member.user_id">{{ member.short_name }}</option>
+        }
+      </select>
+      <select [ngModel]="priorityFilter()" (ngModelChange)="setPriorityFilter($event)">
+        <option value="all">Любой приоритет</option>
+        @for (priority of priorities; track priority.key) {
+          <option [value]="priority.key">{{ priority.label }}</option>
+        }
+      </select>
+      <button type="button" class="tw-filter-btn" [class.active]="showOverdueOnly()" (click)="toggleOverdueFilter()">
+        Просроченные
+      </button>
+      @if (hasActiveFilters()) {
+        <button type="button" class="tw-filter-btn" (click)="resetFilters()">Сброс</button>
       }
-    </p-card>
+    </div>
+    @if (loading()) {
+      <p-card>
+        <p class="tw-muted">Загрузка задач…</p>
+      </p-card>
+    } @else {
+      @if (totalCount() === 0 && !hasActiveFilters()) {
+        <p-card>
+          <p class="tw-muted">Задач пока нет. Создайте первую карточку.</p>
+        </p-card>
+      } @else {
+        <div class="tw-kanban-board">
+          @for (column of statuses; track column.key) {
+            <section class="tw-kanban-column">
+              <header>
+                <h3>{{ column.label }}</h3>
+                <span>{{ filteredTasksByStatus(column.key).length }} / {{ tasksByStatus(column.key).length }}</span>
+              </header>
+              <button type="button" class="tw-add-in-column" (click)="openCreateDialog(column.key)">+ Добавить</button>
+              <div
+                cdkDropList
+                [id]="dropListId(column.key)"
+                [cdkDropListConnectedTo]="connectedDropLists()"
+                [cdkDropListData]="tasksByStatus(column.key)"
+                class="tw-kanban-dropzone"
+                (cdkDropListDropped)="dropTask($event, column.key)"
+              >
+                @for (task of filteredTasksByStatus(column.key); track task.id) {
+                  <article class="tw-task-card" cdkDrag>
+                    <div class="tw-task-card-top">
+                      <span class="tw-priority" [class]="'pr-' + task.priority">{{ task.priority }}</span>
+                      @if (task.dueDate) {
+                        <time [class.tw-overdue]="isOverdue(task)">{{ task.dueDate }}</time>
+                      }
+                    </div>
+                    <h4>{{ task.title }}</h4>
+                    @if (task.description) {
+                      <p>{{ task.description }}</p>
+                    }
+                    @if (task.tags.length > 0) {
+                      <div class="tw-task-tags">
+                        @for (tag of task.tags; track tag) {
+                          <span>{{ tag }}</span>
+                        }
+                      </div>
+                    }
+                    @if (task.checklist.length > 0) {
+                      <div class="tw-task-checklist">
+                        <div class="tw-task-checklist-head">Чек-лист {{ checklistProgress(task) }}</div>
+                        @for (item of task.checklist; track item.id) {
+                          <label>
+                            <input type="checkbox" [checked]="item.done" (change)="toggleChecklistItem(task, item.id)" />
+                            <span [class.done]="item.done">{{ item.text }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+                    <footer>
+                      <span class="tw-assignee-chip">{{ assigneeName(task.assignee_user_id) }}</span>
+                      <div class="tw-task-actions">
+                        <button type="button" class="tw-action-btn new" (click)="moveToStatus(task, 'new')">New</button>
+                        <button type="button" class="tw-action-btn wait" (click)="moveToStatus(task, 'waiting')">Wait</button>
+                        <button type="button" class="tw-action-btn done" (click)="moveToStatus(task, 'done')">Done</button>
+                        <button type="button" class="tw-action-btn open" (click)="openEditDialog(task)">Открыть</button>
+                        <button
+                          type="button"
+                          class="tw-action-btn delete"
+                          [disabled]="deletingTaskId() === task.id"
+                          (click)="removeTask(task.id)"
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    </footer>
+                  </article>
+                }
+              </div>
+            </section>
+          }
+        </div>
+      }
+    }
+
+    <p-dialog
+      [visible]="dialogVisible()"
+      [modal]="true"
+      [dismissableMask]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [style]="{ width: '34rem', maxWidth: '95vw' }"
+      [header]="creating() ? 'Новая задача' : 'Карточка задачи'"
+      (visibleChange)="dialogVisible.set($event)"
+      (onHide)="closeDialog()"
+    >
+      <form class="tw-task-form" (ngSubmit)="saveTask()">
+        <label>
+          Название
+          <input
+            pInputText
+            name="title"
+            autocomplete="off"
+            required
+            [ngModel]="dialogForm().title"
+            (ngModelChange)="setDialogTitle($event)"
+          />
+        </label>
+        <label>
+          Описание
+          <textarea
+            pTextarea
+            rows="3"
+            name="description"
+            [ngModel]="dialogForm().description"
+            (ngModelChange)="setDialogDescription($event)"
+          ></textarea>
+        </label>
+        <div class="tw-task-form-grid">
+          <label>
+            Статус
+            <select
+              name="status"
+              [ngModel]="dialogForm().status"
+              (ngModelChange)="setDialogStatus($event)"
+            >
+              @for (status of statuses; track status.key) {
+                <option [value]="status.key">{{ status.label }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Приоритет
+            <select
+              name="priority"
+              [ngModel]="dialogForm().priority"
+              (ngModelChange)="setDialogPriority($event)"
+            >
+              @for (priority of priorities; track priority.key) {
+                <option [value]="priority.key">{{ priority.label }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Ответственный
+            <select
+              name="assignee"
+              [ngModel]="dialogForm().assignee_user_id?.toString() ?? ''"
+              (ngModelChange)="setDialogAssignee($event)"
+            >
+              <option value="">Без ответственного</option>
+              @for (member of state.members(); track member.user_id) {
+                <option [value]="member.user_id">{{ member.short_name }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Срок
+            <input
+              type="date"
+              name="dueDate"
+              [ngModel]="dialogForm().dueDate"
+              (ngModelChange)="setDialogDueDate($event)"
+            />
+          </label>
+          <label class="tw-col-span-2">
+            Теги
+            <input
+              pInputText
+              name="tagsInput"
+              placeholder="crm, срочно, клиент vip"
+              [ngModel]="dialogForm().tagsInput"
+              (ngModelChange)="setDialogTagsInput($event)"
+            />
+          </label>
+          <label class="tw-col-span-2">
+            Чек-лист
+            <textarea
+              pTextarea
+              rows="4"
+              name="checklistInput"
+              placeholder="Каждый пункт с новой строки"
+              [ngModel]="dialogForm().checklistInput"
+              (ngModelChange)="setDialogChecklistInput($event)"
+            ></textarea>
+          </label>
+        </div>
+        <div class="tw-task-form-actions">
+          <p-button type="button" severity="secondary" [outlined]="true" label="Отмена" (onClick)="closeDialog()" />
+          <p-button type="submit" label="Сохранить" [loading]="savingTask()" />
+        </div>
+      </form>
+    </p-dialog>
   }
 </div>

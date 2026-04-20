@@ -49,6 +49,13 @@ export interface TableAnalyticsDto {
   active_employees: number;
   queued_orders: number;
   charts: AnalyticsMiniChartDto[];
+  kpis?: Array<{
+    key: string;
+    title: string;
+    value: number;
+    unit?: string | null;
+    delta_percent?: number | null;
+  }>;
   periods?: Array<{
     period: string;
     values: number[];
@@ -66,6 +73,10 @@ export interface TableAnalyticsDto {
     date: string;
     title: string;
     severity: 'low' | 'medium' | 'high';
+  }>;
+  breakdown?: Array<{
+    label: string;
+    value: number;
   }>;
 }
 
@@ -105,6 +116,8 @@ export interface WorkspaceDirectoryItemDto {
 export interface WorkspaceDirectoryDto {
   id: number;
   name: string;
+  description?: string | null;
+  schema_fields?: Array<Record<string, unknown>>;
   kind?: string | null;
   items: WorkspaceDirectoryItemDto[];
 }
@@ -334,8 +347,15 @@ export class AuthService {
     return this.http.get<TableDto[]>(this.url('/api/v1/tables/my'), { headers: this.authHeaders() });
   }
 
-  myTablesAnalytics(): Observable<TableAnalyticsDto[]> {
-    return this.http.get<TableAnalyticsDto[]>(this.url('/api/v1/tables/analytics/my'), { headers: this.authHeaders() });
+  myTablesAnalytics(opts?: { from?: string; to?: string; bucket?: 'day' | 'week' }): Observable<TableAnalyticsDto[]> {
+    let params = new HttpParams();
+    if (opts?.from) params = params.set('from', opts.from);
+    if (opts?.to) params = params.set('to', opts.to);
+    if (opts?.bucket) params = params.set('bucket', opts.bucket);
+    return this.http.get<TableAnalyticsDto[]>(this.url('/api/v1/tables/analytics/my'), {
+      headers: this.authHeaders(),
+      params,
+    });
   }
 
   myTableSubscriptions(): Observable<TableSubscriptionDto[]> {
@@ -461,11 +481,18 @@ export class AuthService {
     );
   }
 
-  getTableWorkspaceAnalytics(tableId: number): Observable<TableAnalyticsDto> {
-    return this.http.get<TableAnalyticsDto>(
-      this.url(`/api/v1/tables/${tableId}/workspace/analytics`),
-      { headers: this.authHeaders() },
-    );
+  getTableWorkspaceAnalytics(
+    tableId: number,
+    opts?: { from?: string; to?: string; bucket?: 'day' | 'week' },
+  ): Observable<TableAnalyticsDto> {
+    let params = new HttpParams();
+    if (opts?.from) params = params.set('from', opts.from);
+    if (opts?.to) params = params.set('to', opts.to);
+    if (opts?.bucket) params = params.set('bucket', opts.bucket);
+    return this.http.get<TableAnalyticsDto>(this.url(`/api/v1/tables/${tableId}/workspace/analytics`), {
+      headers: this.authHeaders(),
+      params,
+    });
   }
 
   listCalendarSlots(tableId: number, from?: string, to?: string): Observable<CalendarSlotDto[]> {
@@ -573,10 +600,13 @@ export class AuthService {
     );
   }
 
-  createWorkspaceDirectory(tableId: number, name: string): Observable<WorkspaceDirectoryDto> {
+  createWorkspaceDirectory(
+    tableId: number,
+    payload: { name: string; description?: string | null; schema_fields?: Array<Record<string, unknown>> },
+  ): Observable<WorkspaceDirectoryDto> {
     return this.http.post<WorkspaceDirectoryDto>(
       this.url(`/api/v1/tables/${tableId}/workspace/directories`),
-      { name },
+      payload,
       { headers: this.authHeaders() },
     );
   }

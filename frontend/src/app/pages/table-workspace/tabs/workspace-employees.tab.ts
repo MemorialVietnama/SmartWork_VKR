@@ -29,6 +29,7 @@ export class WorkspaceEmployeesTabComponent implements OnInit {
   protected readonly state = inject(TableWorkspaceState);
 
   protected meId: number | null = null;
+  protected employeeInfoById: Record<number, { position?: string | null; note?: string | null }> = {};
   protected readonly weekdays = [
     { value: 1, label: 'Пн' },
     { value: 2, label: 'Вт' },
@@ -52,6 +53,53 @@ export class WorkspaceEmployeesTabComponent implements OnInit {
         this.meId = me.id;
       },
     });
+    this.auth.myEmployees().subscribe({
+      next: (employees) => {
+        const map: Record<number, { position?: string | null; note?: string | null }> = {};
+        for (const employee of employees) {
+          map[employee.id] = {
+            position: employee.position ?? null,
+            note: employee.note ?? null,
+          };
+        }
+        this.employeeInfoById = map;
+      },
+      error: () => {
+        this.employeeInfoById = {};
+      },
+    });
+  }
+
+  protected memberInitials(member: TableMemberBriefDto): string {
+    const words = member.short_name
+      .split(' ')
+      .map((part) => part.trim())
+      .filter((part) => part.length > 0);
+    const first = words[0]?.[0] ?? '';
+    const second = words[1]?.[0] ?? '';
+    const value = `${first}${second}`.toUpperCase();
+    return value || 'С';
+  }
+
+  protected memberDescription(member: TableMemberBriefDto): string {
+    const info = this.employeeInfoById[member.user_id];
+    const position = info?.position?.trim();
+    const note = info?.note?.trim();
+    if (position && note) {
+      return `${position}. ${note}`;
+    }
+    if (position) {
+      return position;
+    }
+    if (note) {
+      return note;
+    }
+    return 'Сотрудник стола. Доступно планирование смен и календаря.';
+  }
+
+  protected memberColorClass(member: TableMemberBriefDto): string {
+    const palette = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
+    return palette[member.user_id % palette.length];
   }
 
   protected ensureForm(userId: number): ShiftForm {

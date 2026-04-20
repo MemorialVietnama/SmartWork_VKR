@@ -1,7 +1,8 @@
 import secrets
+from datetime import datetime
 
 import redis.asyncio as redis
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +20,6 @@ from app.models.user import User
 from app.routers.auth import get_current_user
 from app.config.directory_presets import ANIMAL_TYPES, normalize_table_preset
 from app.schemas.table import (
-    AnalyticsMiniChartDto,
     TableBonusDto,
     TableAnalyticsDto,
     TableCreateConfirmRequest,
@@ -33,6 +33,7 @@ from app.schemas.table import (
 )
 from app.services.directory_bootstrap import bootstrap_preset_directories
 from app.services.email_sender import send_email
+from app.services.analytics import build_analytics_range, build_table_analytics, table_members_count
 
 router = APIRouter()
 
@@ -361,101 +362,33 @@ async def my_tables(
 async def my_tables_analytics(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    from_ts: datetime | None = Query(None, alias="from"),
+    to_ts: datetime | None = Query(None, alias="to"),
+    bucket: str = Query("day"),
 ) -> list[TableAnalyticsDto]:
-    tables = await my_tables(db=db, current_user=current_user)
+    if current_user.role == "owner":
+        tables_res = await db.execute(select(Table).where(Table.owner_id == current_user.id).order_by(Table.created_at.desc()))
+        tables = tables_res.scalars().all()
+    else:
+        member_res = await db.execute(select(TableMember.table_id).where(TableMember.user_id == current_user.id))
+        member_table_ids = [item[0] for item in member_res.all()]
+        if not member_table_ids:
+            return []
+        tables_res = await db.execute(select(Table).where(Table.id.in_(member_table_ids)).order_by(Table.created_at.desc()))
+        tables = tables_res.scalars().all()
+
+    rng = build_analytics_range(from_ts=from_ts, to_ts=to_ts, bucket=bucket)
     out: list[TableAnalyticsDto] = []
     for table in tables:
-        stats = table.stats
-        load_base = max(stats.tasks_done + stats.tasks_waiting + stats.tasks_new, 1)
-        queued_base = max(stats.queued_orders, 1)
-        active_base = max(stats.active_employees, 1)
+        members_count = await table_members_count(db, table.id)
         out.append(
-            TableAnalyticsDto(
+            await build_table_analytics(
+                db=db,
                 table_id=table.id,
                 table_name=table.title,
-                participants=table.total_participants,
-                active_employees=stats.active_employees,
-                queued_orders=stats.queued_orders,
-                charts=[
-                    AnalyticsMiniChartDto(
-                        title="Заказы за 7 дней",
-                        subtitle="шт / день",
-                        values=[
-                            queued_base,
-                            queued_base + 1,
-                            queued_base + 2,
-                            queued_base + 1,
-                            queued_base + 2,
-                            queued_base + 3,
-                            queued_base + 2,
-                        ],
-                    ),
-                    AnalyticsMiniChartDto(
-                        title="Новые задачи",
-                        subtitle="шт / день",
-                        values=[
-                            stats.tasks_new,
-                            stats.tasks_new + 1,
-                            stats.tasks_new,
-                            stats.tasks_new + 2,
-                            stats.tasks_new + 1,
-                            stats.tasks_new + 1,
-                            stats.tasks_new + 2,
-                        ],
-                    ),
-                    AnalyticsMiniChartDto(
-                        title="Закрытые задачи",
-                        subtitle="шт / день",
-                        values=[
-                            stats.tasks_done,
-                            stats.tasks_done + 1,
-                            stats.tasks_done,
-                            stats.tasks_done + 2,
-                            stats.tasks_done + 1,
-                            stats.tasks_done + 2,
-                            stats.tasks_done + 1,
-                        ],
-                    ),
-                    AnalyticsMiniChartDto(
-                        title="Загрузка сотрудников",
-                        subtitle="усл. индекс",
-                        values=[
-                            active_base,
-                            active_base + (load_base // 4),
-                            active_base + (load_base // 3),
-                            active_base + (load_base // 2),
-                            active_base + (load_base // 3),
-                            active_base + (load_base // 2),
-                            active_base + (load_base // 2) + 1,
-                        ],
-                    ),
-                    AnalyticsMiniChartDto(
-                        title="Записи в очереди",
-                        subtitle="шт / день",
-                        values=[
-                            queued_base,
-                            queued_base,
-                            queued_base + 1,
-                            queued_base,
-                            queued_base + 2,
-                            queued_base + 1,
-                            queued_base + 1,
-                        ],
-                    ),
-                    AnalyticsMiniChartDto(
-                        title="Нагрузка стола",
-                        subtitle="усл. индекс",
-                        values=[
-                            load_base,
-                            load_base + 1,
-                            load_base + 2,
-                            load_base + 1,
-                            load_base + 2,
-                            load_base + 3,
-                            load_base + 2,
-                        ],
-                    ),
-                ],
+                participants=1 + members_count,
+                active_employees=members_count,
+                rng=rng,
             ),
         )
     return out
