@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import re
 import secrets
-import json
-import time
 from datetime import timedelta
-from pathlib import Path
 from typing import Annotated
 
 import redis.asyncio as redis
@@ -37,19 +34,6 @@ CODE_SEND_COOLDOWN_SECONDS = 60
 CODE_MAX_SENDS_PER_HOUR = 5
 CODE_MAX_VERIFY_ATTEMPTS = 5
 CODE_LOCK_SECONDS = 5 * 60
-
-
-def _debug_log(message: str, data: dict, hypothesis_id: str, run_id: str = "run1") -> None:
-    payload = {
-        "sessionId": "f3eb11",
-        "runId": run_id,
-        "hypothesisId": hypothesis_id,
-        "location": "backend/app/routers/auth.py",
-        "message": message,
-        "data": data,
-        "timestamp": int(time.time() * 1000),
-    }
-    Path("debug-f3eb11.log").open("a", encoding="utf-8").write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
 def _build_auth_response(user_id: int) -> AuthResponse:
@@ -163,36 +147,12 @@ async def get_current_user(
 @router.post("/register/request-code")
 async def register_request_code(req: RegisterCodeRequest, db: AsyncSession = Depends(get_db)) -> dict:
     login = _normalize_login(req.login)
-    # region agent log
-    _debug_log(
-        "register_request_code_entry",
-        {"login_domain": login.split("@")[-1] if "@" in login else "invalid"},
-        "H3",
-    )
-    # endregion
     if req.password != req.password_confirm:
         raise HTTPException(status_code=400, detail="Password confirmation does not match")
     _validate_password_rules(req.password)
 
-    try:
-        res = await db.execute(select(User).where(User.login == login))
-    except Exception as exc:
-        # region agent log
-        _debug_log(
-            "register_request_code_select_failed",
-            {"error_type": type(exc).__name__, "error": str(exc)[:300]},
-            "H4",
-        )
-        # endregion
-        raise
+    res = await db.execute(select(User).where(User.login == login))
     existing = res.scalar_one_or_none()
-    # region agent log
-    _debug_log(
-        "register_request_code_select_ok",
-        {"existing_user_found": existing is not None},
-        "H4",
-    )
-    # endregion
 
     if existing and existing.is_active:
         raise HTTPException(status_code=409, detail="User already exists")
