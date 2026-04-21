@@ -40,8 +40,8 @@ export class RegisterPageComponent {
   protected confirmPassword = '';
   protected role: 'owner' | 'staff' = 'owner';
   protected roleOptions: Array<{ label: string; value: 'owner' | 'staff'; icon: string }> = [
-    { label: '????????', value: 'owner', icon: 'pi pi-briefcase' },
-    { label: '?????????', value: 'staff', icon: 'pi pi-users' },
+    { label: 'Владелец', value: 'owner', icon: 'pi pi-briefcase' },
+    { label: 'Сотрудник', value: 'staff', icon: 'pi pi-users' },
   ];
 
   protected loading = false;
