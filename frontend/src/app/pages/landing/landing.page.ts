@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { LandingAboutComponent } from './components/about/landing-about.component';
 import { LandingApiComponent } from './components/api/landing-api.component';
@@ -8,13 +8,12 @@ import { LandingFooterComponent } from './components/footer/landing-footer.compo
 import { LandingHeaderComponent } from './components/header/landing-header.component';
 import { LandingHeroComponent } from './components/hero/landing-hero.component';
 import { LandingIndustriesComponent } from './components/industries/landing-industries.component';
-import { LandingPricingComponent } from './components/pricing/landing-pricing.component';
+import { LandingExtensionsComponent } from './components/extensions/landing-extensions.component';
 import type {
   LandingApiId,
   LandingFaqItem,
   LandingFeatureId,
   LandingIndustryId,
-  LandingPricingExampleRow,
   LandingSelectOption,
 } from './landing.models';
 
@@ -25,8 +24,8 @@ import type {
     LandingHeaderComponent,
     LandingHeroComponent,
     LandingFeaturesComponent,
+    LandingExtensionsComponent,
     LandingIndustriesComponent,
-    LandingPricingComponent,
     LandingApiComponent,
     LandingAboutComponent,
     LandingFaqComponent,
@@ -35,7 +34,7 @@ import type {
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './landing.page.html',
   styleUrls: ['./landing-shared.scss', './landing.page.scss'],
-  host: { class: 'landing-page' },
+  host: { class: 'landing-page', '(window:scroll)': 'onWindowScroll()' },
 })
 export class LandingPageComponent {
   private readonly router = inject(Router);
@@ -46,7 +45,6 @@ export class LandingPageComponent {
   protected readonly featureId = signal<LandingFeatureId>('calendar');
   protected readonly industryId = signal<LandingIndustryId>('barber');
   protected readonly apiId = signal<LandingApiId>('booking');
-  protected readonly billingYearly = signal(false);
 
   protected readonly featureOptions: LandingSelectOption<LandingFeatureId>[] = [
     { label: 'Календарь', value: 'calendar', icon: 'pi pi-calendar' },
@@ -70,13 +68,6 @@ export class LandingPageComponent {
     { label: 'Создание задач', value: 'tasks', icon: 'pi pi-list' },
     { label: 'Статистика', value: 'analytics', icon: 'pi pi-chart-pie' },
     { label: 'Webhooks', value: 'webhook', icon: 'pi pi-link' },
-  ];
-
-  protected readonly pricingExampleRows: LandingPricingExampleRow[] = [
-    { name: 'Календарь', icon: 'pi pi-calendar', description: 'Базовая функция', cost: 'Включено', costSeverity: 'success' },
-    { name: 'Аналитика стола', icon: 'pi pi-chart-bar', description: 'Статистика по доходам', cost: '+200 ₽/мес', costSeverity: null },
-    { name: 'QR для клиентов', icon: 'pi pi-qrcode', description: 'Онлайн-запись', cost: '+150 ₽/мес', costSeverity: null },
-    { name: 'Мобильный доступ', icon: 'pi pi-mobile', description: 'Удобство для сотрудников', cost: '+300 ₽/мес', costSeverity: null },
   ];
 
   protected readonly faqItems: readonly LandingFaqItem[] = [
@@ -142,10 +133,6 @@ export class LandingPageComponent {
     this.apiId.set(id);
   }
 
-  protected onBillingChange(yearly: boolean): void {
-    this.billingYearly.set(yearly);
-  }
-
   protected toggleLang(): void {
     this.langLabel.update((l) => (l === 'RU' ? 'EN' : 'RU'));
   }
@@ -166,7 +153,6 @@ export class LandingPageComponent {
     void this.router.navigate(['/auth/register']);
   }
 
-  @HostListener('window:scroll')
   onWindowScroll(): void {
     this.headerScrolled.set(window.scrollY > 50);
   }

@@ -1,0 +1,50 @@
+<div class="landing-section-inner">
+  <h2 class="landing-template-title">Система расширений</h2>
+  <p class="landing-extensions-lead">
+    Начните с базового стола и подключайте только те возможности, которые реально нужны.
+    Расширения включаются за секунды - без перехода на другой тариф.
+  </p>
+  <div class="landing-extensions-table-wrap" role="region" aria-label="Сравнение возможностей одного стола">
+    <table class="landing-extensions-table">
+      <thead>
+        <tr>
+          <th>Возможность и ценность</th>
+          <th>Базовый стол</th>
+          <th>
+            <div class="landing-extensions-head-accent">
+              <span>Расширенный стол</span>
+              <small>🔥 Рекомендуем</small>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (group of extensionGroups; track group.id) {
+          <tr class="landing-extensions-group-row">
+            <td colspan="3">{{ group.title }}</td>
+          </tr>
+          @for (row of group.rows; track row.label) {
+            <tr>
+              <td>
+                <strong>{{ row.label }}</strong>
+                <div class="landing-extensions-value">{{ row.value }}</div>
+              </td>
+              <td>
+                <span class="landing-extensions-state" [class]="'landing-extensions-state landing-extensions-state--' + row.baseState">
+                  <span aria-hidden="true">{{ stateIcon(row.baseState) }}</span>
+                  {{ stateLabel(row.baseState) }}
+                </span>
+              </td>
+              <td>
+                <span class="landing-extensions-state" [class]="'landing-extensions-state landing-extensions-state--' + row.expandedState">
+                  <span aria-hidden="true">{{ stateIcon(row.expandedState) }}</span>
+                  {{ stateLabel(row.expandedState) }}
+                </span>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

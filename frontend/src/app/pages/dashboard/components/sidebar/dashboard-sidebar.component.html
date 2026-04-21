@@ -1,4 +1,7 @@
 <aside class="sidebar">
+  <a routerLink="/dashboard" class="sidebar-brand" aria-label="SmartWork dashboard">
+    <img src="/full_logo.png" alt="SmartWork" class="sidebar-brand__full" />
+  </a>
   <div class="sidebar-head">
     <p-tag [severity]="'info'" [value]="isOwner() ? 'owner' : 'staff'" />
     <h3>{{ user()?.last_name }} {{ user()?.first_name }}</h3>

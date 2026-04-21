@@ -2,6 +2,19 @@
   display: block;
 }
 
+.landing-footer-brand {
+  display: inline-flex;
+  align-items: center;
+}
+
+.landing-footer-brand__image {
+  width: clamp(170px, 24vw, 240px);
+  height: auto;
+  max-height: 150px;
+  display: block;
+  border-radius: 8px;
+}
+
 .landing-footer-lead {
   color: color-mix(in srgb, var(--p-surface-0) 72%, transparent);
 }

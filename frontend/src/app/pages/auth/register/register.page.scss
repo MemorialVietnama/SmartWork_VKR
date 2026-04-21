@@ -60,16 +60,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
   text-decoration: none;
-  color: var(--p-primary-700);
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  transition: transform 0.2s ease, color 0.2s ease;
+  transition: transform 0.2s ease;
 
   &:hover {
-    color: var(--p-primary-color);
     transform: scale(1.02);
   }
 
@@ -80,17 +74,12 @@
   }
 }
 
-.register-brand__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--p-border-radius-md, 10px);
-  background: linear-gradient(135deg, var(--p-primary-600), var(--p-primary-800));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--p-primary-contrast-color, #fff);
-  font-size: 1.2rem;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--p-primary-600) 35%, transparent);
+.register-brand__image {
+  width: min(100%, 220px);
+  height: auto;
+  max-height: 150px;
+  display: block;
+  border-radius: 8px;
 }
 
 .register-heading {

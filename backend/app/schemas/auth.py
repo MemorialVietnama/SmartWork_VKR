@@ -28,7 +28,12 @@ class LoginRequest(BaseModel):
 
 class AuthResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(min_length=10, max_length=2048)
 
 
 class ForgotPasswordRequest(BaseModel):

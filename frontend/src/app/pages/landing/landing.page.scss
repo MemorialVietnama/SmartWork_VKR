@@ -15,23 +15,16 @@
 
 /* Section anchor offset under fixed toolbar */
 :host.landing-page #features,
+:host.landing-page #extensions,
 :host.landing-page #industries,
-:host.landing-page #pricing,
 :host.landing-page #api,
 :host.landing-page #about,
 :host.landing-page #faq {
   scroll-margin-top: 5.5rem;
 }
 
-.landing-tpl--pricing {
-  background: linear-gradient(
-    180deg,
-    var(--p-surface-50) 0%,
-    var(--p-content-background) 100%
-  );
-}
-
 .landing-tpl--industries,
+.landing-tpl--extensions,
 .landing-tpl--about {
   background: var(--p-content-background);
 }

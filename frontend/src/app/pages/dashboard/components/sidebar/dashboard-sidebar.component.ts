@@ -1,5 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { TagModule } from 'primeng/tag';
+import { RouterLink } from '@angular/router';
 
 interface DashboardUserView {
   first_name?: string | null;
@@ -16,7 +17,7 @@ interface SidebarItemView {
 @Component({
   selector: 'app-dashboard-sidebar',
   standalone: true,
-  imports: [TagModule],
+  imports: [TagModule, RouterLink],
   templateUrl: './dashboard-sidebar.component.html',
   styleUrl: './dashboard-sidebar.component.scss',
 })

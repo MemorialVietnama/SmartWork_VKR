@@ -1,3 +1,27 @@
 :host {
   display: block;
 }
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  margin-bottom: 0.9rem;
+}
+
+.sidebar-brand__icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.sidebar-brand__full {
+  width: min(100%, 160px);
+  height: auto;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: 6px;
+}

@@ -3,7 +3,7 @@
     <div class="landing-hero-copy">
       <h1 class="landing-hero-title">Умное место для умного малого бизнеса</h1>
       <p class="landing-hero-lead">
-        Один Владелекц, Одна компанда, Один стол - в котором есть все что нужно для работы. Календарь, очередь заказов, задачи и аналитика в одном интерфейсе.
+        Один Владелец, Одна команда, Один стол - в котором есть все что нужно для работы. Календарь, очередь заказов, задачи и аналитика в одном интерфейсе.
       </p>
       <div class="landing-hero-actions">
         <p-button
@@ -37,10 +37,11 @@
 
         <div class="landing-mock-dash">
           <aside class="landing-mock-dash-sidebar" aria-hidden="true">
+            <img src="/full_logo.png" alt="SmartWork" class="landing-mock-brand" />
             <div class="landing-mock-dash-head">
-              <p-tag severity="info" value="owner" styleClass="landing-mock-dash-tag" />
-              <h3 class="landing-mock-dash-user">Петров Пётр</h3>
-              <small class="landing-mock-dash-login">owner&#64;example.ru</small>
+              <p-tag severity="info" value="Владелец" styleClass="landing-mock-dash-tag" />
+              <h3 class="landing-mock-dash-user">Демо Владелец</h3>
+              <small class="landing-mock-dash-login">owner.demo&#64;smartwork.local</small>
             </div>
             <nav class="landing-mock-dash-menu" aria-label="Демо меню">
               @for (item of mockNav; track item.id) {
@@ -52,8 +53,14 @@
                 >
                   <i [class]="item.icon" aria-hidden="true"></i>
                   <span>{{ item.label }}</span>
+                  @if (item.id === 'tables') { <small>2</small> }
+                  @if (item.id === 'analytics') { <small>2</small> }
                 </button>
               }
+              <button type="button" class="landing-mock-dash-menu-item landing-mock-dash-menu-item--logout">
+                <i class="pi pi-sign-out" aria-hidden="true"></i>
+                <span>Выход</span>
+              </button>
             </nav>
           </aside>
 
@@ -62,96 +69,121 @@
               @case ('tables') {
                 <div class="landing-mock-dash-content-head">
                   <h2 class="landing-mock-dash-h2">Столы</h2>
-                  <p>Рабочие пространства, в которых состоит ваш аккаунт.</p>
+                  <p>Рабочие пространства, в которых находится ваш аккаунт.</p>
+                </div>
+                <div class="landing-mock-kpi-grid">
+                  <article><small>Столов</small><strong>2</strong></article>
+                  <article><small>Активных сотрудников</small><strong>10</strong></article>
+                  <article><small>Заказов в очереди</small><strong>43</strong></article>
+                  <article><small>Новых задач</small><strong>21</strong></article>
                 </div>
                 <div class="landing-mock-dash-toolbar">
                   <p-button label="Создать стол" icon="pi pi-plus" size="small" [disabled]="true" />
-                  <p-button label="Присоединиться" icon="pi pi-sign-in" size="small" [outlined]="true" [disabled]="true" />
+                  <p-button label="Присоединиться к столу" icon="pi pi-sign-in" size="small" [outlined]="true" [disabled]="true" />
+                  <p-button label="Пригласить сотрудника" icon="pi pi-send" size="small" [outlined]="true" [disabled]="true" />
                 </div>
-                <p-card styleClass="landing-mock-table-card">
-                  <div class="landing-mock-stats">
-                    <div class="landing-mock-stats-row">
-                      <span>Активные сотрудники</span>
-                      <strong>4</strong>
+                <div class="landing-mock-table-grid">
+                  <p-card styleClass="landing-mock-table-card">
+                    <h3>Парихмастерская</h3>
+                    <p class="m-0">103 | Демо В.</p>
+                    <div class="landing-mock-stats-row"><span>Активные сотрудники</span><strong>5</strong></div>
+                    <div class="landing-mock-stats-row"><span>Заказов в очереди</span><strong>9</strong></div>
+                    <div class="landing-mock-stats-row"><span>Прогресс задач</span><strong>35%</strong></div>
+                    <small>Сделано: 144 | В ожидании: 18 | Новые: 11</small>
+                    <div class="landing-mock-table-card-action">
+                      <p-button label="Рабочий стол" icon="pi pi-desktop" size="small" [disabled]="true" />
                     </div>
-                    <div class="landing-mock-stats-row">
-                      <span>Заказов в очереди</span>
-                      <strong>12</strong>
+                  </p-card>
+                  <p-card styleClass="landing-mock-table-card">
+                    <h3>Салон красоты</h3>
+                    <p class="m-0">201 | Демо В.</p>
+                    <div class="landing-mock-stats-row"><span>Активные сотрудники</span><strong>8</strong></div>
+                    <div class="landing-mock-stats-row"><span>Заказов в очереди</span><strong>31</strong></div>
+                    <div class="landing-mock-stats-row"><span>Прогресс задач</span><strong>65%</strong></div>
+                    <small>Сделано: 108 | В ожидании: 26 | Новые: 31</small>
+                    <div class="landing-mock-table-card-action">
+                      <p-button label="Рабочий стол" icon="pi pi-desktop" size="small" [disabled]="true" />
                     </div>
-                    <div class="landing-mock-task-bars">
-                      <div class="landing-mock-task-bars-head">
-                        <span>Задачи</span>
-                        <strong>62%</strong>
-                      </div>
-                      <div class="landing-mock-bars">
-                        <span class="landing-mock-bar landing-mock-bar--done"></span>
-                        <span class="landing-mock-bar landing-mock-bar--wait"></span>
-                        <span class="landing-mock-bar landing-mock-bar--new"></span>
-                      </div>
-                      <small>Сделано: 5 | В ожидании: 2 | Новые: 1</small>
-                    </div>
-                  </div>
-                  <div class="landing-mock-table-meta">
-                    <h3>Барбершоп «Центр»</h3>
-                    <p class="m-0">Всего участников: <strong>6</strong></p>
-                    <p class="m-0">Владелец: <strong>Петров П.</strong></p>
-                    <p-button label="Рабочий стол" icon="pi pi-desktop" size="small" styleClass="p-button-outlined mt-2" [disabled]="true" />
-                  </div>
-                </p-card>
-              }
-              @case ('employees') {
-                <div class="landing-mock-dash-content-head">
-                  <h2 class="landing-mock-dash-h2">Сотрудники</h2>
-                  <p>Управление сотрудниками владельца: добавление, приглашение, редактирование и открепление.</p>
+                  </p-card>
                 </div>
-                <div class="landing-mock-dash-toolbar">
-                  <p-button label="Добавить сотрудника" icon="pi pi-user-plus" size="small" [disabled]="true" />
-                </div>
-                <p-card styleClass="landing-mock-employee-card">
-                  <div class="landing-mock-employee-head">
-                    <div class="landing-mock-avatar" aria-hidden="true">МК</div>
-                    <div>
-                      <h3 class="landing-mock-employee-name m-0">Козлова Мария</h3>
-                      <small class="text-color-secondary">Барбер</small>
-                    </div>
-                  </div>
-                  <p class="text-sm text-color-secondary m-0 mt-2 mb-0">
-                    <strong>Телефон:</strong> +7 ··· ··· ·· ··
-                  </p>
-                </p-card>
               }
               @case ('analytics') {
                 <div class="landing-mock-dash-content-head">
                   <h2 class="landing-mock-dash-h2">Аналитика</h2>
                   <p>Аналитика по всем столам, где аккаунт является владельцем.</p>
                 </div>
+                <div class="landing-mock-analytics-filters">
+                  <select>
+                    <option>Парихмастерская</option>
+                    <option>Салон красоты</option>
+                  </select>
+                  <button type="button">7 дней</button>
+                  <button type="button" class="active">30 дней</button>
+                  <button type="button">90 дней</button>
+                  <button type="button">365 дней</button>
+                </div>
+                <div class="landing-mock-kpi-grid landing-mock-kpi-grid--analytics">
+                  <article><small>Создано заказов / day</small><strong>29%</strong></article>
+                  <article><small>Завершено заказов / day</small><strong>42%</strong></article>
+                  <article><small>Доля завершённых</small><strong>74%</strong></article>
+                  <article><small>Очередь заказов</small><strong>4%</strong></article>
+                </div>
                 <div class="landing-mock-analytics-card">
-                  <div class="landing-mock-analytics-head">
-                    <div>
-                      <h3 class="m-0">Барбершоп «Центр»</h3>
-                      <small class="text-color-secondary">Участников: 6 | Активных сотрудников: 4</small>
-                    </div>
-                    <p-tag severity="success" value="Доступ активен" styleClass="text-xs" />
-                  </div>
+                  <h3 class="m-0">Тренд выбранного показателя</h3>
                   <div class="landing-mock-mini-charts">
                     <div class="landing-mock-mini-chart">
-                      <strong class="text-sm">Выручка по дням</strong>
+                      <strong class="text-sm">Тренд</strong>
                       <div class="landing-mock-mini-bars">
-                        @for (h of [45, 70, 52, 82, 64, 76, 58]; track $index) {
+                        @for (h of [8, 14, 28, 39, 47, 61, 88]; track $index) {
                           <span class="landing-mock-mini-bar" [style.height.%]="h"></span>
                         }
                       </div>
                     </div>
                     <div class="landing-mock-mini-chart">
-                      <strong class="text-sm">Записи</strong>
+                      <strong class="text-sm">Распределение</strong>
                       <div class="landing-mock-mini-bars">
-                        @for (h of [38, 56, 48, 66, 60, 73, 51]; track $index) {
+                        @for (h of [36, 52, 41, 68, 57, 72, 47]; track $index) {
                           <span class="landing-mock-mini-bar landing-mock-mini-bar--alt" [style.height.%]="h"></span>
                         }
                       </div>
                     </div>
                   </div>
                 </div>
+              }
+              @case ('settings') {
+                <div class="landing-mock-dash-content-head">
+                  <h2 class="landing-mock-dash-h2">Настройки</h2>
+                  <p>Управление личными параметрами аккаунта и рабочими настройками.</p>
+                </div>
+                <div class="landing-settings-layout">
+                  <div class="landing-settings-menu">
+                    <button type="button" class="active">Аккаунт</button>
+                    <button type="button">Оформление</button>
+                  </div>
+                  <div class="landing-settings-panel">
+                    <h3>Аккаунт</h3>
+                    <div class="landing-settings-row"><span>Профиль</span><strong>Демо Владелец</strong></div>
+                    <div class="landing-settings-row"><span>Логин</span><strong>owner.demo&#64;smartwork.local</strong></div>
+                    <div class="landing-settings-row"><span>Email</span><strong>o***&#64;smartwork.local</strong></div>
+                    <div class="landing-settings-row"><span>Пароль</span><strong>********</strong></div>
+                    <p-button label="Сохранить настройки" icon="pi pi-check" size="small" [disabled]="true" />
+                  </div>
+                </div>
+              }
+              @case ('subscription') {
+                <div class="landing-mock-dash-content-head">
+                  <h2 class="landing-mock-dash-h2">Подписка для столов</h2>
+                  <p>Покупка бонусов по каждому столу отдельно.</p>
+                </div>
+                <p-card styleClass="landing-mock-table-card">
+                  <h3>Парихмастерская</h3>
+                  <p class="m-0">К оплате: 9 154 ₽ / мес</p>
+                  <div class="landing-mock-stats-row"><span>Доп места для сотрудников</span><strong>20</strong></div>
+                  <div class="landing-mock-stats-row"><span>Доп справочники</span><strong>5</strong></div>
+                  <div class="landing-mock-stats-row"><span>Подытог</span><strong>10 770 ₽</strong></div>
+                  <div class="landing-mock-stats-row"><span>Скидка за 3+ пункта</span><strong>-1 616 ₽</strong></div>
+                  <div class="landing-mock-stats-row"><span>Итог в месяц</span><strong>9 154 ₽</strong></div>
+                </p-card>
               }
             }
           </section>

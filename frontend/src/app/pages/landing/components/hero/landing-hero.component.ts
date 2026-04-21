@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 
-type LandingHeroMockDashTab = 'tables' | 'employees' | 'analytics';
+type LandingHeroMockDashTab = 'tables' | 'analytics' | 'settings' | 'subscription';
 
 @Component({
   selector: 'app-landing-hero',
   standalone: true,
-  imports: [RouterLink, ButtonModule, CardModule, TagModule],
+  imports: [ButtonModule, CardModule, TagModule],
   templateUrl: './landing-hero.component.html',
   styleUrls: ['../../landing-shared.scss', './landing-hero.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,8 +21,9 @@ export class LandingHeroComponent {
 
   protected readonly mockNav: { id: LandingHeroMockDashTab; label: string; icon: string }[] = [
     { id: 'tables', label: 'Столы', icon: 'pi pi-th-large' },
-    { id: 'employees', label: 'Сотрудники', icon: 'pi pi-users' },
     { id: 'analytics', label: 'Аналитика', icon: 'pi pi-chart-bar' },
+    { id: 'settings', label: 'Настройки', icon: 'pi pi-cog' },
+    { id: 'subscription', label: 'Подписка', icon: 'pi pi-wallet' },
   ];
 
   protected selectMockTab(tab: LandingHeroMockDashTab): void {

@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     EMAIL_FROM: str = "SmartWork <no-reply@smartwork.local>"
     JWT_SECRET_KEY: str = "change-me"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 10080
     RESET_TOKEN_EXPIRE_MINUTES: int = 30
     REGISTRATION_CODE_EXPIRE_MINUTES: int = 15
     CORS_ORIGINS: str = "http://localhost:4200,http://127.0.0.1:4200"

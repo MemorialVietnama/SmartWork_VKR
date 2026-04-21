@@ -8,14 +8,6 @@ export interface LandingSelectOption<T extends string> {
   readonly icon: string;
 }
 
-export interface LandingPricingExampleRow {
-  readonly name: string;
-  readonly icon: string;
-  readonly description: string;
-  readonly cost: string;
-  readonly costSeverity: 'success' | null;
-}
-
 export interface LandingFaqItem {
   readonly q: string;
   readonly a: string;

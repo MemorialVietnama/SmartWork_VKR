@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { NgOptimizedImage } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import type { LandingIndustryId, LandingSelectOption } from '../../landing.models';
@@ -7,7 +8,7 @@ import type { LandingIndustryId, LandingSelectOption } from '../../landing.model
 @Component({
   selector: 'app-landing-industries',
   standalone: true,
-  imports: [FormsModule, ButtonModule, SelectButtonModule],
+  imports: [FormsModule, ButtonModule, SelectButtonModule, NgOptimizedImage],
   templateUrl: './landing-industries.component.html',
   styleUrls: ['../../landing-shared.scss', './landing-industries.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

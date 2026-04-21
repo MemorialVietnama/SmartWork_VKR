@@ -24,75 +24,104 @@
       </aside>
 
       <div class="landing-features-main">
-    @if (featureId() === 'calendar') {
-      <div class="landing-feature-grid">
-        <div class="landing-feature-description">
-          <h3 class="landing-h3">Умный календарь</h3>
-          <p>Планирование записей с визуализацией загрузки. Интеграция с очередью заказов, настройка рабочих часов и формата времени.</p>
-          <ul class="landing-list">
-            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Почасовое отображение загрузки</li>
-            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Уведомления клиентам</li>
-            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Блокировка для перерывов</li>
-            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>СМС и email</li>
-          </ul>
-        </div>
-        <div class="landing-feature-demo landing-feature-demo--calendar">
-          <app-workspace-calendar-widget
-            [slots]="demoCalendarSlots()"
-            [slotsLoading]="false"
-            [loadError]="null"
-            [viewMode]="calViewMode()"
-            (viewModeChange)="calViewMode.set($event)"
-            [anchorDate]="calAnchor()"
-            (anchorChange)="calAnchor.set($event)"
-            [weekStartDay]="'monday'"
-            [workHours]="'09:00-18:00'"
-            [promoTheme]="true"
-          />
-        </div>
-      </div>
-    }
+        @if (featureId() === 'calendar') {
+          <div class="landing-feature-grid">
+            <div class="landing-feature-description">
+              <h3 class="landing-h3">Умный календарь</h3>
+              <p>Исключите накладки в записи и контролируйте загрузку каждого сотрудника в реальном времени.</p>
+              <ul class="landing-list">
+                <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Почасовая загрузка без “окон” и пересечений  </li>
+                <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Автоматические уведомления клиентам  </li>
+                <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Напоминания через SMS и email </li>
+                <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Блокировка времени под перерывы и выходные</li>
+              </ul>
+            </div>
+            <div class="landing-feature-demo landing-feature-demo--calendar">
+              <app-workspace-calendar-widget
+                [slots]="demoCalendarSlots()"
+                [slotsLoading]="false"
+                [loadError]="null"
+                [viewMode]="calViewMode()"
+                (viewModeChange)="calViewMode.set($event)"
+                [anchorDate]="calAnchor()"
+                (anchorChange)="calAnchor.set($event)"
+                [weekStartDay]="'monday'"
+                [workHours]="'09:00-18:00'"
+                [promoTheme]="true"
+              />
+            </div>
+          </div>
+        }
 
     @if (featureId() === 'tasks') {
       <div class="landing-feature-grid">
         <div class="landing-feature-description">
           <h3 class="landing-h3">Управление задачами</h3>
-          <p>Создание и назначение задач с отслеживанием прогресса. Статусы и сроки помогают команде работать синхронно.</p>
+          <p>Контролируйте выполнение задач и уберите “забыли / не сделали” из работы команды.</p>
           <ul class="landing-list">
-            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Статусы: новая / в работе / выполнена</li>
-            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Назначение ответственных</li>
-            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Комментарии и вложения</li>
-            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Уведомления</li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Прозрачные статусы задач (новая / в работе / выполнена)  </li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Ответственные и дедлайны по каждому заданию  </li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Комментарии и вложения без мессенджеров </li>
+            <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Уведомления о просрочках и изменениях </li>
           </ul>
         </div>
         <div class="landing-feature-demo align-items-stretch">
-          <div class="w-full">
-            <div class="landing-task-item">
-              <span class="landing-task-dot" aria-hidden="true"></span>
-              <span>Переделать макет главной</span>
-            </div>
-            <div class="landing-task-item">
-              <span class="landing-task-dot" aria-hidden="true"></span>
-              <span>Установить шрифты</span>
-            </div>
-            <div class="landing-task-item">
-              <span class="landing-task-dot landing-task-dot--done" aria-hidden="true"></span>
-              <span>Создать меню</span>
-            </div>
-            <div class="landing-task-item">
-              <span class="landing-task-dot landing-task-dot--done" aria-hidden="true"></span>
-              <span>Добавить футер</span>
+          <div class="landing-kanban-mock">
+            @for (column of taskColumns(); track column.key) {
+              <section
+                class="landing-kanban-column"
+                [class.landing-kanban-column--new]="column.accent === 'new'"
+                [class.landing-kanban-column--waiting]="column.accent === 'waiting'"
+                [class.landing-kanban-column--done]="column.accent === 'done'"
+                cdkDropList
+                [id]="dropListId(column.key)"
+                [cdkDropListData]="column.tasks"
+                [cdkDropListConnectedTo]="taskDropListIds()"
+                (cdkDropListDropped)="dropTask($event, column.key)"
+              >
+                <header>
+                  <h4>{{ column.title }}</h4>
+                  <span>{{ column.tasks.length }}</span>
+                </header>
+                <div class="landing-kanban-list">
+                  @for (task of column.tasks; track task.id) {
+                    <article class="landing-kanban-card" cdkDrag>
+                      <div class="landing-kanban-card-top">
+                        <span class="landing-priority" [class]="'landing-priority landing-priority--' + task.priority">
+                          {{ task.priority === 'high' ? 'Высокий' : task.priority === 'medium' ? 'Средний' : 'Низкий' }}
+                        </span>
+                        <time>{{ task.dueAt }}</time>
+                      </div>
+                      <h5>{{ task.title }}</h5>
+                      <p>{{ task.description }}</p>
+                      <small>Ответственный: {{ task.assignee }}</small>
+                      <div class="landing-task-progress">
+                        Чек-лист: {{ task.checklistDone }}/{{ task.checklistTotal }}
+                      </div>
+                      <div class="landing-kanban-tags">
+                        @for (tag of task.tags; track tag) {
+                          <span>{{ tag }}</span>
+                        }
+                      </div>
+                      <div class="landing-kanban-meta">
+                        <span><i class="pi pi-paperclip" aria-hidden="true"></i>{{ task.attachments }}</span>
+                        <span><i class="pi pi-comments" aria-hidden="true"></i>{{ task.comments }}</span>
+                      </div>
+                    </article>
+                  }
+                </div>
+              </section>
+            }
             </div>
           </div>
         </div>
-      </div>
     }
 
     @if (featureId() === 'analytics') {
-      <div class="landing-feature-grid">
-        <div class="landing-feature-description">
+      <div class="landing-feature-grid landing-feature-grid--analytics">
+        <div class="landing-feature-description landing-feature-description--analytics">
           <h3 class="landing-h3">Аналитика и отчёты</h3>
-          <p>Сводки по столам, графики загрузки и статистика. Экспорт данных для анализа.</p>
+          <p>Принимайте решения на цифрах: выручка, средний чек и динамика загрузки в одном экране без ручных таблиц.</p>
           <ul class="landing-list">
             <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Автоматические отчёты</li>
             <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Графики доходов</li>
@@ -100,23 +129,74 @@
             <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Тренды</li>
           </ul>
         </div>
-        <div class="landing-feature-demo align-items-stretch">
-          <div class="w-full">
-            <div class="landing-chart-mock border-round-md p-3 mb-3 text-white font-semibold text-sm text-right">+ 24% YoY</div>
-            <div class="grid">
-              <div class="col-6">
-                <div class="surface-100 border-round-md p-3">
-                  <div class="text-sm text-color-secondary">Доход</div>
-                  <div class="text-green-600 font-semibold">125 500 ₽</div>
-                </div>
+        <div class="landing-feature-demo landing-feature-demo--analytics">
+          <div class="landing-analytics-mock">
+            <section class="landing-analytics-head">
+              <div>
+                <h4>Барбершоп "Prime Cut"</h4>
+                <p class="landing-analytics-muted">Участников: 12, активных сотрудников: 8</p>
               </div>
-              <div class="col-6">
-                <div class="surface-100 border-round-md p-3">
-                  <div class="text-sm text-color-secondary">Средний чек</div>
-                  <div class="text-primary font-semibold">2 850 ₽</div>
-                </div>
+              <div class="landing-analytics-period-switch" role="tablist" aria-label="Период аналитики">
+                @for (period of analyticsPeriods; track period.id) {
+                  <button type="button" [class.landing-analytics-period-active]="period.active">{{ period.label }}</button>
+                }
               </div>
-            </div>
+            </section>
+
+            <section class="landing-analytics-kpis">
+              @for (kpi of analyticsKpis; track kpi.key) {
+                <article class="landing-analytics-kpi">
+                  <small>{{ kpi.title }}</small>
+                  <strong>{{ kpi.value }}</strong>
+                  <span [class.landing-analytics-kpi-negative]="kpi.delta.startsWith('-')">{{ kpi.delta }}</span>
+                </article>
+              }
+            </section>
+
+            <section class="landing-analytics-panels">
+              <article class="landing-analytics-panel">
+                <h5>Тренд: {{ analyticsCurrentCategory().title }}</h5>
+                <div class="landing-analytics-trend-bars" role="img" aria-label="Тренд выручки за период">
+                  @for (bar of analyticsCurrentCategory().trendBars; track $index) {
+                    <span [style.height.%]="bar"></span>
+                  }
+                </div>
+              </article>
+
+              <article class="landing-analytics-panel">
+                <h5>Категории</h5>
+                <div class="landing-analytics-category-list">
+                  @for (category of analyticsCategories; track category.title) {
+                    <button
+                      type="button"
+                      class="landing-analytics-category-row"
+                      [class.landing-analytics-category-row--active]="analyticsCurrentCategory().title === category.title"
+                      (click)="selectAnalyticsCategory(category.title)"
+                    >
+                      <div>
+                        <strong>{{ category.title }}</strong>
+                        <small>{{ category.subtitle }}</small>
+                      </div>
+                      <div class="landing-analytics-category-metric">
+                        <span>{{ category.value }}%</span>
+                        <div class="landing-analytics-category-bar">
+                          <i [style.width]="analyticsBarWidth(category.value)"></i>
+                        </div>
+                      </div>
+                    </button>
+                  }
+                </div>
+              </article>
+            </section>
+
+            <section class="landing-analytics-summary">
+              @for (row of analyticsSummary(); track row.label) {
+                <div class="landing-analytics-summary-row">
+                  <span>{{ row.label }}</span>
+                  <strong>{{ row.value }}</strong>
+                </div>
+              }
+            </section>
           </div>
         </div>
       </div>
@@ -126,7 +206,7 @@
       <div class="landing-feature-grid">
         <div class="landing-feature-description">
           <h3 class="landing-h3">Управление сотрудниками</h3>
-          <p>Приглашение команды, роли, контроль доступа по столам и функциям.</p>
+          <p>Храните все услуги, клиентов и данные бизнеса в одном месте без разрозненных таблиц.</p>
           <ul class="landing-list">
             <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Роли владелец / сотрудник</li>
             <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Приглашения</li>
@@ -166,7 +246,7 @@
       <div class="landing-feature-grid">
         <div class="landing-feature-description">
           <h3 class="landing-h3">Справочники и каталоги</h3>
-          <p>Услуги, клиенты, кастомные поля в JSON payload, импорт и экспорт.</p>
+          <p>Соберите единый каталог бизнеса: услуги, карточки клиентов и дополнительные поля под ваш формат работы.</p>
           <ul class="landing-list">
             <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Каталог услуг с ценами</li>
             <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Карточки клиентов</li>
@@ -174,23 +254,82 @@
             <li><i class="pi pi-check text-primary mr-2" aria-hidden="true"></i>Импорт / экспорт</li>
           </ul>
         </div>
-        <div class="landing-feature-demo align-items-stretch">
-          <p-table [value]="serviceDemoRows" styleClass="p-datatable-sm w-full">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Услуга</th>
-                <th>Цена</th>
-                <th>Время</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-row>
-              <tr>
-                <td>{{ row.s }}</td>
-                <td>{{ row.p }}</td>
-                <td>{{ row.t }}</td>
-              </tr>
-            </ng-template>
-          </p-table>
+        <div class="landing-feature-demo landing-feature-demo--directories">
+          @if (!selectedDirectoryCatalog()) {
+            <div class="landing-directory-cards">
+              @for (catalog of directoryCatalogs; track catalog.key) {
+                <button type="button" class="landing-directory-card" (click)="openDirectoryCatalog(catalog.key)">
+                  <div class="landing-directory-card-head">
+                    <div class="landing-directory-card-title-row">
+                      <i [class]="catalog.icon" aria-hidden="true"></i>
+                      <h4>{{ catalog.title }}</h4>
+                    </div>
+                    <span class="landing-directory-open-chip">Открыть</span>
+                  </div>
+                  <div class="landing-directory-card-badges">
+                    <span class="landing-directory-badge">Записей: {{ catalog.records.length }}</span>
+                    <span class="landing-directory-badge">{{ catalog.kindLabel }}</span>
+                  </div>
+                  <p>{{ catalog.subtitle }}</p>
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="landing-directory-detail">
+              <div class="landing-directory-detail-head">
+                <button type="button" class="landing-directory-back" (click)="closeDirectoryCatalog()">
+                  <i class="pi pi-arrow-left" aria-hidden="true"></i>
+                  К карточкам
+                </button>
+                <h4>{{ selectedDirectoryCatalog()!.title }}</h4>
+              </div>
+              <div class="landing-directory-toolbar">
+                <div class="landing-directory-toolbar-actions">
+                  <button type="button" class="landing-directory-icon-btn landing-directory-icon-btn--create" aria-label="Создать">
+                    <i class="pi pi-plus" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="landing-directory-icon-btn landing-directory-icon-btn--edit"
+                    [disabled]="!selectedDirectoryRecordId()"
+                    aria-label="Изменить"
+                  >
+                    <i class="pi pi-pencil" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="landing-directory-icon-btn landing-directory-icon-btn--delete"
+                    [disabled]="!selectedDirectoryRecordId()"
+                    aria-label="Удалить"
+                  >
+                    <i class="pi pi-trash" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="landing-directory-toolbar-search">
+                  <i class="pi pi-search" aria-hidden="true"></i>
+                  <span>Найти по таблице</span>
+                </div>
+              </div>
+              <table class="landing-directory-table">
+                <thead>
+                  <tr>
+                    <th>Запись</th>
+                    <th>Значение</th>
+                    <th>Детали</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (record of selectedDirectoryCatalog()!.records; track record.id) {
+                    <tr [class.landing-directory-row--active]="selectedDirectoryRecordId() === record.id" (click)="selectDirectoryRecord(record.id)">
+                      <td>{{ record.title }}</td>
+                      <td>{{ record.value }}</td>
+                      <td>{{ record.meta }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
       </div>
     }

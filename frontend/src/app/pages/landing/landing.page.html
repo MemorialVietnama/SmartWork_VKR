@@ -19,21 +19,15 @@
       />
     </section>
 
+    <section class="landing-tpl-section landing-tpl--extensions" id="extensions">
+      <app-landing-extensions />
+    </section>
+
     <section class="landing-tpl-section landing-tpl--industries" id="industries">
       <app-landing-industries
         [industryId]="industryId()"
         [industryOptions]="industryOptions"
         (industryChange)="setIndustry($event)"
-        (registerClick)="goRegister()"
-      />
-    </section>
-
-    <section class="landing-tpl-section landing-tpl--pricing" id="pricing">
-      <app-landing-pricing
-        [billingYearly]="billingYearly()"
-        [pricingExampleRows]="pricingExampleRows"
-        (billingChange)="onBillingChange($event)"
-        (loginClick)="goLogin()"
         (registerClick)="goRegister()"
       />
     </section>

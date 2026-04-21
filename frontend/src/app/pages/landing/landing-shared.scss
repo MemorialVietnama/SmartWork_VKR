@@ -111,37 +111,6 @@
   );
 }
 
-.landing-pricing-grid {
-  display: grid;
-  gap: 1.25rem;
-}
-
-@media (min-width: 900px) {
-  .landing-pricing-grid {
-    grid-template-columns: repeat(3, 1fr);
-    align-items: stretch;
-  }
-}
-
-.landing-price-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.landing-price-list li {
-  padding: 0.35rem 0;
-}
-
-.landing-card-featured {
-  position: relative;
-}
-
-.landing-tag-floating {
-  top: -0.5rem;
-  right: 1rem;
-}
-
 .landing-api-layout {
   display: grid;
   gap: 1.25rem;
@@ -664,21 +633,6 @@
 
 .landing-table-mock-row {
   border-top: 1px solid var(--p-content-border-color);
-}
-
-.landing-pricing-intro {
-  text-align: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: color-mix(in srgb, var(--p-green-50) 85%, var(--p-content-background));
-  border-radius: 12px;
-  border-left: 4px solid var(--p-green-500);
-}
-
-.landing-pricing-intro p {
-  margin: 0;
-  color: var(--p-text-color);
-  line-height: 1.6;
 }
 
 .landing-benefit-card {

@@ -1,14 +1,19 @@
+import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select, text
+from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.base import Base
-from app.db.session import engine
 from app.core.config import settings
+from app.core.logging import configure_logging
 from app.core.security import hash_password
+from app.db.session import engine
 from app.models.user import User
 from app.routers import system as system_router
 from app.routers import auth as auth_router
@@ -17,33 +22,13 @@ from app.routers import settings as settings_router
 from app.routers import employees as employees_router
 from app.routers import table_workspace as table_workspace_router
 
+configure_logging()
+logger = logging.getLogger("app")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import app.models  # noqa: F401
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(100)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(100)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS middle_name VARCHAR(100)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT FALSE"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(30)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_data_url VARCHAR(4000)"))
-        await conn.execute(text("ALTER TABLE users ALTER COLUMN avatar_data_url TYPE TEXT"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS position VARCHAR(120)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS note VARCHAR(500)"))
-        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS owner_id INTEGER REFERENCES users(id)"))
-        await conn.execute(text("ALTER TABLE tables ADD COLUMN IF NOT EXISTS preset VARCHAR(50)"))
-        await conn.execute(text("ALTER TABLE tables ADD COLUMN IF NOT EXISTS custom_preset_name VARCHAR(80)"))
-        await conn.execute(text("ALTER TABLE tables ADD COLUMN IF NOT EXISTS time_format VARCHAR(10)"))
-        await conn.execute(text("ALTER TABLE tables ADD COLUMN IF NOT EXISTS week_start_day VARCHAR(20)"))
-        await conn.execute(text("ALTER TABLE tables ADD COLUMN IF NOT EXISTS work_hours VARCHAR(30)"))
-        await conn.execute(text("ALTER TABLE table_directories ADD COLUMN IF NOT EXISTS kind VARCHAR(40)"))
-        await conn.execute(text("ALTER TABLE table_directories ADD COLUMN IF NOT EXISTS description VARCHAR(500)"))
-        await conn.execute(text("ALTER TABLE table_directories ADD COLUMN IF NOT EXISTS schema_fields JSONB"))
-        await conn.execute(text("ALTER TABLE table_directory_items ADD COLUMN IF NOT EXISTS payload JSONB"))
-
     if settings.ENABLE_DEV_SEED_STAFF and settings.DEV_SEED_STAFF_PASSWORD:
         async with AsyncSession(engine) as session:
             res = await session.execute(select(User).where(User.login == settings.DEV_SEED_STAFF_LOGIN))
@@ -81,6 +66,82 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    start = time.perf_counter()
+    response = None
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        client_ip = request.client.host if request.client else None
+        status_code = response.status_code if response is not None else 500
+        logger.info(
+            "http_request",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": status_code,
+                "duration_ms": duration_ms,
+                "client_ip": client_ip,
+            },
+        )
+        if response is not None:
+            response.headers["x-request-id"] = request_id
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    logger.warning(
+        "validation_error",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": 422,
+            "client_ip": request.client.host if request.client else None,
+        },
+        exc_info=exc,
+    )
+    return JSONResponse(status_code=422, content={"detail": exc.errors(), "request_id": request_id})
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    logger.warning(
+        "http_error",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": exc.status_code,
+            "client_ip": request.client.host if request.client else None,
+        },
+    )
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail, "request_id": request_id})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    logger.exception(
+        "unhandled_error",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": 500,
+            "client_ip": request.client.host if request.client else None,
+        },
+    )
+    return JSONResponse(status_code=500, content={"detail": "Internal Server Error", "request_id": request_id})
 
 app.include_router(
     system_router.router,

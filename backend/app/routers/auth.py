@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.security import create_access_token, decode_token, hash_password, verify_password
+from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.table_member import TableMember
 from app.models.user import User
@@ -20,6 +20,7 @@ from app.schemas.auth import (
     ForgotPasswordRequest,
     LoginRequest,
     MeResponse,
+    RefreshTokenRequest,
     RegisterCodeRequest,
     RegisterConfirmRequest,
     ResendCodeRequest,
@@ -33,6 +34,18 @@ CODE_SEND_COOLDOWN_SECONDS = 60
 CODE_MAX_SENDS_PER_HOUR = 5
 CODE_MAX_VERIFY_ATTEMPTS = 5
 CODE_LOCK_SECONDS = 5 * 60
+
+
+def _build_auth_response(user_id: int) -> AuthResponse:
+    access_token = create_access_token(
+        subject=user_id,
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    refresh_token = create_refresh_token(
+        subject=user_id,
+        expires_delta=timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
+    )
+    return AuthResponse(access_token=access_token, refresh_token=refresh_token)
 
 
 def _normalize_login(login: str) -> str:
@@ -115,6 +128,8 @@ async def get_current_user(
     payload = decode_token(token)
     if not payload or "sub" not in payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    if payload.get("type") not in (None, "access"):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
     try:
         user_id = int(payload["sub"])
@@ -245,11 +260,7 @@ async def register_confirm(req: RegisterConfirmRequest, db: AsyncSession = Depen
     await db.commit()
     await db.refresh(user)
 
-    token = create_access_token(
-        subject=user.id,
-        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-    return AuthResponse(access_token=token)
+    return _build_auth_response(user.id)
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -266,11 +277,28 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)) -> AuthRe
             detail={"code": "ACCOUNT_NOT_ACTIVATED", "login": login},
         )
 
-    token = create_access_token(
-        subject=user.id,
-        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-    return AuthResponse(access_token=token)
+    return _build_auth_response(user.id)
+
+
+@router.post("/refresh", response_model=AuthResponse)
+async def refresh_tokens(req: RefreshTokenRequest, db: AsyncSession = Depends(get_db)) -> AuthResponse:
+    payload = decode_token(req.refresh_token.strip())
+    if not payload or "sub" not in payload:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
+
+    try:
+        user_id = int(payload["sub"])
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+
+    res = await db.execute(select(User).where(User.id == user_id))
+    user = res.scalar_one_or_none()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+
+    return _build_auth_response(user.id)
 
 
 @router.get("/me", response_model=MeResponse)
@@ -370,9 +398,5 @@ async def oauth_demo(provider: str, db: AsyncSession = Depends(get_db)) -> AuthR
         await db.commit()
         await db.refresh(user)
 
-    token = create_access_token(
-        subject=user.id,
-        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-    return AuthResponse(access_token=token)
+    return _build_auth_response(user.id)
 

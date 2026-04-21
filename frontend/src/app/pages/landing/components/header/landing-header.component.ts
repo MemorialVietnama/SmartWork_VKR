@@ -38,7 +38,7 @@ export class LandingHeaderComponent {
   readonly navItems: NavItem[] = [
     { label: 'Возможности', link: '/welcome', fragment: 'features' },
     { label: 'Для кого', link: '/welcome', fragment: 'industries' },
-    { label: 'Расширения', link: '/welcome', fragment: 'pricing' },
+    { label: 'Расширения', link: '/welcome', fragment: 'extensions' },
     { label: 'API', link: '/welcome', fragment: 'api' },
     { label: 'Помощь', link: '/welcome', fragment: 'faq' },
     { label: 'О нас', link: '/welcome', fragment: 'about' },

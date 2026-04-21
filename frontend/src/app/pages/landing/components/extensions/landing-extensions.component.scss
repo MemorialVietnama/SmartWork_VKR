@@ -1,0 +1,107 @@
+:host {
+  display: block;
+}
+
+.landing-extensions-lead {
+  max-width: 860px;
+  margin: 0 auto 1.5rem;
+  text-align: center;
+  color: var(--p-text-muted-color);
+}
+
+.landing-extensions-table-wrap {
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid var(--p-content-border-color);
+}
+
+.landing-extensions-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--p-content-background);
+  min-width: 740px;
+}
+
+.landing-extensions-table th,
+.landing-extensions-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+  text-align: left;
+}
+
+.landing-extensions-table th {
+  background: var(--p-surface-100);
+  font-weight: 700;
+}
+
+.landing-extensions-table td:nth-child(3),
+.landing-extensions-table th:nth-child(3) {
+  background: rgb(100 150 255 / 8%);
+}
+
+.landing-extensions-head-accent {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.landing-extensions-head-accent small {
+  color: var(--p-primary-700);
+}
+
+.landing-extensions-group-row td {
+  font-weight: 700;
+  background: var(--p-surface-50);
+}
+
+.landing-extensions-value {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+}
+
+.landing-extensions-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+
+.landing-extensions-state--available {
+  color: var(--p-primary-700);
+}
+
+.landing-extensions-state--unavailable {
+  color: var(--p-text-muted-color);
+  opacity: 0.85;
+}
+
+.landing-extensions-state--limited {
+  color: var(--p-primary-700);
+}
+
+.landing-extensions-table tbody tr:hover {
+  background: var(--p-surface-50);
+}
+
+.extensions-cta {
+  margin-top: 1rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+}
+
+.extensions-cta-primary {
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 1.1rem;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.extensions-cta-hint {
+  font-size: 0.82rem;
+  color: var(--p-text-muted-color);
+}
