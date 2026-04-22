@@ -131,3 +131,73 @@ app-workspace-calendar-widget {
     grid-template-columns: 1fr;
   }
 }
+
+:host-context(.sw-dark) .tw-form-grid input,
+:host-context(.sw-dark) .tw-slot-menu,
+:host-context(.sw-dark) .tw-step-head button,
+:host-context(.sw-dark) .tw-employee-pill,
+:host-context(html[data-theme='dark']) .tw-form-grid input,
+:host-context(html[data-theme='dark']) .tw-slot-menu,
+:host-context(html[data-theme='dark']) .tw-step-head button,
+:host-context(html[data-theme='dark']) .tw-employee-pill,
+.sw-dark .tw-form-grid input,
+.sw-dark .tw-slot-menu,
+.sw-dark .tw-step-head button,
+.sw-dark .tw-employee-pill,
+html[data-theme='dark'] .tw-form-grid input,
+html[data-theme='dark'] .tw-slot-menu,
+html[data-theme='dark'] .tw-step-head button,
+html[data-theme='dark'] .tw-employee-pill {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-step-head button.active,
+:host-context(html[data-theme='dark']) .tw-step-head button.active,
+.sw-dark .tw-step-head button.active,
+html[data-theme='dark'] .tw-step-head button.active {
+  background: #1e1b4b;
+  border-color: #6366f1;
+  color: #c7d2fe;
+}
+
+:host-context(.sw-dark) .tw-slot-menu button:hover,
+:host-context(html[data-theme='dark']) .tw-slot-menu button:hover,
+.sw-dark .tw-slot-menu button:hover,
+html[data-theme='dark'] .tw-slot-menu button:hover {
+  background: #1e293b;
+}
+
+:host-context(.sw-dark) .tw-form-grid label span,
+:host-context(html[data-theme='dark']) .tw-form-grid label span,
+.sw-dark .tw-form-grid label span,
+html[data-theme='dark'] .tw-form-grid label span {
+  color: #94a3b8;
+}
+
+:host-context(.sw-dark) .tw-employee-pill input,
+:host-context(html[data-theme='dark']) .tw-employee-pill input,
+.sw-dark .tw-employee-pill input,
+html[data-theme='dark'] .tw-employee-pill input {
+  accent-color: #818cf8;
+}
+
+:host-context(.sw-dark) ::ng-deep .p-dialog .p-dialog-header,
+:host-context(.sw-dark) ::ng-deep .p-dialog .p-dialog-content,
+:host-context(html[data-theme='dark']) ::ng-deep .p-dialog .p-dialog-header,
+:host-context(html[data-theme='dark']) ::ng-deep .p-dialog .p-dialog-content,
+.sw-dark ::ng-deep .p-dialog .p-dialog-header,
+.sw-dark ::ng-deep .p-dialog .p-dialog-content,
+html[data-theme='dark'] ::ng-deep .p-dialog .p-dialog-header,
+html[data-theme='dark'] ::ng-deep .p-dialog .p-dialog-content {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) ::ng-deep .p-dialog .p-dialog-header,
+:host-context(html[data-theme='dark']) ::ng-deep .p-dialog .p-dialog-header,
+.sw-dark ::ng-deep .p-dialog .p-dialog-header,
+html[data-theme='dark'] ::ng-deep .p-dialog .p-dialog-header {
+  border-bottom: 1px solid #334155;
+}

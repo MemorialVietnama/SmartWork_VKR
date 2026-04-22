@@ -15,6 +15,7 @@ import {
   NotificationSettingsDto,
   TableDetailDto,
 } from '../../../core/auth/auth.service';
+import { ThemeService } from '../../../core/theme.service';
 import { TableWorkspaceState } from '../table-workspace.state';
 
 type WorkspaceSettingsSection = 'notifications' | 'appearance' | 'table' | 'staff' | 'bonuses';
@@ -53,6 +54,7 @@ interface BonusCatalogItem {
 export class WorkspaceSettingsTabComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly themeService = inject(ThemeService);
   protected readonly state = inject(TableWorkspaceState);
 
   protected readonly section = signal<WorkspaceSettingsSection>('notifications');
@@ -196,6 +198,7 @@ export class WorkspaceSettingsTabComponent implements OnInit {
   protected setAppearanceTheme(ev: Event): void {
     const v = (ev.target as HTMLSelectElement).value as AppearanceSettingsDto['theme'];
     this.appearance.update((a) => ({ ...a, theme: v }));
+    this.themeService.applyTheme(v);
     this.settingsSaved.set(false);
   }
 
@@ -238,6 +241,7 @@ export class WorkspaceSettingsTabComponent implements OnInit {
             targets: { ...s.notifications.targets },
           });
           this.appearance.set({ ...s.appearance });
+          this.themeService.applyTheme(s.appearance.theme);
           this.settingsLoading.set(false);
           this.settingsSaved.set(true);
         },
@@ -389,6 +393,7 @@ export class WorkspaceSettingsTabComponent implements OnInit {
           targets: { ...s.notifications.targets },
         });
         this.appearance.set({ ...s.appearance });
+        this.themeService.applyTheme(s.appearance.theme);
         this.settingsLoading.set(false);
       },
       error: () => {

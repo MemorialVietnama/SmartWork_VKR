@@ -235,3 +235,113 @@
     padding: 0.8rem;
   }
 }
+
+:host-context(.sw-dark) .table-workspace-page,
+:host-context(html[data-theme='dark']) .table-workspace-page,
+:host-context([data-theme='dark']) .table-workspace-page,
+.sw-dark .table-workspace-page,
+html[data-theme='dark'] .table-workspace-page {
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.2), transparent 40%),
+    radial-gradient(circle at top right, rgba(6, 182, 212, 0.16), transparent 36%),
+    #020617;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-loading,
+:host-context(.sw-dark) .tw-error,
+:host-context(.sw-dark) .tw-header,
+:host-context(.sw-dark) .tw-sidebar,
+:host-context(.sw-dark) .tw-sidebar section,
+:host-context(.sw-dark) .tw-main,
+:host-context(html[data-theme='dark']) .tw-loading,
+:host-context(html[data-theme='dark']) .tw-error,
+:host-context(html[data-theme='dark']) .tw-header,
+:host-context(html[data-theme='dark']) .tw-sidebar,
+:host-context(html[data-theme='dark']) .tw-sidebar section,
+:host-context(html[data-theme='dark']) .tw-main,
+.sw-dark .tw-loading,
+.sw-dark .tw-error,
+.sw-dark .tw-header,
+.sw-dark .tw-sidebar,
+.sw-dark .tw-sidebar section,
+.sw-dark .tw-main,
+html[data-theme='dark'] .tw-loading,
+html[data-theme='dark'] .tw-error,
+html[data-theme='dark'] .tw-header,
+html[data-theme='dark'] .tw-sidebar,
+html[data-theme='dark'] .tw-sidebar section,
+html[data-theme='dark'] .tw-main {
+  background: #0f172a;
+  border-color: #334155;
+  box-shadow: 0 20px 38px -30px rgb(2 6 23 / 0.95);
+}
+
+:host-context(.sw-dark) .tw-header,
+:host-context(html[data-theme='dark']) .tw-header,
+.sw-dark .tw-header,
+html[data-theme='dark'] .tw-header {
+  background:
+    linear-gradient(140deg, rgba(99, 102, 241, 0.22), rgba(15, 23, 42, 0)),
+    #0f172a;
+}
+
+:host-context(.sw-dark) .tw-tabs a,
+:host-context(html[data-theme='dark']) .tw-tabs a,
+.sw-dark .tw-tabs a,
+html[data-theme='dark'] .tw-tabs a {
+  background: #111827;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-tabs a:hover,
+:host-context(html[data-theme='dark']) .tw-tabs a:hover,
+.sw-dark .tw-tabs a:hover,
+html[data-theme='dark'] .tw-tabs a:hover {
+  background: #1e293b;
+  border-color: #6366f1;
+}
+
+:host-context(.sw-dark) .tw-tabs a.active,
+:host-context(html[data-theme='dark']) .tw-tabs a.active,
+.sw-dark .tw-tabs a.active,
+html[data-theme='dark'] .tw-tabs a.active {
+  background: #1e1b4b;
+  border-color: #6366f1;
+  color: #c7d2fe;
+}
+
+:host-context(.sw-dark) .tw-side-list li,
+:host-context(html[data-theme='dark']) .tw-side-list li,
+.sw-dark .tw-side-list li,
+html[data-theme='dark'] .tw-side-list li {
+  background: #111827;
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .tw-side-list.compact li,
+:host-context(html[data-theme='dark']) .tw-side-list.compact li,
+.sw-dark .tw-side-list.compact li,
+html[data-theme='dark'] .tw-side-list.compact li {
+  background: #0b1f34;
+}
+
+:host-context(.sw-dark) .tw-meta div,
+:host-context(html[data-theme='dark']) .tw-meta div,
+.sw-dark .tw-meta div,
+html[data-theme='dark'] .tw-meta div {
+  background: #111827;
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .tw-muted,
+:host-context(.sw-dark) .tw-meta dt,
+:host-context(html[data-theme='dark']) .tw-muted,
+:host-context(html[data-theme='dark']) .tw-meta dt,
+.sw-dark .tw-muted,
+.sw-dark .tw-meta dt,
+html[data-theme='dark'] .tw-muted,
+html[data-theme='dark'] .tw-meta dt {
+  color: #94a3b8;
+}

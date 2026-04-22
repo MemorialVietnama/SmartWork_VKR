@@ -396,3 +396,87 @@
     grid-template-columns: 1fr;
   }
 }
+
+:host-context(.sw-dark) .tw-task-themed,
+:host-context(html[data-theme='dark']) .tw-task-themed,
+.sw-dark .tw-task-themed,
+html[data-theme='dark'] .tw-task-themed {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.2), transparent 40%),
+    radial-gradient(circle at top right, rgba(236, 72, 153, 0.18), transparent 42%),
+    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.18), transparent 36%),
+    #020617;
+}
+
+:host-context(.sw-dark) .tw-monitoring,
+:host-context(.sw-dark) .tw-kanban-column,
+:host-context(.sw-dark) .tw-task-card,
+:host-context(.sw-dark) .tw-kanban-filters input,
+:host-context(.sw-dark) .tw-kanban-filters select,
+:host-context(.sw-dark) .tw-filter-btn,
+:host-context(.sw-dark) .tw-task-tags span,
+:host-context(.sw-dark) .tw-assignee-chip,
+:host-context(.sw-dark) .tw-task-form input,
+:host-context(.sw-dark) .tw-task-form textarea,
+:host-context(.sw-dark) .tw-task-form select,
+:host-context(html[data-theme='dark']) .tw-monitoring,
+:host-context(html[data-theme='dark']) .tw-kanban-column,
+:host-context(html[data-theme='dark']) .tw-task-card,
+:host-context(html[data-theme='dark']) .tw-kanban-filters input,
+:host-context(html[data-theme='dark']) .tw-kanban-filters select,
+:host-context(html[data-theme='dark']) .tw-filter-btn,
+:host-context(html[data-theme='dark']) .tw-task-tags span,
+:host-context(html[data-theme='dark']) .tw-assignee-chip,
+:host-context(html[data-theme='dark']) .tw-task-form input,
+:host-context(html[data-theme='dark']) .tw-task-form textarea,
+:host-context(html[data-theme='dark']) .tw-task-form select,
+.sw-dark .tw-monitoring,
+.sw-dark .tw-kanban-column,
+.sw-dark .tw-task-card,
+.sw-dark .tw-kanban-filters input,
+.sw-dark .tw-kanban-filters select,
+.sw-dark .tw-filter-btn,
+.sw-dark .tw-task-tags span,
+.sw-dark .tw-assignee-chip,
+.sw-dark .tw-task-form input,
+.sw-dark .tw-task-form textarea,
+.sw-dark .tw-task-form select,
+html[data-theme='dark'] .tw-monitoring,
+html[data-theme='dark'] .tw-kanban-column,
+html[data-theme='dark'] .tw-task-card,
+html[data-theme='dark'] .tw-kanban-filters input,
+html[data-theme='dark'] .tw-kanban-filters select,
+html[data-theme='dark'] .tw-filter-btn,
+html[data-theme='dark'] .tw-task-tags span,
+html[data-theme='dark'] .tw-assignee-chip,
+html[data-theme='dark'] .tw-task-form input,
+html[data-theme='dark'] .tw-task-form textarea,
+html[data-theme='dark'] .tw-task-form select {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-kanban-column header span,
+:host-context(html[data-theme='dark']) .tw-kanban-column header span,
+.sw-dark .tw-kanban-column header span,
+html[data-theme='dark'] .tw-kanban-column header span {
+  background: #1e1b4b;
+  color: #c7d2fe;
+}
+
+:host-context(.sw-dark) .tw-filter-btn.active,
+:host-context(html[data-theme='dark']) .tw-filter-btn.active,
+.sw-dark .tw-filter-btn.active,
+html[data-theme='dark'] .tw-filter-btn.active {
+  background: #1e1b4b;
+  border-color: #6366f1;
+}
+
+:host-context(.sw-dark) .tw-add-in-column,
+:host-context(html[data-theme='dark']) .tw-add-in-column,
+.sw-dark .tw-add-in-column,
+html[data-theme='dark'] .tw-add-in-column {
+  border-color: #475569;
+  color: #cbd5e1;
+}

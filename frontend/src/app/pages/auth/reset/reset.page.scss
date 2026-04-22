@@ -40,3 +40,29 @@
   padding-top: 0.5rem;
 }
 
+:host-context(.sw-dark) .page,
+:host-context(html[data-theme='dark']) .page,
+:host-context([data-theme='dark']) .page,
+.sw-dark .page,
+html[data-theme='dark'] .page {
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) ::ng-deep .page .p-card,
+:host-context(html[data-theme='dark']) ::ng-deep .page .p-card,
+:host-context([data-theme='dark']) ::ng-deep .page .p-card,
+.sw-dark ::ng-deep .page .p-card,
+html[data-theme='dark'] ::ng-deep .page .p-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  box-shadow: 0 20px 28px -24px rgb(2 6 23 / 0.95);
+}
+
+:host-context(.sw-dark) .links a,
+:host-context(html[data-theme='dark']) .links a,
+:host-context([data-theme='dark']) .links a,
+.sw-dark .links a,
+html[data-theme='dark'] .links a {
+  color: #a5b4fc;
+}
+

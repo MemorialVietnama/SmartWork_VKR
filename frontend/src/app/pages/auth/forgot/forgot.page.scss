@@ -269,3 +269,64 @@
   color: var(--p-primary-600);
 }
 
+:host-context(.sw-dark) .forgot-page,
+:host-context(html[data-theme='dark']) .forgot-page,
+:host-context([data-theme='dark']) .forgot-page,
+.sw-dark .forgot-page,
+html[data-theme='dark'] .forgot-page {
+  background: linear-gradient(165deg, #020617 0%, #0f172a 45%, #111827 100%);
+}
+
+:host-context(.sw-dark) ::ng-deep .forgot-card.p-card,
+:host-context(html[data-theme='dark']) ::ng-deep .forgot-card.p-card,
+:host-context([data-theme='dark']) ::ng-deep .forgot-card.p-card,
+.sw-dark ::ng-deep .forgot-card.p-card,
+html[data-theme='dark'] ::ng-deep .forgot-card.p-card {
+  background: #0f172a;
+  border-color: #334155;
+  box-shadow: 0 20px 28px -24px rgb(2 6 23 / 0.95);
+}
+
+:host-context(.sw-dark) .forgot-brand__image,
+:host-context(html[data-theme='dark']) .forgot-brand__image,
+:host-context([data-theme='dark']) .forgot-brand__image,
+.sw-dark .forgot-brand__image,
+html[data-theme='dark'] .forgot-brand__image {
+  content: url('/full_logo_dark.png');
+}
+
+:host-context(.sw-dark) .forgot-link-card,
+:host-context(html[data-theme='dark']) .forgot-link-card,
+:host-context([data-theme='dark']) .forgot-link-card,
+.sw-dark .forgot-link-card,
+html[data-theme='dark'] .forgot-link-card {
+  background: #111827;
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .forgot-link-card:hover,
+:host-context(html[data-theme='dark']) .forgot-link-card:hover,
+:host-context([data-theme='dark']) .forgot-link-card:hover,
+.sw-dark .forgot-link-card:hover,
+html[data-theme='dark'] .forgot-link-card:hover {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+:host-context(.sw-dark) .forgot-link-card--muted,
+:host-context(html[data-theme='dark']) .forgot-link-card--muted,
+:host-context([data-theme='dark']) .forgot-link-card--muted,
+.sw-dark .forgot-link-card--muted,
+html[data-theme='dark'] .forgot-link-card--muted {
+  background: #0f172a;
+}
+
+:host-context(.sw-dark) .forgot-link-card--muted:hover,
+:host-context(html[data-theme='dark']) .forgot-link-card--muted:hover,
+:host-context([data-theme='dark']) .forgot-link-card--muted:hover,
+.sw-dark .forgot-link-card--muted:hover,
+html[data-theme='dark'] .forgot-link-card--muted:hover {
+  background: #1e293b;
+  border-color: #475569;
+}
+

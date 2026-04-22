@@ -475,3 +475,121 @@
     grid-template-columns: 1fr;
   }
 }
+
+:host-context(.sw-dark) .tw-dir,
+:host-context(html[data-theme='dark']) .tw-dir,
+.sw-dark .tw-dir,
+html[data-theme='dark'] .tw-dir {
+  background: linear-gradient(140deg, #020617 0%, #0b1f34 45%, #1f1230 100%);
+}
+
+:host-context(.sw-dark) .tw-badge,
+:host-context(.sw-dark) .tw-dir-group,
+:host-context(.sw-dark) .tw-dir-detail,
+:host-context(.sw-dark) .tw-dir-detail-head,
+:host-context(.sw-dark) .tw-dir-table-toolbar,
+:host-context(.sw-dark) .tw-custom-table-wrap,
+:host-context(.sw-dark) .tw-drawer,
+:host-context(.sw-dark) .tw-step,
+:host-context(.sw-dark) .tw-dir-fieldset,
+:host-context(.sw-dark) .tw-dir-subcard,
+:host-context(.sw-dark) .tw-custom-table thead th,
+:host-context(.sw-dark) .tw-custom-row-editor input,
+:host-context(.sw-dark) .tw-custom-dir-create input,
+:host-context(.sw-dark) .tw-dir-grid input,
+:host-context(.sw-dark) .tw-dir-grid select,
+:host-context(.sw-dark) .tw-dir-grid textarea,
+:host-context(.sw-dark) .tw-dir-toolbar input,
+:host-context(.sw-dark) .tw-dir-toolbar select,
+:host-context(html[data-theme='dark']) .tw-badge,
+:host-context(html[data-theme='dark']) .tw-dir-group,
+:host-context(html[data-theme='dark']) .tw-dir-detail,
+:host-context(html[data-theme='dark']) .tw-dir-detail-head,
+:host-context(html[data-theme='dark']) .tw-dir-table-toolbar,
+:host-context(html[data-theme='dark']) .tw-custom-table-wrap,
+:host-context(html[data-theme='dark']) .tw-drawer,
+:host-context(html[data-theme='dark']) .tw-step,
+:host-context(html[data-theme='dark']) .tw-dir-fieldset,
+:host-context(html[data-theme='dark']) .tw-dir-subcard,
+:host-context(html[data-theme='dark']) .tw-custom-table thead th,
+:host-context(html[data-theme='dark']) .tw-custom-row-editor input,
+:host-context(html[data-theme='dark']) .tw-custom-dir-create input,
+:host-context(html[data-theme='dark']) .tw-dir-grid input,
+:host-context(html[data-theme='dark']) .tw-dir-grid select,
+:host-context(html[data-theme='dark']) .tw-dir-grid textarea,
+:host-context(html[data-theme='dark']) .tw-dir-toolbar input,
+:host-context(html[data-theme='dark']) .tw-dir-toolbar select,
+.sw-dark .tw-badge,
+.sw-dark .tw-dir-group,
+.sw-dark .tw-dir-detail,
+.sw-dark .tw-dir-detail-head,
+.sw-dark .tw-dir-table-toolbar,
+.sw-dark .tw-custom-table-wrap,
+.sw-dark .tw-drawer,
+.sw-dark .tw-step,
+.sw-dark .tw-dir-fieldset,
+.sw-dark .tw-dir-subcard,
+.sw-dark .tw-custom-table thead th,
+.sw-dark .tw-custom-row-editor input,
+.sw-dark .tw-custom-dir-create input,
+.sw-dark .tw-dir-grid input,
+.sw-dark .tw-dir-grid select,
+.sw-dark .tw-dir-grid textarea,
+.sw-dark .tw-dir-toolbar input,
+.sw-dark .tw-dir-toolbar select,
+html[data-theme='dark'] .tw-badge,
+html[data-theme='dark'] .tw-dir-group,
+html[data-theme='dark'] .tw-dir-detail,
+html[data-theme='dark'] .tw-dir-detail-head,
+html[data-theme='dark'] .tw-dir-table-toolbar,
+html[data-theme='dark'] .tw-custom-table-wrap,
+html[data-theme='dark'] .tw-drawer,
+html[data-theme='dark'] .tw-step,
+html[data-theme='dark'] .tw-dir-fieldset,
+html[data-theme='dark'] .tw-dir-subcard,
+html[data-theme='dark'] .tw-custom-table thead th,
+html[data-theme='dark'] .tw-custom-row-editor input,
+html[data-theme='dark'] .tw-custom-dir-create input,
+html[data-theme='dark'] .tw-dir-grid input,
+html[data-theme='dark'] .tw-dir-grid select,
+html[data-theme='dark'] .tw-dir-grid textarea,
+html[data-theme='dark'] .tw-dir-toolbar input,
+html[data-theme='dark'] .tw-dir-toolbar select {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-dir-card-desc,
+:host-context(html[data-theme='dark']) .tw-dir-card-desc,
+.sw-dark .tw-dir-card-desc,
+html[data-theme='dark'] .tw-dir-card-desc {
+  color: #cbd5e1;
+}
+
+:host-context(.sw-dark) .tw-custom-table th,
+:host-context(.sw-dark) .tw-custom-table td,
+:host-context(html[data-theme='dark']) .tw-custom-table th,
+:host-context(html[data-theme='dark']) .tw-custom-table td,
+.sw-dark .tw-custom-table th,
+.sw-dark .tw-custom-table td,
+html[data-theme='dark'] .tw-custom-table th,
+html[data-theme='dark'] .tw-custom-table td {
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .tw-row-selected,
+:host-context(html[data-theme='dark']) .tw-row-selected,
+.sw-dark .tw-row-selected,
+html[data-theme='dark'] .tw-row-selected {
+  background: #1e1b4b;
+}
+
+:host-context(.sw-dark) .tw-step.active,
+:host-context(html[data-theme='dark']) .tw-step.active,
+.sw-dark .tw-step.active,
+html[data-theme='dark'] .tw-step.active {
+  background: #1e1b4b;
+  border-color: #6366f1;
+  color: #c7d2fe;
+}

@@ -15,6 +15,14 @@
   border-radius: 8px;
 }
 
+:host-context(.sw-dark) .landing-footer-brand__image,
+:host-context(html[data-theme='dark']) .landing-footer-brand__image,
+:host-context([data-theme='dark']) .landing-footer-brand__image,
+.sw-dark .landing-footer-brand__image,
+html[data-theme='dark'] .landing-footer-brand__image {
+  content: url('/full_logo_dark.png');
+}
+
 .landing-footer-lead {
   color: color-mix(in srgb, var(--p-surface-0) 72%, transparent);
 }

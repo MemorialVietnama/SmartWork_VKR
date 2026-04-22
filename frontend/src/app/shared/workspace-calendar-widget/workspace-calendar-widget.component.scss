@@ -594,3 +594,138 @@
   border-left: 4px solid var(--p-surface-400);
   color: var(--p-text-muted-color);
 }
+
+:host-context(.sw-dark) .tw-cal-widget,
+:host-context(html[data-theme='dark']) .tw-cal-widget,
+:host-context([data-theme='dark']) .tw-cal-widget,
+.sw-dark .tw-cal-widget,
+html[data-theme='dark'] .tw-cal-widget {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-cal-mode-select,
+:host-context(.sw-dark) .tw-cal-nav-btn,
+:host-context(.sw-dark) .tw-cal-today-btn,
+:host-context(.sw-dark) .tw-cal-mini-month,
+:host-context(.sw-dark) .tw-cal-mini-cell,
+:host-context(.sw-dark) .tw-cal-month-cell,
+:host-context(.sw-dark) .tw-cal-week-card,
+:host-context(.sw-dark) .tw-cal-day-card,
+:host-context(html[data-theme='dark']) .tw-cal-mode-select,
+:host-context(html[data-theme='dark']) .tw-cal-nav-btn,
+:host-context(html[data-theme='dark']) .tw-cal-today-btn,
+:host-context(html[data-theme='dark']) .tw-cal-mini-month,
+:host-context(html[data-theme='dark']) .tw-cal-mini-cell,
+:host-context(html[data-theme='dark']) .tw-cal-month-cell,
+:host-context(html[data-theme='dark']) .tw-cal-week-card,
+:host-context(html[data-theme='dark']) .tw-cal-day-card,
+.sw-dark .tw-cal-mode-select,
+.sw-dark .tw-cal-nav-btn,
+.sw-dark .tw-cal-today-btn,
+.sw-dark .tw-cal-mini-month,
+.sw-dark .tw-cal-mini-cell,
+.sw-dark .tw-cal-month-cell,
+.sw-dark .tw-cal-week-card,
+.sw-dark .tw-cal-day-card,
+html[data-theme='dark'] .tw-cal-mode-select,
+html[data-theme='dark'] .tw-cal-nav-btn,
+html[data-theme='dark'] .tw-cal-today-btn,
+html[data-theme='dark'] .tw-cal-mini-month,
+html[data-theme='dark'] .tw-cal-mini-cell,
+html[data-theme='dark'] .tw-cal-month-cell,
+html[data-theme='dark'] .tw-cal-week-card,
+html[data-theme='dark'] .tw-cal-day-card {
+  background: #111827;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-cal-mini-cell--empty,
+:host-context(html[data-theme='dark']) .tw-cal-mini-cell--empty,
+.sw-dark .tw-cal-mini-cell--empty,
+html[data-theme='dark'] .tw-cal-mini-cell--empty {
+  background: transparent;
+}
+
+:host-context(.sw-dark) .tw-cal-month-cell--muted,
+:host-context(html[data-theme='dark']) .tw-cal-month-cell--muted,
+.sw-dark .tw-cal-month-cell--muted,
+html[data-theme='dark'] .tw-cal-month-cell--muted {
+  background: #1e293b;
+}
+
+:host-context(.sw-dark) .tw-cal-week-card-head,
+:host-context(.sw-dark) .tw-cal-day-hour-row,
+:host-context(.sw-dark) .tw-cal-day-all,
+:host-context(html[data-theme='dark']) .tw-cal-week-card-head,
+:host-context(html[data-theme='dark']) .tw-cal-day-hour-row,
+:host-context(html[data-theme='dark']) .tw-cal-day-all,
+.sw-dark .tw-cal-week-card-head,
+.sw-dark .tw-cal-day-hour-row,
+.sw-dark .tw-cal-day-all,
+html[data-theme='dark'] .tw-cal-week-card-head,
+html[data-theme='dark'] .tw-cal-day-hour-row,
+html[data-theme='dark'] .tw-cal-day-all {
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .tw-cal-loading,
+:host-context(.sw-dark) .tw-cal-week-dow,
+:host-context(.sw-dark) .tw-cal-day-hour-label,
+:host-context(.sw-dark) .tw-cal-day-hour-empty,
+:host-context(.sw-dark) .tw-cal-week-empty,
+:host-context(.sw-dark) .tw-muted,
+:host-context(html[data-theme='dark']) .tw-cal-loading,
+:host-context(html[data-theme='dark']) .tw-cal-week-dow,
+:host-context(html[data-theme='dark']) .tw-cal-day-hour-label,
+:host-context(html[data-theme='dark']) .tw-cal-day-hour-empty,
+:host-context(html[data-theme='dark']) .tw-cal-week-empty,
+:host-context(html[data-theme='dark']) .tw-muted,
+.sw-dark .tw-cal-loading,
+.sw-dark .tw-cal-week-dow,
+.sw-dark .tw-cal-day-hour-label,
+.sw-dark .tw-cal-day-hour-empty,
+.sw-dark .tw-cal-week-empty,
+.sw-dark .tw-muted,
+html[data-theme='dark'] .tw-cal-loading,
+html[data-theme='dark'] .tw-cal-week-dow,
+html[data-theme='dark'] .tw-cal-day-hour-label,
+html[data-theme='dark'] .tw-cal-day-hour-empty,
+html[data-theme='dark'] .tw-cal-week-empty,
+html[data-theme='dark'] .tw-muted {
+  color: #94a3b8;
+}
+
+:host-context(.sw-dark) .tw-cal-period,
+:host-context(.sw-dark) .tw-cal-week-date,
+:host-context(.sw-dark) .tw-cal-month-daybtn,
+:host-context(html[data-theme='dark']) .tw-cal-period,
+:host-context(html[data-theme='dark']) .tw-cal-week-date,
+:host-context(html[data-theme='dark']) .tw-cal-month-daybtn,
+.sw-dark .tw-cal-period,
+.sw-dark .tw-cal-week-date,
+.sw-dark .tw-cal-month-daybtn,
+html[data-theme='dark'] .tw-cal-period,
+html[data-theme='dark'] .tw-cal-week-date,
+html[data-theme='dark'] .tw-cal-month-daybtn {
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-cal-month-cell--today,
+:host-context(html[data-theme='dark']) .tw-cal-month-cell--today,
+.sw-dark .tw-cal-month-cell--today,
+html[data-theme='dark'] .tw-cal-month-cell--today {
+  background: #1e293b;
+  border-color: #6366f1;
+}
+
+:host-context(.sw-dark) .tw-cal-slot--neutral,
+:host-context(html[data-theme='dark']) .tw-cal-slot--neutral,
+.sw-dark .tw-cal-slot--neutral,
+html[data-theme='dark'] .tw-cal-slot--neutral {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}

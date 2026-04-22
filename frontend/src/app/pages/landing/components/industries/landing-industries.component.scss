@@ -41,6 +41,11 @@
   line-height: 1;
 }
 
+.landing-industry-tab-item {
+  width: 100%;
+  min-height: 100%;
+}
+
 .landing-industry-visual-icon {
   font-size: 4rem;
 }
@@ -159,4 +164,120 @@
   ::ng-deep .landing-select-industry-cards .p-selectbutton {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+:host-context(.sw-dark) .landing-industry-grid,
+:host-context(html[data-theme='dark']) .landing-industry-grid,
+:host-context([data-theme='dark']) .landing-industry-grid,
+.sw-dark .landing-industry-grid,
+html[data-theme='dark'] .landing-industry-grid {
+  background: linear-gradient(145deg, #0f172a 0%, #111827 44%), #0f172a !important;
+  border-color: #334155 !important;
+  color: #e2e8f0;
+  box-shadow: 0 16px 36px -30px rgb(2 6 23 / 0.9);
+}
+
+:host-context(.sw-dark) .landing-list li,
+:host-context(html[data-theme='dark']) .landing-list li,
+:host-context([data-theme='dark']) .landing-list li,
+.sw-dark .landing-list li,
+html[data-theme='dark'] .landing-list li {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+:host-context(.sw-dark) .landing-industry-visual,
+:host-context(html[data-theme='dark']) .landing-industry-visual,
+:host-context([data-theme='dark']) .landing-industry-visual,
+.sw-dark .landing-industry-visual,
+html[data-theme='dark'] .landing-industry-visual {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .landing-custom-cta,
+:host-context(html[data-theme='dark']) .landing-custom-cta,
+:host-context([data-theme='dark']) .landing-custom-cta,
+.sw-dark .landing-custom-cta,
+html[data-theme='dark'] .landing-custom-cta {
+  background: linear-gradient(135deg, #4c1d95 0%, #831843 100%);
+  border: 1px solid #6d28d9;
+}
+
+:host-context(.sw-dark) .landing-industry-heading,
+:host-context(html[data-theme='dark']) .landing-industry-heading,
+:host-context([data-theme='dark']) .landing-industry-heading,
+.sw-dark .landing-industry-heading,
+html[data-theme='dark'] .landing-industry-heading {
+  color: #f8fafc;
+}
+
+:host-context(.sw-dark) .landing-industry-grid p,
+:host-context(html[data-theme='dark']) .landing-industry-grid p,
+:host-context([data-theme='dark']) .landing-industry-grid p,
+.sw-dark .landing-industry-grid p,
+html[data-theme='dark'] .landing-industry-grid p {
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .landing-industry-grid .text-color-secondary,
+:host-context(html[data-theme='dark']) .landing-industry-grid .text-color-secondary,
+:host-context([data-theme='dark']) .landing-industry-grid .text-color-secondary,
+.sw-dark .landing-industry-grid .text-color-secondary,
+html[data-theme='dark'] .landing-industry-grid .text-color-secondary {
+  color: #cbd5e1 !important;
+}
+
+:host-context(.sw-dark) .landing-industry-photo,
+:host-context(html[data-theme='dark']) .landing-industry-photo,
+:host-context([data-theme='dark']) .landing-industry-photo,
+.sw-dark .landing-industry-photo,
+html[data-theme='dark'] .landing-industry-photo {
+  box-shadow: 0 14px 28px -18px rgb(2 6 23 / 0.95);
+}
+
+:host-context(.sw-dark) ::ng-deep .landing-select-industry-cards .p-togglebutton,
+:host-context(.sw-dark) ::ng-deep .landing-select-industry-cards .p-button,
+:host-context(html[data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-togglebutton,
+:host-context(html[data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-button,
+:host-context([data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-togglebutton,
+:host-context([data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-button,
+.sw-dark ::ng-deep .landing-select-industry-cards .p-togglebutton,
+.sw-dark ::ng-deep .landing-select-industry-cards .p-button,
+html[data-theme='dark'] ::ng-deep .landing-select-industry-cards .p-togglebutton,
+html[data-theme='dark'] ::ng-deep .landing-select-industry-cards .p-button {
+  border-color: #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) ::ng-deep .landing-select-industry-cards .p-togglebutton.p-highlight,
+:host-context(.sw-dark) ::ng-deep .landing-select-industry-cards .p-togglebutton.p-button-checked,
+:host-context(html[data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-togglebutton.p-highlight,
+:host-context(html[data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-togglebutton.p-button-checked,
+:host-context([data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-togglebutton.p-highlight,
+:host-context([data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-togglebutton.p-button-checked,
+.sw-dark ::ng-deep .landing-select-industry-cards .p-togglebutton.p-highlight,
+.sw-dark ::ng-deep .landing-select-industry-cards .p-togglebutton.p-button-checked,
+html[data-theme='dark'] ::ng-deep .landing-select-industry-cards .p-togglebutton.p-highlight,
+html[data-theme='dark'] ::ng-deep .landing-select-industry-cards .p-togglebutton.p-button-checked {
+  border-color: #6366f1;
+  background: #1e1b4b;
+  color: #e0e7ff;
+  box-shadow: 0 10px 18px -14px rgb(30 41 59 / 0.95);
+}
+
+:host-context(.sw-dark) ::ng-deep .landing-select-industry-cards .p-togglebutton:not(.p-disabled):hover,
+:host-context(.sw-dark) ::ng-deep .landing-select-industry-cards .p-button:not(.p-disabled):hover,
+:host-context(html[data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-togglebutton:not(.p-disabled):hover,
+:host-context(html[data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-button:not(.p-disabled):hover,
+:host-context([data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-togglebutton:not(.p-disabled):hover,
+:host-context([data-theme='dark']) ::ng-deep .landing-select-industry-cards .p-button:not(.p-disabled):hover,
+.sw-dark ::ng-deep .landing-select-industry-cards .p-togglebutton:not(.p-disabled):hover,
+.sw-dark ::ng-deep .landing-select-industry-cards .p-button:not(.p-disabled):hover,
+html[data-theme='dark'] ::ng-deep .landing-select-industry-cards .p-togglebutton:not(.p-disabled):hover,
+html[data-theme='dark'] ::ng-deep .landing-select-industry-cards .p-button:not(.p-disabled):hover {
+  border-color: #818cf8;
+  background: #1e293b;
+  box-shadow: 0 10px 18px -14px rgb(15 23 42 / 0.95);
 }

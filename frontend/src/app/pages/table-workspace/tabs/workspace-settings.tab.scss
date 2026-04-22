@@ -236,3 +236,57 @@
     outline-offset: 2px;
   }
 }
+
+:host-context(.sw-dark) .tw-settings-nav-btn,
+:host-context(.sw-dark) .tw-settings .settings-form-grid input[type='text'],
+:host-context(.sw-dark) .tw-settings .settings-form-grid select,
+:host-context(.sw-dark) .tw-settings .settings-form-grid input[type='time'],
+:host-context(.sw-dark) .tw-textarea,
+:host-context(.sw-dark) .tw-select,
+:host-context(.sw-dark) .sub-bonus-card,
+:host-context(.sw-dark) .qty-controls button,
+:host-context(html[data-theme='dark']) .tw-settings-nav-btn,
+:host-context(html[data-theme='dark']) .tw-settings .settings-form-grid input[type='text'],
+:host-context(html[data-theme='dark']) .tw-settings .settings-form-grid select,
+:host-context(html[data-theme='dark']) .tw-settings .settings-form-grid input[type='time'],
+:host-context(html[data-theme='dark']) .tw-textarea,
+:host-context(html[data-theme='dark']) .tw-select,
+:host-context(html[data-theme='dark']) .sub-bonus-card,
+:host-context(html[data-theme='dark']) .qty-controls button,
+.sw-dark .tw-settings-nav-btn,
+.sw-dark .tw-settings .settings-form-grid input[type='text'],
+.sw-dark .tw-settings .settings-form-grid select,
+.sw-dark .tw-settings .settings-form-grid input[type='time'],
+.sw-dark .tw-textarea,
+.sw-dark .tw-select,
+.sw-dark .sub-bonus-card,
+.sw-dark .qty-controls button,
+html[data-theme='dark'] .tw-settings-nav-btn,
+html[data-theme='dark'] .tw-settings .settings-form-grid input[type='text'],
+html[data-theme='dark'] .tw-settings .settings-form-grid select,
+html[data-theme='dark'] .tw-settings .settings-form-grid input[type='time'],
+html[data-theme='dark'] .tw-textarea,
+html[data-theme='dark'] .tw-select,
+html[data-theme='dark'] .sub-bonus-card,
+html[data-theme='dark'] .qty-controls button {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-settings-nav-btn.active,
+:host-context(html[data-theme='dark']) .tw-settings-nav-btn.active,
+.sw-dark .tw-settings-nav-btn.active,
+html[data-theme='dark'] .tw-settings-nav-btn.active {
+  background: #1e1b4b;
+  border-color: #6366f1;
+  color: #c7d2fe;
+}
+
+:host-context(.sw-dark) .tw-badge-mini,
+:host-context(html[data-theme='dark']) .tw-badge-mini,
+.sw-dark .tw-badge-mini,
+html[data-theme='dark'] .tw-badge-mini {
+  background: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+}

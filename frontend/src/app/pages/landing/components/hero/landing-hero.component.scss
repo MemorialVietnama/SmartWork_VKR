@@ -43,10 +43,7 @@
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--p-surface-900) 0%, var(--p-primary-700) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--p-primary-600);
 }
 
 .landing-hero-lead {
@@ -56,8 +53,26 @@
   color: var(--p-text-muted-color);
 }
 
+:host-context(.sw-dark) .landing-hero-lead,
+:host-context(html[data-theme='dark']) .landing-hero-lead,
+:host-context(body[data-theme='dark']) .landing-hero-lead,
+:host-context([data-theme='dark']) .landing-hero-lead {
+  color: #fff !important;
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+}
+
+.sw-dark .landing-hero-lead,
+html[data-theme='dark'] .landing-hero-lead {
+  color: #fff !important;
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+}
+
 .landing-dashboard-preview {
-  background: #f6f7f9;
+  background: var(--p-content-background);
   border-radius: 16px;
   box-shadow: 0 8px 20px rgb(15 23 42 / 0.08);
   padding: 1rem 1rem 1.25rem;
@@ -136,6 +151,14 @@
   width: 98px;
   height: auto;
   margin-bottom: 0.6rem;
+}
+
+:host-context(.sw-dark) .landing-mock-brand,
+:host-context(html[data-theme='dark']) .landing-mock-brand,
+:host-context([data-theme='dark']) .landing-mock-brand,
+.sw-dark .landing-mock-brand,
+html[data-theme='dark'] .landing-mock-brand {
+  content: url('/full_logo_dark.png');
 }
 
 .landing-mock-dash-head {
@@ -406,7 +429,7 @@
 .landing-mock-kpi-grid article {
   border: 1px solid var(--p-content-border-color);
   border-radius: 0.55rem;
-  background: #fafafa;
+  background: var(--p-content-background);
   padding: 0.45rem 0.55rem;
 }
 
@@ -459,7 +482,8 @@
   border: 1px solid var(--p-content-border-color);
   border-radius: 0.45rem;
   padding: 0.25rem 0.45rem;
-  background: #fff;
+  background: var(--p-content-background);
+  color: var(--p-text-color);
   font-size: 0.68rem;
 }
 
@@ -478,7 +502,8 @@
   text-align: left;
   border: 1px solid var(--p-content-border-color);
   border-radius: 0.45rem;
-  background: #fff;
+  background: var(--p-content-background);
+  color: var(--p-text-color);
   padding: 0.4rem 0.5rem;
   font-size: 0.7rem;
   margin-bottom: 0.35rem;
@@ -486,14 +511,14 @@
 
 .landing-settings-menu .active {
   border-color: var(--p-primary-color);
-  background: color-mix(in srgb, var(--p-primary-color) 10%, #fff);
+  background: color-mix(in srgb, var(--p-primary-color) 10%, var(--p-content-background));
 }
 
 .landing-settings-panel {
   border: 1px solid var(--p-content-border-color);
   border-radius: 0.55rem;
   padding: 0.6rem;
-  background: #fafafa;
+  background: var(--p-content-background);
 }
 
 .landing-settings-panel h3 {
@@ -548,10 +573,148 @@
   }
 }
 
+.sw-dark .landing-hero-title,
+html[data-theme='dark'] .landing-hero-title {
+  color: var(--p-surface-50);
+}
+
+.sw-dark .landing-dashboard-preview,
+html[data-theme='dark'] .landing-dashboard-preview {
+  background: #111a2b;
+  border-color: #273449;
+  box-shadow: 0 10px 24px rgb(2 6 23 / 0.45);
+}
+
+.sw-dark .landing-mock-dash-sidebar,
+.sw-dark .landing-mock-dash-content,
+.sw-dark .landing-mock-mini-chart,
+.sw-dark .landing-mock-kpi-grid article,
+.sw-dark .landing-settings-menu button,
+.sw-dark .landing-settings-panel,
+.sw-dark .landing-mock-analytics-card,
+html[data-theme='dark'] .landing-mock-dash-sidebar,
+html[data-theme='dark'] .landing-mock-dash-content,
+html[data-theme='dark'] .landing-mock-mini-chart,
+html[data-theme='dark'] .landing-mock-kpi-grid article,
+html[data-theme='dark'] .landing-settings-menu button,
+html[data-theme='dark'] .landing-settings-panel,
+html[data-theme='dark'] .landing-mock-analytics-card {
+  background: #111a2b !important;
+  border-color: #273449;
+  color: #e2e8f0;
+}
+
+.sw-dark .landing-mock-dash-menu-item,
+.sw-dark .landing-mock-analytics-filters select,
+.sw-dark .landing-mock-analytics-filters button,
+html[data-theme='dark'] .landing-mock-dash-menu-item,
+html[data-theme='dark'] .landing-mock-analytics-filters select,
+html[data-theme='dark'] .landing-mock-analytics-filters button {
+  background: #0f172a;
+  border-color: #334155;
+  color: #fff;
+}
+
+.sw-dark .landing-mock-dash-menu-item:hover,
+html[data-theme='dark'] .landing-mock-dash-menu-item:hover {
+  background: #1e293b;
+}
+
+.sw-dark .landing-mock-dash-menu-item--active,
+.sw-dark .landing-settings-menu .active,
+html[data-theme='dark'] .landing-mock-dash-menu-item--active,
+html[data-theme='dark'] .landing-settings-menu .active {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+  color: #dbeafe;
+}
+
+.sw-dark .landing-mock-dash-menu-item small,
+.sw-dark .landing-mock-dash-login,
+.sw-dark .landing-mock-table-card small,
+.sw-dark .landing-mock-kpi-grid article small,
+.sw-dark .landing-mock-dash-content-head p,
+.sw-dark .landing-mock-task-bars,
+html[data-theme='dark'] .landing-mock-dash-menu-item small,
+html[data-theme='dark'] .landing-mock-dash-login,
+html[data-theme='dark'] .landing-mock-table-card small,
+html[data-theme='dark'] .landing-mock-kpi-grid article small,
+html[data-theme='dark'] .landing-mock-dash-content-head p,
+html[data-theme='dark'] .landing-mock-task-bars {
+  color: #94a3b8;
+}
+
+.sw-dark .landing-mock-analytics-card,
+.sw-dark .landing-mock-analytics-card h3,
+.sw-dark .landing-mock-analytics-card small,
+.sw-dark .landing-mock-analytics-card strong,
+.sw-dark .landing-mock-analytics-card p,
+html[data-theme='dark'] .landing-mock-analytics-card,
+html[data-theme='dark'] .landing-mock-analytics-card h3,
+html[data-theme='dark'] .landing-mock-analytics-card small,
+html[data-theme='dark'] .landing-mock-analytics-card strong,
+html[data-theme='dark'] .landing-mock-analytics-card p {
+  color: #fff !important;
+}
+
+:host-context(.sw-dark) .landing-mock-analytics-filters button,
+:host-context(.sw-dark) .landing-mock-analytics-filters select,
+:host-context([data-theme='dark']) .landing-mock-analytics-filters button,
+:host-context([data-theme='dark']) .landing-mock-analytics-filters select {
+  color: #fff !important;
+}
+
+:host-context(.sw-dark) ::ng-deep .landing-mock-dash-toolbar .p-button,
+:host-context(.sw-dark) ::ng-deep .landing-mock-table-card-action .p-button,
+:host-context([data-theme='dark']) ::ng-deep .landing-mock-dash-toolbar .p-button,
+:host-context([data-theme='dark']) ::ng-deep .landing-mock-table-card-action .p-button {
+  color: #fff !important;
+}
+
+:host-context(.sw-dark) ::ng-deep .landing-mock-dash-toolbar .p-button .p-button-label,
+:host-context(.sw-dark) ::ng-deep .landing-mock-dash-toolbar .p-button .p-button-icon,
+:host-context(.sw-dark) ::ng-deep .landing-mock-table-card-action .p-button .p-button-label,
+:host-context(.sw-dark) ::ng-deep .landing-mock-table-card-action .p-button .p-button-icon,
+:host-context([data-theme='dark']) ::ng-deep .landing-mock-dash-toolbar .p-button .p-button-label,
+:host-context([data-theme='dark']) ::ng-deep .landing-mock-dash-toolbar .p-button .p-button-icon,
+:host-context([data-theme='dark']) ::ng-deep .landing-mock-table-card-action .p-button .p-button-label,
+:host-context([data-theme='dark']) ::ng-deep .landing-mock-table-card-action .p-button .p-button-icon {
+  color: #fff !important;
+}
+
+:host-context(.sw-dark) ::ng-deep .landing-hero-cta-primary.p-button,
+:host-context([data-theme='dark']) ::ng-deep .landing-hero-cta-primary.p-button,
+:host-context(.sw-dark) ::ng-deep .landing-hero-cta-primary.p-button .p-button-label,
+:host-context([data-theme='dark']) ::ng-deep .landing-hero-cta-primary.p-button .p-button-label,
+:host-context(.sw-dark) ::ng-deep .landing-hero-cta-primary.p-button .p-button-icon,
+:host-context([data-theme='dark']) ::ng-deep .landing-hero-cta-primary.p-button .p-button-icon {
+  color: #fff !important;
+}
+
+.sw-dark .landing-mock-stats-row,
+.sw-dark .landing-mock-table-meta,
+.sw-dark .landing-mock-dash-head,
+.sw-dark .landing-mock-dash-toolbar,
+.sw-dark .landing-settings-row,
+html[data-theme='dark'] .landing-mock-stats-row,
+html[data-theme='dark'] .landing-mock-table-meta,
+html[data-theme='dark'] .landing-mock-dash-head,
+html[data-theme='dark'] .landing-mock-dash-toolbar,
+html[data-theme='dark'] .landing-settings-row {
+  border-color: #273449;
+}
+
 :host ::ng-deep .landing-hero-cta-primary.p-button {
   padding: 1rem 2rem;
   font-size: 1.1rem;
   font-weight: 600;
+  background: var(--p-primary-600, var(--p-primary-color));
+  border-color: var(--p-primary-600, var(--p-primary-color));
+}
+
+:host ::ng-deep .landing-hero-cta-primary.p-button:not(:disabled):hover {
+  background: var(--p-primary-700, var(--p-primary-color));
+  border-color: var(--p-primary-700, var(--p-primary-color));
 }
 
 :host ::ng-deep .landing-hero-cta-secondary.p-button {

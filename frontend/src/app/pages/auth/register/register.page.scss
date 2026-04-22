@@ -324,4 +324,100 @@
   color: var(--p-primary-600);
 }
 
+:host-context(.sw-dark) .register-page,
+:host-context(html[data-theme='dark']) .register-page,
+:host-context([data-theme='dark']) .register-page,
+.sw-dark .register-page,
+html[data-theme='dark'] .register-page {
+  background: linear-gradient(165deg, #020617 0%, #0f172a 45%, #111827 100%);
+}
+
+:host-context(.sw-dark) .register-page::before,
+:host-context(html[data-theme='dark']) .register-page::before,
+:host-context([data-theme='dark']) .register-page::before,
+.sw-dark .register-page::before,
+html[data-theme='dark'] .register-page::before {
+  background: color-mix(in srgb, #6366f1 24%, transparent);
+}
+
+:host-context(.sw-dark) ::ng-deep .register-card.p-card,
+:host-context(html[data-theme='dark']) ::ng-deep .register-card.p-card,
+:host-context([data-theme='dark']) ::ng-deep .register-card.p-card,
+.sw-dark ::ng-deep .register-card.p-card,
+html[data-theme='dark'] ::ng-deep .register-card.p-card {
+  background: #0f172a;
+  border-color: #334155;
+  box-shadow: 0 20px 28px -24px rgb(2 6 23 / 0.95);
+}
+
+:host-context(.sw-dark) .register-brand__image,
+:host-context(html[data-theme='dark']) .register-brand__image,
+:host-context([data-theme='dark']) .register-brand__image,
+.sw-dark .register-brand__image,
+html[data-theme='dark'] .register-brand__image {
+  content: url('/full_logo_dark.png');
+}
+
+:host-context(.sw-dark) .register-title,
+:host-context(html[data-theme='dark']) .register-title,
+:host-context([data-theme='dark']) .register-title,
+.sw-dark .register-title,
+html[data-theme='dark'] .register-title {
+  background: none;
+  color: var(--p-surface-50);
+}
+
+:host-context(.sw-dark) .register-link-card,
+:host-context(html[data-theme='dark']) .register-link-card,
+:host-context([data-theme='dark']) .register-link-card,
+.sw-dark .register-link-card,
+html[data-theme='dark'] .register-link-card {
+  background: #111827;
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .register-link-card:hover,
+:host-context(html[data-theme='dark']) .register-link-card:hover,
+:host-context([data-theme='dark']) .register-link-card:hover,
+.sw-dark .register-link-card:hover,
+html[data-theme='dark'] .register-link-card:hover {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+:host-context(.sw-dark) .register-link-card--muted,
+:host-context(html[data-theme='dark']) .register-link-card--muted,
+:host-context([data-theme='dark']) .register-link-card--muted,
+.sw-dark .register-link-card--muted,
+html[data-theme='dark'] .register-link-card--muted {
+  background: #0f172a;
+}
+
+:host-context(.sw-dark) .register-link-card--muted:hover,
+:host-context(html[data-theme='dark']) .register-link-card--muted:hover,
+:host-context([data-theme='dark']) .register-link-card--muted:hover,
+.sw-dark .register-link-card--muted:hover,
+html[data-theme='dark'] .register-link-card--muted:hover {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+:host-context(.sw-dark) .register-link-card__icon,
+:host-context(html[data-theme='dark']) .register-link-card__icon,
+:host-context([data-theme='dark']) .register-link-card__icon,
+.sw-dark .register-link-card__icon,
+html[data-theme='dark'] .register-link-card__icon {
+  background: #1e293b;
+  color: #93c5fd;
+}
+
+:host-context(.sw-dark) .register-link-card--muted .register-link-card__icon,
+:host-context(html[data-theme='dark']) .register-link-card--muted .register-link-card__icon,
+:host-context([data-theme='dark']) .register-link-card--muted .register-link-card__icon,
+.sw-dark .register-link-card--muted .register-link-card__icon,
+html[data-theme='dark'] .register-link-card--muted .register-link-card__icon {
+  background: #334155;
+  color: #cbd5e1;
+}
+
 

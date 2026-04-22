@@ -33,6 +33,7 @@ import {
   TableDto,
   UserSettingsDto,
 } from '../../core/auth/auth.service';
+import { ThemeService } from '../../core/theme.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -69,6 +70,7 @@ export class DashboardPageComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly themeService = inject(ThemeService);
   private readonly analyticsBonusKey = 'unlock_analytics';
 
   protected user: MeDto | null = null;
@@ -1251,6 +1253,7 @@ export class DashboardPageComponent implements OnInit {
       density: settings.appearance.density,
       cardSize: settings.appearance.card_size,
     };
+    this.themeService.applyTheme(this.appearanceSettings.theme);
     this.notificationsSettings = {
       sources: { ...settings.notifications.sources },
       targets: { ...settings.notifications.targets },

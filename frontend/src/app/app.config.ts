@@ -23,6 +23,9 @@ export const appConfig: ApplicationConfig = {
       ripple: true,
       theme: {
         preset: SmartWorkPreset,
+        options: {
+          darkModeSelector: '.sw-dark',
+        },
       },
     }),
   ],

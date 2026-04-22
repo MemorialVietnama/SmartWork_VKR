@@ -151,3 +151,55 @@
     grid-template-columns: 1fr;
   }
 }
+
+:host-context(.sw-dark) .wa-period-switch button,
+:host-context(.sw-dark) .wa-kpi-card,
+:host-context(.sw-dark) .wa-panel,
+:host-context(.sw-dark) .wa-chip,
+:host-context(.sw-dark) .wa-drilldown,
+:host-context(.sw-dark) .wa-drill-row,
+:host-context(html[data-theme='dark']) .wa-period-switch button,
+:host-context(html[data-theme='dark']) .wa-kpi-card,
+:host-context(html[data-theme='dark']) .wa-panel,
+:host-context(html[data-theme='dark']) .wa-chip,
+:host-context(html[data-theme='dark']) .wa-drilldown,
+:host-context(html[data-theme='dark']) .wa-drill-row,
+.sw-dark .wa-period-switch button,
+.sw-dark .wa-kpi-card,
+.sw-dark .wa-panel,
+.sw-dark .wa-chip,
+.sw-dark .wa-drilldown,
+.sw-dark .wa-drill-row,
+html[data-theme='dark'] .wa-period-switch button,
+html[data-theme='dark'] .wa-kpi-card,
+html[data-theme='dark'] .wa-panel,
+html[data-theme='dark'] .wa-chip,
+html[data-theme='dark'] .wa-drilldown,
+html[data-theme='dark'] .wa-drill-row {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .wa-period-switch button.active,
+:host-context(.sw-dark) .wa-kpi-card.active,
+:host-context(.sw-dark) .wa-chip.active,
+:host-context(html[data-theme='dark']) .wa-period-switch button.active,
+:host-context(html[data-theme='dark']) .wa-kpi-card.active,
+:host-context(html[data-theme='dark']) .wa-chip.active,
+.sw-dark .wa-period-switch button.active,
+.sw-dark .wa-kpi-card.active,
+.sw-dark .wa-chip.active,
+html[data-theme='dark'] .wa-period-switch button.active,
+html[data-theme='dark'] .wa-kpi-card.active,
+html[data-theme='dark'] .wa-chip.active {
+  background: #1e1b4b;
+  border-color: #6366f1;
+}
+
+:host-context(.sw-dark) .wa-insights li,
+:host-context(html[data-theme='dark']) .wa-insights li,
+.sw-dark .wa-insights li,
+html[data-theme='dark'] .wa-insights li {
+  border-color: #334155;
+}
