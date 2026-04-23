@@ -10,7 +10,7 @@
 }
 
 .landing-main {
-  padding-top: 5.5rem;
+  padding-top: 4.75rem;
 }
 
 /* Section anchor offset under fixed toolbar */
@@ -20,7 +20,22 @@
 :host.landing-page #api,
 :host.landing-page #about,
 :host.landing-page #faq {
-  scroll-margin-top: 5.5rem;
+  scroll-margin-top: 4.75rem;
+}
+
+@media (min-width: 1280px) {
+  .landing-main {
+    padding-top: 5rem;
+  }
+
+  :host.landing-page #features,
+  :host.landing-page #extensions,
+  :host.landing-page #industries,
+  :host.landing-page #api,
+  :host.landing-page #about,
+  :host.landing-page #faq {
+    scroll-margin-top: 5rem;
+  }
 }
 
 .landing-tpl--industries,

@@ -166,6 +166,22 @@
   }
 }
 
+@media (max-width: 479px) {
+  ::ng-deep .landing-select-industry-cards .p-selectbutton {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-industry-photo {
+    height: 180px;
+  }
+}
+
+@media (min-width: 1280px) {
+  ::ng-deep .landing-select-industry-cards .p-selectbutton {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
 :host-context(.sw-dark) .landing-industry-grid,
 :host-context(html[data-theme='dark']) .landing-industry-grid,
 :host-context([data-theme='dark']) .landing-industry-grid,

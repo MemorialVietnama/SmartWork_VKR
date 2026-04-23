@@ -1,7 +1,7 @@
 .invite-register-page {
-  max-width: 42rem;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  max-width: min(44rem, 100%);
+  margin: clamp(1rem, 3vw, 2rem) auto;
+  padding: 0 var(--sw-content-padding, 1rem);
 }
 
 .form-grid {
@@ -38,6 +38,18 @@
 @media (max-width: 720px) {
   .form-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 479px) {
+  .invite-register-page {
+    padding: 0 0.75rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .invite-register-page {
+    max-width: 48rem;
   }
 }
 

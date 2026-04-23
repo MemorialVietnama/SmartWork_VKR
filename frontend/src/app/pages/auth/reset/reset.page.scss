@@ -1,7 +1,7 @@
 .page {
-  max-width: 34rem;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  max-width: min(36rem, 100%);
+  margin: clamp(1rem, 3vw, 2rem) auto;
+  padding: 0 var(--sw-content-padding, 1rem);
 }
 
 .lead {
@@ -38,6 +38,18 @@
   display: flex;
   justify-content: center;
   padding-top: 0.5rem;
+}
+
+@media (max-width: 479px) {
+  .page {
+    padding: 0 0.75rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .page {
+    max-width: 40rem;
+  }
 }
 
 :host-context(.sw-dark) .page,

@@ -360,6 +360,42 @@
   }
 }
 
+@media (max-width: 767px) {
+  .tw-cal-widget {
+    padding: 0.75rem;
+  }
+
+  .tw-cal-period {
+    min-width: auto;
+    text-align: left;
+  }
+
+  .tw-cal-month-weekdays,
+  .tw-cal-month-row {
+    grid-template-columns: repeat(7, minmax(4.5rem, 1fr));
+  }
+
+  .tw-cal-month-grid {
+    min-width: 32rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .tw-cal-toolbar {
+    gap: 0.5rem;
+  }
+
+  .tw-cal-mode-select {
+    min-width: 100%;
+  }
+}
+
+@media (min-width: 1280px) {
+  .tw-cal-year-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .tw-muted {
   color: var(--text-color-secondary, #64748b);
 }

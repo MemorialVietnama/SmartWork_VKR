@@ -54,3 +54,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Docs artifacts
+docs/**

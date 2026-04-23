@@ -129,6 +129,28 @@
   padding: clamp(1rem, 2.6vw, 1.8rem);
 }
 
+@media (max-width: 767px) {
+  .landing-api-demo {
+    padding: 0.85rem;
+  }
+
+  .landing-api-actions {
+    gap: 0.5rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .landing-api-shell {
+    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1920px) {
+  .landing-api-shell {
+    gap: 1.5rem;
+  }
+}
+
 .landing-api-demo::after {
   content: '';
   position: absolute;

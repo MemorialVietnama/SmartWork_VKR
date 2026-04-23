@@ -85,6 +85,12 @@ html[data-theme='dark'] .landing-hero-lead {
   will-change: transform;
 }
 
+@media (max-width: 1023px) {
+  .landing-dashboard-preview {
+    transform: none;
+  }
+}
+
 .landing-dashboard-preview:hover {
   transform: perspective(1200px) rotateY(-1deg) rotateX(1deg) translateY(-2px);
   box-shadow: 0 16px 30px rgb(15 23 42 / 0.12);
@@ -137,6 +143,12 @@ html[data-theme='dark'] .landing-hero-lead {
   .landing-mock-dash {
     grid-template-columns: 190px 1fr;
     gap: 0.9rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .landing-mock-dash {
+    grid-template-columns: 220px 1fr;
   }
 }
 
@@ -560,6 +572,22 @@ html[data-theme='dark'] .landing-mock-brand {
   gap: 3px;
   height: 52px;
   margin-top: 0.35rem;
+}
+
+@media (max-width: 767px) {
+  .landing-hero-title {
+    font-size: clamp(1.75rem, 7.5vw, 2.35rem);
+  }
+
+  .landing-hero-lead {
+    font-size: 1rem;
+    line-height: 1.55;
+    margin-bottom: 1.35rem;
+  }
+
+  .landing-dashboard-preview {
+    padding: 0.75rem;
+  }
 }
 
 .landing-mock-mini-bar {

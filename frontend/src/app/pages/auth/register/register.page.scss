@@ -33,7 +33,7 @@
 
 ::ng-deep .register-card.p-card {
   width: 100%;
-  max-width: 26rem;
+  max-width: min(30rem, 100%);
   margin: 0 auto;
   border: 1px solid var(--p-content-border-color);
   border-radius: var(--p-content-border-radius);
@@ -46,6 +46,31 @@
 
 ::ng-deep .register-card .p-card-body {
   padding: clamp(1.5rem, 4vw, 2rem);
+}
+
+@media (max-width: 479px) {
+  .register-page {
+    padding: 0.9rem 0.6rem;
+  }
+
+  ::ng-deep .register-card .p-card-body {
+    padding: 1rem 0.85rem;
+  }
+
+  .register-title {
+    font-size: 1.25rem;
+  }
+
+  .register-link-card {
+    padding: 0.75rem;
+    gap: 0.6rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  ::ng-deep .register-card.p-card {
+    max-width: 32rem;
+  }
 }
 
 .register-card-body {

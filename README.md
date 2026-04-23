@@ -257,6 +257,11 @@ SmartWork/
 - env/secrets точки;
 - healthchecks и зависимости старта.
 
+### 11.7 Use Case Diagram
+
+- UML-диаграмма прецедентов для двух ролей (`Owner` и `Staff`): `docs/precedent.drawio`
+- PNG-экспорт для быстрого просмотра: `docs/precedent.drawio.png`
+
 ## 12) Шаблоны для быстрого построения диаграмм (Mermaid)
 
 ### 12.1 ERD шаблон
