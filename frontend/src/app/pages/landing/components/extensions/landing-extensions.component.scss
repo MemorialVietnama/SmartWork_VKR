@@ -22,23 +22,6 @@
   min-width: 740px;
 }
 
-@media (max-width: 767px) {
-  .landing-extensions-table {
-    min-width: 620px;
-  }
-
-  .landing-extensions-table th,
-  .landing-extensions-table td {
-    padding: 0.65rem 0.75rem;
-  }
-}
-
-@media (min-width: 1440px) {
-  .landing-extensions-table {
-    min-width: 860px;
-  }
-}
-
 .landing-extensions-table th,
 .landing-extensions-table td {
   padding: 0.85rem 1rem;

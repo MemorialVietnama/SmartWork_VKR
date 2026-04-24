@@ -2,16 +2,6 @@
 
 :root {
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --sw-content-max: 1200px;
-  --sw-content-padding: 0.875rem;
-  --sw-content-padding-lg: 1.25rem;
-  --sw-radius-lg: 1rem;
-  --sw-bp-sm: 480px;
-  --sw-bp-md: 768px;
-  --sw-bp-lg: 1024px;
-  --sw-bp-xl: 1280px;
-  --sw-bp-2xl: 1440px;
-  --sw-bp-3xl: 1920px;
 }
 
 html,
@@ -19,48 +9,6 @@ body {
   height: 100%;
   margin: 0;
   font-family: var(--font-family);
-  overflow-x: hidden;
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-.dashboard-page,
-.table-workspace-page,
-.landing-section-inner,
-.landing-header__container {
-  width: min(100%, var(--sw-content-max));
-  margin-inline: auto;
-  padding-inline: var(--sw-content-padding);
-}
-
-@media (min-width: 768px) {
-  :root {
-    --sw-content-padding: 1rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  :root {
-    --sw-content-max: 1280px;
-    --sw-content-padding: var(--sw-content-padding-lg);
-  }
-}
-
-@media (min-width: 1440px) {
-  :root {
-    --sw-content-max: 1360px;
-  }
-}
-
-@media (min-width: 1920px) {
-  :root {
-    --sw-content-max: 1520px;
-    --sw-content-padding: 1.5rem;
-  }
 }
 
 .dashboard-page .subscription-summary {

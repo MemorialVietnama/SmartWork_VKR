@@ -476,33 +476,6 @@
   }
 }
 
-@media (max-width: 479px) {
-  .tw-dir {
-    padding: 0.75rem;
-    border-radius: 0.8rem;
-  }
-
-  .tw-dir-head,
-  .tw-dir-detail-head {
-    gap: 0.55rem;
-  }
-
-  .tw-drawer {
-    width: 100%;
-    padding: 0.75rem;
-  }
-
-  .tw-custom-table {
-    min-width: 34rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  .tw-dir-list-groups {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 :host-context(.sw-dark) .tw-dir,
 :host-context(html[data-theme='dark']) .tw-dir,
 .sw-dark .tw-dir,

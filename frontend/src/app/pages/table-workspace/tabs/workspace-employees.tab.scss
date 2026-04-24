@@ -202,22 +202,6 @@
   }
 }
 
-@media (max-width: 479px) {
-  .tw-employees {
-    padding: 0.7rem;
-  }
-
-  .tw-employee-content {
-    padding: 0.65rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  .tw-form-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 :host-context(.sw-dark) .tw-employees,
 :host-context(html[data-theme='dark']) .tw-employees,
 .sw-dark .tw-employees,
