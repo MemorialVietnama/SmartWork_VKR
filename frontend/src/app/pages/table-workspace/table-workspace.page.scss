@@ -2,11 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-<<<<<<< HEAD
   padding: 0;
-=======
-  padding: 1.25rem;
->>>>>>> dfdb2ebfbe64a05734fdf18e38a0fee20bf078de
   gap: 1rem;
   background:
     radial-gradient(circle at top left, rgba(99, 102, 241, 0.12), transparent 38%),
@@ -384,7 +380,6 @@
   }
 }
 
-<<<<<<< HEAD
 @media (max-width: 479px) {
   .table-workspace-page {
     padding: 0;
@@ -421,9 +416,6 @@
     grid-template-columns: minmax(19rem, 24rem) minmax(0, 1fr);
   }
 }
-
-=======
->>>>>>> dfdb2ebfbe64a05734fdf18e38a0fee20bf078de
 :host-context(.sw-dark) .table-workspace-page,
 :host-context(html[data-theme='dark']) .table-workspace-page,
 :host-context([data-theme='dark']) .table-workspace-page,

@@ -456,7 +456,7 @@
                 [options]="relationOptionsForField(field)"
                 optionLabel="label"
                 optionValue="id"
-                [ngModel]="customRowRelationMultiValues()[field.key] ?? []"
+                [ngModel]="customRowRelationMultiValues()[field.key]"
                 (ngModelChange)="setCustomRowRelationMultiValues(field.key, $event)"
                 defaultLabel="Выберите записи"
                 [filter]="true"
