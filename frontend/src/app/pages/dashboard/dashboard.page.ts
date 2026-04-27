@@ -260,9 +260,13 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
         }
         this.loading = false;
       },
-      error: () => {
+      error: (err) => {
         this.loading = false;
-        this.error = 'Сессия не действительна. Выполните вход заново.';
+        if (err?.status === 401) {
+          // 401 обрабатывается глобально интерсептором редиректом на логин.
+          return;
+        }
+        this.error = 'Не удалось загрузить данные. Попробуйте ещё раз.';
       },
     });
   }
