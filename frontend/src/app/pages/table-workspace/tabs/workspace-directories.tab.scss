@@ -88,6 +88,16 @@
   box-shadow: 0 16px 36px -32px rgba(15, 23, 42, 0.8);
   cursor: pointer;
   min-height: 10rem;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.tw-dir-group:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--p-primary-400, #818cf8) 65%, #cbd5e1);
+  box-shadow: 0 18px 30px -18px rgba(59, 130, 246, 0.35);
 }
 
 .tw-dir-group:focus-visible {
@@ -133,11 +143,14 @@
 
 .tw-dir-detail {
   border: 1px solid var(--p-content-border-color, #dbe4f1);
-  border-radius: 0.9rem;
-  background: #fff;
-  padding: 0.9rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  padding: 1rem;
   min-height: calc(100vh - 12rem);
   position: relative;
+  box-shadow:
+    0 18px 45px -35px rgba(15, 23, 42, 0.65),
+    0 2px 6px -5px rgba(15, 23, 42, 0.45);
 }
 
 .tw-dir-detail-head {
@@ -145,12 +158,15 @@
   justify-content: space-between;
   gap: 0.8rem;
   align-items: flex-start;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.9rem;
   position: sticky;
   top: 0;
   z-index: 4;
-  background: #fff;
-  padding-bottom: 0.35rem;
+  background: color-mix(in srgb, #fff 88%, #eff6ff);
+  padding: 0.45rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--p-primary-200, #c7d2fe) 45%, #e2e8f0);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(2px);
 }
 
 .tw-dir-detail-head h3 {
@@ -173,9 +189,10 @@
   position: sticky;
   top: 3.9rem;
   z-index: 3;
-  background: #fff;
-  padding: 0.35rem 0;
-  border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
+  background: color-mix(in srgb, #fff 84%, #ecfeff);
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--p-content-border-color, #e2e8f0);
+  border-radius: 0.75rem;
 }
 
 .tw-icon-actions {
@@ -211,16 +228,19 @@
   border: 1px solid var(--p-content-border-color, #e2e8f0);
   border-radius: 0.7rem;
   min-height: calc(100vh - 20rem);
+  background: #fff;
+  box-shadow: 0 10px 28px -24px rgba(15, 23, 42, 0.75);
 }
 
 .tw-custom-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   min-width: 40rem;
 }
 
 .tw-data-table {
-  min-height: calc(100vh - 20rem);
+  min-height: auto;
 }
 
 .tw-custom-table th,
@@ -228,16 +248,82 @@
   border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
   text-align: left;
   vertical-align: top;
-  padding: 0.5rem;
+  padding: 0.65rem 0.75rem;
 }
 
 .tw-custom-table thead th {
   background: color-mix(in srgb, var(--p-primary-100, #e0e7ff) 35%, #fff);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .tw-custom-table th input {
   margin-top: 0.35rem;
+}
+
+.tw-custom-table tbody tr {
+  transition: background-color 0.14s ease;
+}
+
+.tw-custom-table tbody tr:hover {
+  background: color-mix(in srgb, var(--p-primary-50, #eef2ff) 65%, #fff);
+}
+
+.tw-custom-table td > *:not(img),
+.tw-custom-table td {
+  line-height: 1rem;
+}
+
+.tw-custom-table td > *:not(img) {
+  display: block;
+  max-height: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .tw-data-table .p-datatable-wrapper {
+  border: 1px solid var(--p-content-border-color, #e2e8f0);
+  border-radius: 0.7rem;
+  background: #fff;
+  box-shadow: 0 10px 28px -24px rgba(15, 23, 42, 0.75);
+}
+
+:host ::ng-deep .tw-data-table .p-datatable-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-height: 0 !important;
+}
+
+:host ::ng-deep .tw-data-table .p-datatable-thead > tr > th {
+  background: color-mix(in srgb, var(--p-primary-100, #e0e7ff) 35%, #fff);
+  border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+:host ::ng-deep .tw-data-table .p-datatable-tbody > tr > td {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
+  line-height: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 18rem;
+}
+
+:host ::ng-deep .tw-data-table .p-datatable-tbody > tr {
+  transition: background-color 0.14s ease;
+  height: auto !important;
+}
+
+:host ::ng-deep .tw-data-table .p-datatable-tbody > tr:hover {
+  background: color-mix(in srgb, var(--p-primary-50, #eef2ff) 65%, #fff);
 }
 
 .tw-row-selected {
@@ -256,6 +342,12 @@
   line-height: 1.2;
   color: #fff;
   cursor: pointer;
+  transition: filter 0.14s ease, transform 0.14s ease;
+}
+
+.tw-row-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
 }
 
 .tw-row-btn-open {
@@ -585,6 +677,39 @@ html[data-theme='dark'] .tw-dir-toolbar select {
   background: #0f172a;
   border-color: #334155;
   color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-dir-detail,
+:host-context(html[data-theme='dark']) .tw-dir-detail,
+.sw-dark .tw-dir-detail,
+html[data-theme='dark'] .tw-dir-detail {
+  background: linear-gradient(180deg, #0f172a 0%, #111c33 100%);
+  box-shadow:
+    0 18px 45px -35px rgba(2, 6, 23, 0.9),
+    0 2px 6px -5px rgba(2, 6, 23, 0.8);
+}
+
+:host-context(.sw-dark) .tw-dir-detail-head,
+:host-context(html[data-theme='dark']) .tw-dir-detail-head,
+.sw-dark .tw-dir-detail-head,
+html[data-theme='dark'] .tw-dir-detail-head,
+:host-context(.sw-dark) .tw-dir-table-toolbar,
+:host-context(html[data-theme='dark']) .tw-dir-table-toolbar,
+.sw-dark .tw-dir-table-toolbar,
+html[data-theme='dark'] .tw-dir-table-toolbar {
+  background: color-mix(in srgb, #0f172a 85%, #1e293b);
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .tw-custom-table tbody tr:hover,
+:host-context(html[data-theme='dark']) .tw-custom-table tbody tr:hover,
+.sw-dark .tw-custom-table tbody tr:hover,
+html[data-theme='dark'] .tw-custom-table tbody tr:hover,
+:host-context(.sw-dark) ::ng-deep .tw-data-table .p-datatable-tbody > tr:hover,
+:host-context(html[data-theme='dark']) ::ng-deep .tw-data-table .p-datatable-tbody > tr:hover,
+.sw-dark ::ng-deep .tw-data-table .p-datatable-tbody > tr:hover,
+html[data-theme='dark'] ::ng-deep .tw-data-table .p-datatable-tbody > tr:hover {
+  background: #172554;
 }
 
 :host-context(.sw-dark) .tw-dir-card-desc,
