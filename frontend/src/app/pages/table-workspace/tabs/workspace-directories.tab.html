@@ -188,7 +188,7 @@
                               alt="Фото"
                             />
                           } @else {
-                            {{ asTableCell(rowValueMap(it, currentDir.id)[field.key]) || '—' }}
+                            {{ formatFieldCell(field, rowValueMap(it, currentDir.id)[field.key]) }}
                           }
                         </td>
                       }
@@ -412,13 +412,19 @@
     [draggable]="false"
     [resizable]="false"
     [style]="{ width: '46rem', maxWidth: '96vw' }"
+    styleClass="tw-custom-row-dialog"
+    [contentStyle]="{ overflow: 'visible' }"
     [header]="customRowEditingItemId() === null ? 'Новая строка справочника' : 'Редактирование строки'"
     (visibleChange)="customRowDialogOpen.set($event)"
     (onHide)="closeCustomRowDialog()"
   >
-    <div class="tw-dir-grid">
+    <div class="tw-custom-row-dialog-body">
+      <div class="tw-custom-row-dialog-note">
+        Заполните поля и сохраните запись. Для связей с множественным режимом можно выбрать несколько значений.
+      </div>
+      <div class="tw-dir-grid tw-custom-row-grid">
       @for (field of selectedDirectoryFields(); track field.id) {
-        <label [class.tw-dir-full]="field.type === 'photo'">
+        <label class="tw-custom-row-field" [class.tw-dir-full]="field.type === 'photo' || field.type === 'json' || (field.type === 'relation' && !!field.relation?.multiple)">
           <span>{{ field.label }}</span>
           @if (field.type === 'number') {
             <input
@@ -427,6 +433,44 @@
                 [ngModel]="getCustomRowValue(field.key)"
               (ngModelChange)="setCustomRowValue(field.key, $event)"
             />
+          } @else if (field.type === 'boolean') {
+            <select pInputText [ngModel]="getCustomRowValue(field.key)" (ngModelChange)="setCustomRowValue(field.key, $event)">
+              <option value="false">Нет</option>
+              <option value="true">Да</option>
+            </select>
+          } @else if (field.type === 'date') {
+            <input type="date" pInputText [ngModel]="getCustomRowValue(field.key)" (ngModelChange)="setCustomRowValue(field.key, $event)" />
+          } @else if (field.type === 'datetime') {
+            <input type="datetime-local" pInputText [ngModel]="getCustomRowValue(field.key)" (ngModelChange)="setCustomRowValue(field.key, $event)" />
+          } @else if (field.type === 'email') {
+            <input type="email" pInputText [ngModel]="getCustomRowValue(field.key)" (ngModelChange)="setCustomRowValue(field.key, $event)" />
+          } @else if (field.type === 'phone') {
+            <input type="tel" pInputText [ngModel]="getCustomRowValue(field.key)" (ngModelChange)="setCustomRowValue(field.key, $event)" />
+          } @else if (field.type === 'url') {
+            <input type="url" pInputText [ngModel]="getCustomRowValue(field.key)" (ngModelChange)="setCustomRowValue(field.key, $event)" />
+          } @else if (field.type === 'json') {
+            <textarea class="tw-dir-textarea" rows="3" [ngModel]="getCustomRowValue(field.key)" (ngModelChange)="setCustomRowValue(field.key, $event)"></textarea>
+          } @else if (field.type === 'relation') {
+            @if (field.relation?.multiple) {
+              <p-multiSelect
+                [options]="relationOptionsForField(field)"
+                optionLabel="label"
+                optionValue="id"
+                [ngModel]="customRowRelationMultiValues()[field.key] ?? []"
+                (ngModelChange)="setCustomRowRelationMultiValues(field.key, $event)"
+                defaultLabel="Выберите записи"
+                [filter]="true"
+                appendTo="body"
+                styleClass="tw-relation-multiselect"
+              />
+            } @else {
+              <select pInputText [ngModel]="getCustomRowValue(field.key)" (ngModelChange)="setCustomRowRelationSingleValue(field.key, $event)">
+                <option value="">—</option>
+                @for (option of relationOptionsForField(field); track option.id) {
+                  <option [value]="option.id">{{ option.label }}</option>
+                }
+              </select>
+            }
           } @else if (field.type === 'photo') {
             <input
               type="text"
@@ -445,6 +489,7 @@
           }
         </label>
       }
+      </div>
     </div>
     <div class="tw-dir-actions">
       <p-button label="Сохранить" icon="pi pi-check" (onClick)="saveCustomRow()" />
@@ -464,9 +509,18 @@
     (onHide)="closeCreateWizard()"
   >
     <div class="tw-stepper">
-      <div class="tw-step" [class.active]="createWizardStep() === 1">1. Основа</div>
-      <div class="tw-step" [class.active]="createWizardStep() === 2">2. Поля</div>
-      <div class="tw-step" [class.active]="createWizardStep() === 3">3. Preview</div>
+      <div class="tw-step" [class.active]="createWizardStep() === 1" [class.done]="createWizardStep() > 1">
+        <span class="tw-step-index">1</span>
+        <span class="tw-step-label">Основа</span>
+      </div>
+      <div class="tw-step" [class.active]="createWizardStep() === 2" [class.done]="createWizardStep() > 2">
+        <span class="tw-step-index">2</span>
+        <span class="tw-step-label">Поля</span>
+      </div>
+      <div class="tw-step" [class.active]="createWizardStep() === 3">
+        <span class="tw-step-index">3</span>
+        <span class="tw-step-label">Preview</span>
+      </div>
     </div>
 
     @if (createWizardStep() === 1) {
@@ -484,6 +538,10 @@
             (ngModelChange)="createDirDescription.set($event)"
           ></textarea>
         </label>
+      </div>
+      <div class="tw-wizard-note">
+        Кастомные справочники будут доступны глобально: в формах, фильтрах, календаре и отчетах.
+        Для полей типа «Связь» хранится пара <strong>id + label</strong>, чтобы сохранять корректные связи даже при изменениях в связанных таблицах.
       </div>
     }
 
@@ -505,13 +563,51 @@
               (ngModelChange)="updateCreateField(field.id, { key: $event })"
               placeholder="Ключ (например phone)"
             />
-            <select [ngModel]="field.type" (ngModelChange)="updateCreateField(field.id, { type: $event })">
-              <option value="text">Текст</option>
-              <option value="number">Число</option>
-              <option value="photo">Фото URL</option>
+            <select pInputText [ngModel]="field.type" (ngModelChange)="updateCreateField(field.id, { type: $event })">
+              @for (option of customFieldTypeOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
             </select>
             <button type="button" class="tw-link-danger" (click)="removeCreateField(field.id)">Удалить</button>
           </div>
+          @if (field.type === 'relation') {
+            <div class="tw-wizard-relation-row">
+              <label>
+                <span>Связанный справочник</span>
+                <select
+                  pInputText
+                  [ngModel]="field.relation?.directoryId ?? ''"
+                  (ngModelChange)="setCreateFieldRelationDirectory(field.id, $event)"
+                >
+                  <option value="">Выберите справочник</option>
+                  @for (dir of relationDirectoryOptions(); track dir.id) {
+                    <option [value]="dir.id">{{ dir.name }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                <span>Поле отображения</span>
+                <select
+                  pInputText
+                  [ngModel]="field.relation?.displayFieldKey ?? 'label'"
+                  (ngModelChange)="setCreateFieldRelationDisplayField(field.id, $event)"
+                >
+                  @for (displayField of relationDisplayFieldOptions(field.relation?.directoryId ?? null); track displayField.key) {
+                    <option [value]="displayField.key">{{ displayField.label }}</option>
+                  }
+                </select>
+              </label>
+              <p-multiSelect
+                [options]="relationModeOptions"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="relationModeSelection(field)"
+                (ngModelChange)="setCreateFieldRelationModes(field.id, $event)"
+                defaultLabel="Режим связи"
+                styleClass="tw-relation-mode-select"
+              />
+            </div>
+          }
         }
         <p-button label="Добавить поле" icon="pi pi-plus" styleClass="p-button-outlined" (onClick)="addCreateField()" />
       </div>
@@ -530,15 +626,7 @@
           <tbody>
             <tr>
               @for (field of customPreviewColumns(); track field.id) {
-                <td>
-                  @if (field.type === 'photo') {
-                    <span class="tw-muted">url/image</span>
-                  } @else if (field.type === 'number') {
-                    0
-                  } @else {
-                    Текст
-                  }
-                </td>
+                <td>{{ previewCellValue(field) }}</td>
               }
             </tr>
           </tbody>

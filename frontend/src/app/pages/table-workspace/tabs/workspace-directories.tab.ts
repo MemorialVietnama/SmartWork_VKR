@@ -6,6 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { TableModule } from 'primeng/table';
 
 import { AuthService, WorkspaceDirectoryDto, WorkspaceDirectoryItemDto } from '../../../core/auth/auth.service';
@@ -27,14 +28,17 @@ import {
 
 type TemplateKind = 'services' | 'clients' | 'pets';
 type SelectedDirectoryFilter = 'all' | 'services' | 'clients' | 'pets' | 'custom';
-type CustomFieldType = 'text' | 'number' | 'photo';
-type CustomField = { id: string; key: string; label: string; type: CustomFieldType };
+type CustomFieldType = 'text' | 'number' | 'photo' | 'boolean' | 'date' | 'datetime' | 'email' | 'phone' | 'url' | 'json' | 'relation';
+type RelationConfig = { directoryId: number | null; displayFieldKey: string; multiple: boolean };
+type CustomField = { id: string; key: string; label: string; type: CustomFieldType; relation: RelationConfig | null };
+type RelationPayloadValue = { valueId: number | null; valueLabel: string };
+type RelationModeValue = 'multiple';
 
 @Component({
   selector: 'app-workspace-directories-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, CardModule, ButtonModule, InputTextModule, DialogModule, TableModule],
+  imports: [CommonModule, FormsModule, CardModule, ButtonModule, InputTextModule, DialogModule, TableModule, MultiSelectModule],
   templateUrl: './workspace-directories.tab.html',
   styleUrl: './workspace-directories.tab.scss',
 })
@@ -54,10 +58,13 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   protected readonly createWizardStep = signal(1);
   protected readonly createDirName = signal('');
   protected readonly createDirDescription = signal('');
-  protected readonly createDirFields = signal<CustomField[]>([{ id: this.uid(), key: 'title', label: 'Название', type: 'text' }]);
+  protected readonly createDirFields = signal<CustomField[]>([
+    { id: this.uid(), key: 'title', label: 'Название', type: 'text', relation: null },
+  ]);
   protected readonly customRowDialogOpen = signal(false);
   protected readonly customRowEditingItemId = signal<number | null>(null);
   protected readonly customRowValues = signal<Record<string, string>>({});
+  protected readonly customRowRelationMultiValues = signal<Record<string, number[]>>({});
 
   protected readonly petAnimalTypes = PET_ANIMAL_TYPES;
   protected editor: { kind: TemplateKind; dirId: number; itemId: number | null } | null = null;
@@ -72,6 +79,23 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     { key: 'pets', label: 'Питомцы' },
     { key: 'custom', label: 'Свои' },
   ] as const;
+
+  protected readonly customFieldTypeOptions: Array<{ value: CustomFieldType; label: string }> = [
+    { value: 'text', label: 'Текст' },
+    { value: 'number', label: 'Число' },
+    { value: 'boolean', label: 'Да/Нет' },
+    { value: 'date', label: 'Дата' },
+    { value: 'datetime', label: 'Дата и время' },
+    { value: 'email', label: 'Email' },
+    { value: 'phone', label: 'Телефон' },
+    { value: 'url', label: 'Ссылка URL' },
+    { value: 'json', label: 'JSON' },
+    { value: 'photo', label: 'Фото URL' },
+    { value: 'relation', label: 'Связь со справочником' },
+  ];
+  protected readonly relationModeOptions: Array<{ label: string; value: RelationModeValue }> = [
+    { label: 'Множественный выбор', value: 'multiple' },
+  ];
 
   protected readonly stats = computed(() => {
     const list = this.dirs();
@@ -130,9 +154,9 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     }
     return dir.items.filter((item) => {
       const row = this.rowValueMap(item, dir.id);
-      const rowValues = Object.values(row).map((v) => String(v ?? ''));
+      const rowValues = this.selectedDirectoryFields().map((field) => this.searchableFieldValue(field, row[field.key]));
       if (globalSearch) {
-        const hit = rowValues.some((value) => value.toLowerCase().includes(globalSearch));
+        const hit = rowValues.some((value) => value.includes(globalSearch));
         if (!hit) {
           return false;
         }
@@ -142,7 +166,11 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
         if (!query) {
           continue;
         }
-        if (!String(row[key] ?? '').toLowerCase().includes(query)) {
+        const field = this.selectedDirectoryFields().find((entry) => entry.key === key);
+        if (!field) {
+          continue;
+        }
+        if (!this.searchableFieldValue(field, row[key]).includes(query)) {
           return false;
         }
       }
@@ -282,7 +310,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     }
     this.createDirName.set('');
     this.createDirDescription.set('');
-    this.createDirFields.set([{ id: this.uid(), key: 'title', label: 'Название', type: 'text' }]);
+    this.createDirFields.set([{ id: this.uid(), key: 'title', label: 'Название', type: 'text', relation: null }]);
     this.createWizardStep.set(1);
     this.createWizardOpen.set(true);
   }
@@ -313,7 +341,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   protected addCreateField(): void {
     this.createDirFields.update((fields) => [
       ...fields,
-      { id: this.uid(), key: `field_${fields.length + 1}`, label: `Поле ${fields.length + 1}`, type: 'text' },
+      { id: this.uid(), key: `field_${fields.length + 1}`, label: `Поле ${fields.length + 1}`, type: 'text', relation: null },
     ]);
   }
 
@@ -323,17 +351,11 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
 
   protected updateCreateField(
     id: string,
-    patch: Partial<{ key: string; label: string; type: CustomFieldType }>,
+    patch: Partial<{ key: string; label: string; type: CustomFieldType; relation: RelationConfig | null }>,
   ): void {
     this.createDirFields.update((fields) =>
       fields.map((field) =>
-        field.id === id
-          ? {
-              ...field,
-              ...patch,
-              key: patch.key !== undefined ? this.normalizeFieldKey(patch.key) : field.key,
-            }
-          : field,
+        field.id === id ? this.normalizeCustomField({ ...field, ...patch, key: patch.key !== undefined ? this.normalizeFieldKey(patch.key) : field.key }) : field,
       ),
     );
   }
@@ -350,7 +372,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     }
     const fields: CustomField[] = this.createDirFields()
       .map((field): CustomField => ({
-        ...field,
+        ...this.normalizeCustomField(field),
         key: this.normalizeFieldKey(field.key),
         label: field.label.trim() || field.key,
       }))
@@ -363,7 +385,12 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
       .createWorkspaceDirectory(this.state.tableId(), {
         name,
         description: this.createDirDescription().trim() || null,
-        schema_fields: fields.map((field) => ({ key: field.key, label: field.label, type: field.type })),
+        schema_fields: fields.map((field) => ({
+          key: field.key,
+          label: field.label,
+          type: field.type,
+          relation: field.type === 'relation' ? field.relation : null,
+        })),
       })
       .subscribe({
       next: (created) => {
@@ -461,10 +488,18 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
       return;
     }
     const values: Record<string, string> = {};
+    const relationMultiValues: Record<string, number[]> = {};
     for (const field of this.selectedDirectoryFields()) {
       values[field.key] = '';
+      if (field.type === 'boolean') {
+        values[field.key] = 'false';
+      }
+      if (field.type === 'relation' && field.relation?.multiple) {
+        relationMultiValues[field.key] = [];
+      }
     }
     this.customRowValues.set(values);
+    this.customRowRelationMultiValues.set(relationMultiValues);
     this.customRowEditingItemId.set(null);
     this.customRowDialogOpen.set(true);
   }
@@ -476,10 +511,30 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     }
     const values = this.rowValueMap(item, dir.id);
     const stringValues: Record<string, string> = {};
+    const relationMultiValues: Record<string, number[]> = {};
     for (const field of this.selectedDirectoryFields()) {
-      stringValues[field.key] = String(values[field.key] ?? '');
+      const current = values[field.key];
+      if (field.type === 'relation') {
+        if (field.relation?.multiple) {
+          const list = this.asRelationPayloadList(current);
+          relationMultiValues[field.key] = list
+            .map((entry) => Number(entry.valueId))
+            .filter((value) => Number.isFinite(value));
+          stringValues[field.key] = '';
+        } else {
+          const relation = this.asRelationPayloadSingle(current);
+          stringValues[field.key] = relation.valueId !== null ? String(relation.valueId) : '';
+        }
+      } else if (field.type === 'boolean') {
+        stringValues[field.key] = String(Boolean(current));
+      } else if (field.type === 'json') {
+        stringValues[field.key] = typeof current === 'string' ? current : JSON.stringify(current ?? {});
+      } else {
+        stringValues[field.key] = String(current ?? '');
+      }
     }
     this.customRowValues.set(stringValues);
+    this.customRowRelationMultiValues.set(relationMultiValues);
     this.customRowEditingItemId.set(item.id);
     this.customRowDialogOpen.set(true);
   }
@@ -487,10 +542,19 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   protected closeCustomRowDialog(): void {
     this.customRowDialogOpen.set(false);
     this.customRowEditingItemId.set(null);
+    this.customRowRelationMultiValues.set({});
   }
 
   protected setCustomRowValue(key: string, value: string): void {
     this.customRowValues.update((current) => ({ ...current, [key]: value }));
+  }
+
+  protected setCustomRowRelationSingleValue(key: string, value: string): void {
+    this.setCustomRowValue(key, value);
+  }
+
+  protected setCustomRowRelationMultiValues(key: string, values: number[] | null | undefined): void {
+    this.customRowRelationMultiValues.update((current) => ({ ...current, [key]: values ?? [] }));
   }
 
   protected saveCustomRow(): void {
@@ -507,10 +571,30 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     const values = this.customRowValues();
     for (const field of fields) {
       const raw = (values[field.key] ?? '').trim();
-      if (field.type === 'number') {
-        payload[field.key] = raw ? Number(raw) : 0;
-      } else {
-        payload[field.key] = raw;
+      switch (field.type) {
+        case 'number':
+          payload[field.key] = raw ? Number(raw) : 0;
+          break;
+        case 'boolean':
+          payload[field.key] = raw === 'true';
+          break;
+        case 'json':
+          payload[field.key] = this.parseJsonSafe(raw);
+          break;
+        case 'relation': {
+          if (field.relation?.multiple) {
+            const selectedIds = this.customRowRelationMultiValues()[field.key] ?? [];
+            payload[field.key] = selectedIds.map((id) => this.makeRelationPayloadEntry(field, id));
+          } else {
+            const relationId = Number(raw);
+            payload[field.key] = Number.isFinite(relationId) && relationId > 0
+              ? this.makeRelationPayloadEntry(field, relationId)
+              : { valueId: null, valueLabel: '' };
+          }
+          break;
+        }
+        default:
+          payload[field.key] = raw;
       }
     }
     const mainField = fields[0];
@@ -679,7 +763,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
 
   protected customPreviewColumns(): CustomField[] {
     return this.createDirFields()
-      .map((field) => ({ ...field, key: this.normalizeFieldKey(field.key), label: field.label.trim() || field.key }))
+      .map((field) => ({ ...this.normalizeCustomField(field), key: this.normalizeFieldKey(field.key), label: field.label.trim() || field.key }))
       .filter((field) => field.key.length > 0);
   }
 
@@ -778,24 +862,302 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     return String(value);
   }
 
+  protected formatFieldCell(field: CustomField, value: unknown): string {
+    if (value === null || value === undefined || value === '') {
+      return '—';
+    }
+    if (field.type === 'boolean') {
+      return value ? 'Да' : 'Нет';
+    }
+    if (field.type === 'relation') {
+      if (field.relation?.multiple) {
+        const list = this.asRelationPayloadList(value);
+        if (list.length === 0) {
+          return '—';
+        }
+        return list.map((entry) => this.formatRelationPayloadEntry(entry)).join(', ');
+      }
+      return this.formatRelationPayloadEntry(this.asRelationPayloadSingle(value));
+    }
+    if (field.type === 'json') {
+      try {
+        return typeof value === 'string' ? value : JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+    }
+    return String(value);
+  }
+
+  protected previewCellValue(field: CustomField): string {
+    switch (field.type) {
+      case 'number':
+        return '0';
+      case 'boolean':
+        return 'Да/Нет';
+      case 'date':
+        return '2026-04-27';
+      case 'datetime':
+        return '2026-04-27T13:45';
+      case 'email':
+        return 'user@domain.com';
+      case 'phone':
+        return '+7 900 000-00-00';
+      case 'url':
+        return 'https://example.com';
+      case 'json':
+        return '{"key":"value"}';
+      case 'photo':
+        return 'url/image';
+      case 'relation':
+        return 'Связанная запись';
+      default:
+        return 'Текст';
+    }
+  }
+
+  protected relationDirectoryOptions(): WorkspaceDirectoryDto[] {
+    return this.dirs();
+  }
+
+  protected relationDisplayFieldOptions(directoryId: number | null): Array<{ key: string; label: string }> {
+    if (!directoryId) {
+      return [];
+    }
+    const dir = this.dirs().find((entry) => entry.id === directoryId);
+    if (!dir) {
+      return [];
+    }
+    const options: Array<{ key: string; label: string }> = [{ key: 'label', label: 'Название записи' }];
+    const seen = new Set<string>(['label']);
+    const schemaFields = this.normalizeFields(dir.schema_fields);
+    for (const field of schemaFields) {
+      if (!field.key || seen.has(field.key)) {
+        continue;
+      }
+      seen.add(field.key);
+      options.push({ key: field.key, label: field.label || this.humanizeFieldKey(field.key) });
+    }
+    for (const payloadKey of this.directoryPayloadKeys(dir)) {
+      if (seen.has(payloadKey)) {
+        continue;
+      }
+      seen.add(payloadKey);
+      options.push({ key: payloadKey, label: this.humanizeFieldKey(payloadKey) });
+    }
+    return options;
+  }
+
+  protected setCreateFieldRelationDirectory(fieldId: string, value: string): void {
+    const directoryId = value ? Number(value) : null;
+    this.createDirFields.update((fields) =>
+      fields.map((field) => {
+        if (field.id !== fieldId) {
+          return field;
+        }
+        const relation = field.relation ?? this.emptyRelationConfig();
+        const options = this.relationDisplayFieldOptions(directoryId);
+        const displayFieldKey = options.find((option) => option.key === relation.displayFieldKey)?.key ?? (options[0]?.key ?? 'label');
+        return this.normalizeCustomField({ ...field, type: 'relation', relation: { ...relation, directoryId, displayFieldKey } });
+      }),
+    );
+  }
+
+  protected setCreateFieldRelationDisplayField(fieldId: string, value: string): void {
+    this.createDirFields.update((fields) =>
+      fields.map((field) =>
+        field.id === fieldId
+          ? this.normalizeCustomField({
+              ...field,
+              type: 'relation',
+              relation: { ...(field.relation ?? this.emptyRelationConfig()), displayFieldKey: value || 'label' },
+            })
+          : field,
+      ),
+    );
+  }
+
+  protected setCreateFieldRelationMultiple(fieldId: string, checked: boolean): void {
+    this.createDirFields.update((fields) =>
+      fields.map((field) =>
+        field.id === fieldId
+          ? this.normalizeCustomField({
+              ...field,
+              type: 'relation',
+              relation: { ...(field.relation ?? this.emptyRelationConfig()), multiple: checked },
+            })
+          : field,
+      ),
+    );
+  }
+
+  protected relationModeSelection(field: CustomField): RelationModeValue[] {
+    return field.relation?.multiple ? ['multiple'] : [];
+  }
+
+  protected setCreateFieldRelationModes(fieldId: string, values: RelationModeValue[] | null | undefined): void {
+    this.setCreateFieldRelationMultiple(fieldId, (values ?? []).includes('multiple'));
+  }
+
+  protected relationOptionsForField(field: CustomField): Array<{ id: number; label: string }> {
+    const relationDirId = field.relation?.directoryId;
+    if (!relationDirId) {
+      return [];
+    }
+    const targetDir = this.dirs().find((entry) => entry.id === relationDirId);
+    if (!targetDir) {
+      return [];
+    }
+    return targetDir.items.map((item) => ({
+      id: item.id,
+      label: this.resolveRelationItemLabel(targetDir, item, field.relation?.displayFieldKey ?? 'label'),
+    }));
+  }
+
   private normalizeFields(input: Array<Record<string, unknown>> | null | undefined): CustomField[] {
     if (!Array.isArray(input)) {
       return [];
     }
+    const supportedTypes = new Set<CustomFieldType>([
+      'text',
+      'number',
+      'photo',
+      'boolean',
+      'date',
+      'datetime',
+      'email',
+      'phone',
+      'url',
+      'json',
+      'relation',
+    ]);
     return input
       .map((field): CustomField => {
         const typeRaw = String(field['type'] ?? '').toLowerCase();
-        const type: CustomFieldType = typeRaw === 'number' || typeRaw === 'photo' ? typeRaw : 'text';
+        const type: CustomFieldType = supportedTypes.has(typeRaw as CustomFieldType) ? (typeRaw as CustomFieldType) : 'text';
         const key = this.normalizeFieldKey(String(field['key'] ?? ''));
         const label = String(field['label'] ?? '').trim() || key;
+        const relationRaw = (field['relation'] ?? null) as Record<string, unknown> | null;
+        const relation: RelationConfig | null = type === 'relation'
+          ? {
+              directoryId: this.toNullableNumber(relationRaw?.['directoryId']),
+              displayFieldKey: String(relationRaw?.['displayFieldKey'] ?? 'label') || 'label',
+              multiple: Boolean(relationRaw?.['multiple']),
+            }
+          : null;
         return {
           id: String(field['id'] ?? this.uid()),
           key,
           label,
           type,
+          relation,
         };
       })
+      .map((field) => this.normalizeCustomField(field))
       .filter((field) => !!field.key);
+  }
+
+  private normalizeCustomField(field: CustomField): CustomField {
+    if (field.type !== 'relation') {
+      return { ...field, relation: null };
+    }
+    const relation = field.relation ?? this.emptyRelationConfig();
+    return {
+      ...field,
+      relation: {
+        directoryId: relation.directoryId,
+        displayFieldKey: relation.displayFieldKey || 'label',
+        multiple: Boolean(relation.multiple),
+      },
+    };
+  }
+
+  private emptyRelationConfig(): RelationConfig {
+    return { directoryId: null, displayFieldKey: 'label', multiple: false };
+  }
+
+  private toNullableNumber(value: unknown): number | null {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private parseJsonSafe(value: string): unknown {
+    if (!value) {
+      return {};
+    }
+    try {
+      return JSON.parse(value);
+    } catch {
+      return { raw: value };
+    }
+  }
+
+  private makeRelationPayloadEntry(field: CustomField, id: number): RelationPayloadValue {
+    const match = this.relationOptionsForField(field).find((option) => option.id === id);
+    return { valueId: id, valueLabel: match?.label ?? `Недоступно (#${id})` };
+  }
+
+  private asRelationPayloadSingle(value: unknown): RelationPayloadValue {
+    const source = (value ?? null) as Record<string, unknown> | null;
+    return {
+      valueId: this.toNullableNumber(source?.['valueId']),
+      valueLabel: String(source?.['valueLabel'] ?? ''),
+    };
+  }
+
+  private asRelationPayloadList(value: unknown): RelationPayloadValue[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value.map((entry) => this.asRelationPayloadSingle(entry)).filter((entry) => entry.valueId !== null || !!entry.valueLabel);
+  }
+
+  private formatRelationPayloadEntry(entry: RelationPayloadValue): string {
+    if (entry.valueLabel.trim()) {
+      return entry.valueLabel;
+    }
+    if (entry.valueId !== null) {
+      return `Недоступно (#${entry.valueId})`;
+    }
+    return '—';
+  }
+
+  private resolveRelationItemLabel(dir: WorkspaceDirectoryDto, item: WorkspaceDirectoryItemDto, displayFieldKey: string): string {
+    if (!displayFieldKey || displayFieldKey === 'label') {
+      return item.label;
+    }
+    const payload = (item.payload ?? {}) as Record<string, unknown>;
+    const raw = payload[displayFieldKey];
+    const formatted = raw === null || raw === undefined || raw === '' ? item.label : String(raw);
+    return formatted;
+  }
+
+  private directoryPayloadKeys(dir: WorkspaceDirectoryDto): string[] {
+    const keys = new Set<string>();
+    for (const item of dir.items) {
+      const payload = (item.payload ?? {}) as Record<string, unknown>;
+      for (const key of Object.keys(payload)) {
+        if (key) {
+          keys.add(key);
+        }
+      }
+    }
+    return [...keys];
+  }
+
+  private humanizeFieldKey(key: string): string {
+    const base = key
+      .replace(/[_\-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!base) {
+      return key;
+    }
+    return base.charAt(0).toUpperCase() + base.slice(1);
+  }
+
+  private searchableFieldValue(field: CustomField, value: unknown): string {
+    return this.formatFieldCell(field, value).toLowerCase();
   }
 
   private normalizeFieldKey(raw: string): string {
