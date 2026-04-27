@@ -60,6 +60,7 @@
                           slotsForDayKey(dayKey(item.cell)).length
                         "
                         (click)="pickDay(item.cell)"
+                        (contextmenu)="onDayContextMenu($event, item.cell)"
                       >
                         <span class="tw-cal-mini-daynum">{{ item.cell.getDate() }}</span>
                         @if (slotsForDayKey(dayKey(item.cell)).length > 0) {
@@ -95,6 +96,7 @@
                     [class.tw-cal-month-cell--today]="isToday(cell)"
                     (dragover)="allowDrop($event)"
                     (drop)="onDropOnDate($event, cell)"
+                    (contextmenu)="onDayContextMenu($event, cell)"
                   >
                     <button
                       type="button"
@@ -137,7 +139,13 @@
     @case ('week') {
       <div class="tw-cal-week-row" role="list">
         @for (d of weekDays(); track dayKey(d)) {
-          <article class="tw-cal-week-card" role="listitem" (dragover)="allowDrop($event)" (drop)="onDropOnDate($event, d)">
+          <article
+            class="tw-cal-week-card"
+            role="listitem"
+            (dragover)="allowDrop($event)"
+            (drop)="onDropOnDate($event, d)"
+            (contextmenu)="onDayContextMenu($event, d)"
+          >
             <header class="tw-cal-week-card-head">
               <span class="tw-cal-week-dow">{{ weekdayShort(d.getDay()) }}</span>
               <span class="tw-cal-week-date">{{ d.getDate() }} {{ monthName(d.getMonth()).slice(0, 3) }}.</span>
@@ -169,7 +177,13 @@
         </p>
         <ul class="tw-cal-day-hours" role="list">
           @for (h of workHourIndices(); track h) {
-            <li class="tw-cal-day-hour-row" role="listitem" (dragover)="allowDrop($event)" (drop)="onDropOnDate($event, anchorDate())">
+            <li
+              class="tw-cal-day-hour-row"
+              role="listitem"
+              (dragover)="allowDrop($event)"
+              (drop)="onDropOnDate($event, anchorDate())"
+              (contextmenu)="onDayContextMenu($event, anchorDate())"
+            >
               <div class="tw-cal-day-hour-label">{{ h }}:00 — {{ h + 1 }}:00</div>
               @if (slotsForHour(h).length === 0) {
                 <span class="tw-cal-day-hour-empty">—</span>

@@ -131,8 +131,22 @@ export interface PresetDirectoriesRepairResultDto {
 
 export interface WorkspaceOrderDto {
   id: number;
+  order_uuid?: string;
+  order_number?: string;
   title: string;
+  starts_at?: string;
+  ends_at?: string;
+  client_directory_item_id?: number | null;
+  assignee_user_id?: number | null;
+  service_item_ids?: number[];
+  custom_directory_links?: Array<Record<string, unknown>>;
   status: string;
+  price_base?: number;
+  price_adjustment?: number;
+  price_total?: number;
+  parent_order_id?: number | null;
+  child_type?: string | null;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
   completed_at: string | null;
 }
@@ -156,6 +170,7 @@ export interface TableDetailDto {
   stats: TableStatsDto;
   can_edit_settings: boolean;
   bonuses: TableBonusDto[];
+  order_enabled_directory_ids?: number[];
 }
 
 export interface TableSubscriptionDto {
@@ -571,6 +586,7 @@ export class AuthService {
       week_start_day?: string;
       work_hours?: string;
       color?: string | null;
+      order_enabled_directory_ids?: number[];
     },
   ): Observable<TableDetailDto> {
     return this.http.patch<TableDetailDto>(this.url(`/api/v1/tables/${tableId}`), payload, { headers: this.authHeaders() });
@@ -758,10 +774,13 @@ export class AuthService {
 
   listWorkspaceOrders(
     tableId: number,
-    opts?: { status?: string; limit?: number; offset?: number },
+    opts?: { status?: string; assignee_user_id?: number; from?: string; to?: string; limit?: number; offset?: number },
   ): Observable<WorkspaceOrderDto[]> {
     let params = new HttpParams();
     if (opts?.status) params = params.set('status', opts.status);
+    if (opts?.assignee_user_id != null) params = params.set('assignee_user_id', String(opts.assignee_user_id));
+    if (opts?.from) params = params.set('from', opts.from);
+    if (opts?.to) params = params.set('to', opts.to);
     if (opts?.limit != null) params = params.set('limit', String(opts.limit));
     if (opts?.offset != null) params = params.set('offset', String(opts.offset));
     return this.http.get<WorkspaceOrderDto[]>(this.url(`/api/v1/tables/${tableId}/workspace/orders`), {
@@ -770,18 +789,101 @@ export class AuthService {
     });
   }
 
-  createWorkspaceOrder(tableId: number, title: string): Observable<WorkspaceOrderDto> {
+  createWorkspaceOrder(
+    tableId: number,
+    payload: {
+      title: string;
+      starts_at: string;
+      ends_at: string;
+      client_directory_item_id?: number | null;
+      assignee_user_id?: number | null;
+      service_item_ids?: number[];
+      custom_directory_links?: Array<Record<string, unknown>>;
+      price_adjustment?: number;
+      parent_order_id?: number | null;
+      child_type?: 'follow_up' | 'repeat_copy' | null;
+      metadata?: Record<string, unknown> | null;
+    },
+  ): Observable<WorkspaceOrderDto> {
     return this.http.post<WorkspaceOrderDto>(
       this.url(`/api/v1/tables/${tableId}/workspace/orders`),
-      { title },
+      payload,
       { headers: this.authHeaders() },
     );
   }
 
-  updateWorkspaceOrder(tableId: number, orderId: number, status: string): Observable<WorkspaceOrderDto> {
+  updateWorkspaceOrder(
+    tableId: number,
+    orderId: number,
+    payload: {
+      title?: string | null;
+      starts_at?: string | null;
+      ends_at?: string | null;
+      status?: string | null;
+      client_directory_item_id?: number | null;
+      assignee_user_id?: number | null;
+      service_item_ids?: number[] | null;
+      custom_directory_links?: Array<Record<string, unknown>> | null;
+      price_adjustment?: number | null;
+      metadata?: Record<string, unknown> | null;
+    },
+  ): Observable<WorkspaceOrderDto> {
     return this.http.patch<WorkspaceOrderDto>(
       this.url(`/api/v1/tables/${tableId}/workspace/orders/${orderId}`),
-      { status },
+      payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  deleteWorkspaceOrder(tableId: number, orderId: number): Observable<{ detail: string }> {
+    return this.http.delete<{ detail: string }>(this.url(`/api/v1/tables/${tableId}/workspace/orders/${orderId}`), {
+      headers: this.authHeaders(),
+    });
+  }
+
+  createWorkspaceChildOrder(
+    tableId: number,
+    orderId: number,
+    payload: { child_type: 'follow_up' | 'repeat_copy'; starts_at?: string; ends_at?: string },
+  ): Observable<WorkspaceOrderDto> {
+    return this.http.post<WorkspaceOrderDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/orders/${orderId}/child`),
+      payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  rescheduleWorkspaceOrder(
+    tableId: number,
+    orderId: number,
+    payload: { starts_at: string; ends_at: string; reason?: string; keep_assignee?: boolean },
+  ): Observable<WorkspaceOrderDto> {
+    return this.http.post<WorkspaceOrderDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/orders/${orderId}/reschedule`),
+      payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  checkWorkspaceOrderAvailability(
+    tableId: number,
+    payload: {
+      title: string;
+      starts_at: string;
+      ends_at: string;
+      client_directory_item_id?: number | null;
+      assignee_user_id?: number | null;
+      service_item_ids?: number[];
+      custom_directory_links?: Array<Record<string, unknown>>;
+      price_adjustment?: number;
+      parent_order_id?: number | null;
+      child_type?: 'follow_up' | 'repeat_copy' | null;
+      metadata?: Record<string, unknown> | null;
+    },
+  ): Observable<{ warnings: Array<{ code: string; message: string }> }> {
+    return this.http.post<{ warnings: Array<{ code: string; message: string }> }>(
+      this.url(`/api/v1/tables/${tableId}/workspace/orders/check-availability`),
+      payload,
       { headers: this.authHeaders() },
     );
   }

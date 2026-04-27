@@ -160,8 +160,8 @@ export function workHoursToHourIndices(wh: string | null | undefined): number[] 
 export function slotIntersectsHour(slot: CalendarSlotDto, dayAnchor: Date, hour: number): boolean {
   const dayStart = startOfDay(dayAnchor).getTime();
   const dayEnd = endOfDay(dayAnchor).getTime();
-  const hs = hour * 60 * 1000;
-  const he = (hour + 1) * 60 * 1000;
+  const hs = hour * 60 * 60 * 1000;
+  const he = (hour + 1) * 60 * 60 * 1000;
   const winStart = dayStart + hs;
   const winEnd = dayStart + he;
   const a = new Date(slot.starts_at).getTime();

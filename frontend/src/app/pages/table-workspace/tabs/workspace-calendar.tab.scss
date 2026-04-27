@@ -14,6 +14,9 @@ app-workspace-calendar-widget {
 
 .tw-cal-actions {
   margin-bottom: 0.8rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .tw-form-grid {
@@ -34,6 +37,15 @@ app-workspace-calendar-widget {
 }
 
 .tw-form-grid input {
+  width: 100%;
+  border: 1px solid var(--p-content-border-color, #e2e8f0);
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  background: var(--p-content-background, #ffffff);
+  color: var(--p-text-color, #0f172a);
+}
+
+.tw-form-grid select {
   width: 100%;
   border: 1px solid var(--p-content-border-color, #e2e8f0);
   border-radius: 0.6rem;
@@ -85,9 +97,37 @@ app-workspace-calendar-widget {
   color: var(--p-red-700, #b91c1c);
 }
 
+.tw-slot-menu .success {
+  color: #166534;
+}
+
+.tw-rating-stars {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.tw-rating-stars button {
+  border: 1px solid var(--p-content-border-color, #cbd5e1);
+  border-radius: 0.45rem;
+  width: 2rem;
+  height: 2rem;
+  background: #fff;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.tw-rating-stars button.active {
+  color: #f59e0b;
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
 .tw-step-head {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
   gap: 0.55rem;
   margin-bottom: 0.85rem;
 }
@@ -122,6 +162,10 @@ app-workspace-calendar-widget {
   background: rgba(99, 102, 241, 0.08);
 }
 
+:host ::ng-deep .tw-form-grid .p-multiselect {
+  width: 100%;
+}
+
 @media (max-width: 900px) {
   .tw-form-grid {
     grid-template-columns: 1fr;
@@ -150,18 +194,22 @@ app-workspace-calendar-widget {
 }
 
 :host-context(.sw-dark) .tw-form-grid input,
+:host-context(.sw-dark) .tw-form-grid select,
 :host-context(.sw-dark) .tw-slot-menu,
 :host-context(.sw-dark) .tw-step-head button,
 :host-context(.sw-dark) .tw-employee-pill,
 :host-context(html[data-theme='dark']) .tw-form-grid input,
+:host-context(html[data-theme='dark']) .tw-form-grid select,
 :host-context(html[data-theme='dark']) .tw-slot-menu,
 :host-context(html[data-theme='dark']) .tw-step-head button,
 :host-context(html[data-theme='dark']) .tw-employee-pill,
 .sw-dark .tw-form-grid input,
+.sw-dark .tw-form-grid select,
 .sw-dark .tw-slot-menu,
 .sw-dark .tw-step-head button,
 .sw-dark .tw-employee-pill,
 html[data-theme='dark'] .tw-form-grid input,
+html[data-theme='dark'] .tw-form-grid select,
 html[data-theme='dark'] .tw-slot-menu,
 html[data-theme='dark'] .tw-step-head button,
 html[data-theme='dark'] .tw-employee-pill {
@@ -184,6 +232,24 @@ html[data-theme='dark'] .tw-step-head button.active {
 .sw-dark .tw-slot-menu button:hover,
 html[data-theme='dark'] .tw-slot-menu button:hover {
   background: #1e293b;
+}
+
+:host-context(.sw-dark) .tw-rating-stars button,
+:host-context(html[data-theme='dark']) .tw-rating-stars button,
+.sw-dark .tw-rating-stars button,
+html[data-theme='dark'] .tw-rating-stars button {
+  background: #111827;
+  border-color: #334155;
+  color: #64748b;
+}
+
+:host-context(.sw-dark) .tw-rating-stars button.active,
+:host-context(html[data-theme='dark']) .tw-rating-stars button.active,
+.sw-dark .tw-rating-stars button.active,
+html[data-theme='dark'] .tw-rating-stars button.active {
+  background: rgb(120 53 15 / 0.35);
+  border-color: #f59e0b;
+  color: #fcd34d;
 }
 
 :host-context(.sw-dark) .tw-form-grid label span,

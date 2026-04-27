@@ -148,6 +148,150 @@
   background: color-mix(in srgb, var(--p-cyan-50, #ecfeff) 32%, #fff);
 }
 
+.tw-side-orders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.tw-order-card {
+  border: 1px solid var(--p-content-border-color, #d7e0eb);
+  border-radius: 0.72rem;
+  padding: 0.52rem 0.58rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--p-primary-50, #eef2ff) 55%, #fff), #fff);
+  display: grid;
+  gap: 0.34rem;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.tw-order-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px -22px rgba(30, 41, 59, 0.5);
+  border-color: color-mix(in srgb, var(--p-primary-400, #818cf8) 55%, #d7e0eb);
+}
+
+.tw-side-orders--history .tw-order-card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--p-cyan-50, #ecfeff) 48%, #fff), #fff);
+}
+
+.tw-order-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.tw-order-number {
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--p-primary-700, #4338ca);
+}
+
+.tw-order-status {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.tw-order-status.queued {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.tw-order-status.in-progress {
+  color: #a16207;
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.tw-order-status.completed {
+  color: #166534;
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.tw-order-status.cancelled {
+  color: #b91c1c;
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.tw-order-status.unknown {
+  color: #475569;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.tw-order-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.25;
+}
+
+.tw-order-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  color: var(--p-text-muted-color, #64748b);
+  font-size: 0.76rem;
+}
+
+.tw-order-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.tw-order-meta i {
+  font-size: 0.72rem;
+}
+
+.tw-order-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition:
+    opacity 0.14s ease,
+    max-height 0.14s ease;
+}
+
+.tw-order-card:hover .tw-order-actions,
+.tw-order-card:focus-within .tw-order-actions {
+  opacity: 1;
+  max-height: 2rem;
+}
+
+.tw-order-actions button {
+  border: 1px solid var(--p-content-border-color, #cbd5e1);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--p-text-color, #0f172a);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.28rem 0.5rem;
+  cursor: pointer;
+}
+
+.tw-order-actions button:hover {
+  border-color: var(--p-primary-400, #818cf8);
+  background: color-mix(in srgb, var(--p-primary-50, #eef2ff) 60%, #fff);
+}
+
 .tw-badge-owner {
   border: 1px solid color-mix(in srgb, var(--p-primary-500, #6366f1) 40%, #fff);
   border-radius: 999px;
@@ -364,6 +508,80 @@ html[data-theme='dark'] .tw-side-list.compact li {
   background: #0b1f34;
 }
 
+:host-context(.sw-dark) .tw-order-card,
+:host-context(html[data-theme='dark']) .tw-order-card,
+.sw-dark .tw-order-card,
+html[data-theme='dark'] .tw-order-card {
+  background: #0b1b31;
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .tw-order-number,
+:host-context(html[data-theme='dark']) .tw-order-number,
+.sw-dark .tw-order-number,
+html[data-theme='dark'] .tw-order-number {
+  color: #c7d2fe;
+}
+
+:host-context(.sw-dark) .tw-order-meta,
+:host-context(html[data-theme='dark']) .tw-order-meta,
+.sw-dark .tw-order-meta,
+html[data-theme='dark'] .tw-order-meta {
+  color: #94a3b8;
+}
+
+:host-context(.sw-dark) .tw-order-status.queued,
+:host-context(html[data-theme='dark']) .tw-order-status.queued,
+.sw-dark .tw-order-status.queued,
+html[data-theme='dark'] .tw-order-status.queued {
+  background: rgb(30 58 138 / 0.35);
+  border-color: #3b82f6;
+  color: #bfdbfe;
+}
+
+:host-context(.sw-dark) .tw-order-status.in-progress,
+:host-context(html[data-theme='dark']) .tw-order-status.in-progress,
+.sw-dark .tw-order-status.in-progress,
+html[data-theme='dark'] .tw-order-status.in-progress {
+  background: rgb(113 63 18 / 0.35);
+  border-color: #f59e0b;
+  color: #fde68a;
+}
+
+:host-context(.sw-dark) .tw-order-status.completed,
+:host-context(html[data-theme='dark']) .tw-order-status.completed,
+.sw-dark .tw-order-status.completed,
+html[data-theme='dark'] .tw-order-status.completed {
+  background: rgb(20 83 45 / 0.35);
+  border-color: #22c55e;
+  color: #bbf7d0;
+}
+
+:host-context(.sw-dark) .tw-order-status.cancelled,
+:host-context(html[data-theme='dark']) .tw-order-status.cancelled,
+.sw-dark .tw-order-status.cancelled,
+html[data-theme='dark'] .tw-order-status.cancelled {
+  background: rgb(127 29 29 / 0.35);
+  border-color: #ef4444;
+  color: #fecaca;
+}
+
+:host-context(.sw-dark) .tw-order-actions button,
+:host-context(html[data-theme='dark']) .tw-order-actions button,
+.sw-dark .tw-order-actions button,
+html[data-theme='dark'] .tw-order-actions button {
+  background: #111827;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+:host-context(.sw-dark) .tw-order-actions button:hover,
+:host-context(html[data-theme='dark']) .tw-order-actions button:hover,
+.sw-dark .tw-order-actions button:hover,
+html[data-theme='dark'] .tw-order-actions button:hover {
+  background: #1e293b;
+  border-color: #6366f1;
+}
 :host-context(.sw-dark) .tw-meta div,
 :host-context(html[data-theme='dark']) .tw-meta div,
 .sw-dark .tw-meta div,

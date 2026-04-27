@@ -617,6 +617,13 @@
   color: var(--p-text-color);
 }
 
+.tw-cal-widget--promo .tw-cal-slot--order-completed {
+  background: color-mix(in srgb, var(--p-green-500) 14%, var(--p-content-background));
+  border-color: color-mix(in srgb, var(--p-green-500) 30%, transparent);
+  border-left: 4px solid var(--p-green-500);
+  color: var(--p-text-color);
+}
+
 .tw-cal-widget--promo .tw-cal-slot--duty {
   background: color-mix(in srgb, var(--p-orange-500, #f97316) 14%, var(--p-content-background));
   border-color: color-mix(in srgb, var(--p-orange-500, #f97316) 32%, transparent);
@@ -764,4 +771,13 @@ html[data-theme='dark'] .tw-cal-slot--neutral {
   background: #1e293b;
   border-color: #334155;
   color: #cbd5e1;
+}
+
+:host-context(.sw-dark) .tw-cal-slot--order-completed,
+:host-context(html[data-theme='dark']) .tw-cal-slot--order-completed,
+.sw-dark .tw-cal-slot--order-completed,
+html[data-theme='dark'] .tw-cal-slot--order-completed {
+  background: rgb(20 83 45 / 0.3);
+  border-color: #22c55e;
+  color: #dcfce7;
 }

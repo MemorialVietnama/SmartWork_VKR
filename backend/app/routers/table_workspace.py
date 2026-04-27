@@ -23,6 +23,7 @@ from app.schemas.table import TableAnalyticsDto, TableBonusDto, TableStatDto
 from app.config.directory_presets import empty_payload_for_kind, preset_has_directory_template
 from app.services.directory_bootstrap import repair_preset_directories as run_preset_directories_repair
 from app.services.analytics import build_analytics_range, build_table_analytics, table_members_count
+from app.services.audit import create_user_notification
 from app.schemas.table_workspace import (
     CalendarSlotCreateRequest,
     CalendarSlotPatchRequest,
@@ -37,7 +38,11 @@ from app.schemas.table_workspace import (
     TableDirectoryDto,
     TableMemberBriefDto,
     TableOrderCreateRequest,
+    TableOrderCreateChildRequest,
     TableOrderDto,
+    TableOrderRescheduleRequest,
+    OrderAvailabilityCheckResponse,
+    OrderAvailabilityWarningDto,
     TableOrderUpdateRequest,
     TableTaskCreateRequest,
     TableTaskDto,
@@ -65,6 +70,30 @@ async def _directory_slot_limit(db: AsyncSession, table_id: int) -> int:
 
 def _directory_item_dto(item: TableDirectoryItem) -> DirectoryItemDto:
     return DirectoryItemDto(id=item.id, label=item.label, value=item.value, payload=item.payload)
+
+
+def _order_dto(order: TableOrder) -> TableOrderDto:
+    return TableOrderDto(
+        id=order.id,
+        order_uuid=order.order_uuid,
+        order_number=order.order_number,
+        title=order.title,
+        starts_at=order.starts_at,
+        ends_at=order.ends_at,
+        client_directory_item_id=order.client_directory_item_id,
+        assignee_user_id=order.assignee_user_id,
+        service_item_ids=list(order.service_item_ids or []),
+        custom_directory_links=list(order.custom_directory_links or []),
+        status=order.status,
+        price_base=float(order.price_base or 0.0),
+        price_adjustment=float(order.price_adjustment or 0.0),
+        price_total=float(order.price_total or 0.0),
+        parent_order_id=order.parent_order_id,
+        child_type=order.child_type,
+        metadata=order.metadata_json,
+        created_at=order.created_at,
+        completed_at=order.completed_at,
+    )
 
 
 async def _require_table_access(
@@ -145,6 +174,7 @@ async def get_table_detail(
         stats=stats,
         can_edit_settings=is_owner,
         bonuses=bonuses,
+        order_enabled_directory_ids=list(table.order_enabled_directory_ids or []),
     )
 
 
@@ -173,6 +203,8 @@ async def patch_table_detail(
         table.week_start_day = req.week_start_day.strip()
     if req.work_hours is not None:
         table.work_hours = req.work_hours.strip()
+    if req.order_enabled_directory_ids is not None:
+        table.order_enabled_directory_ids = [int(x) for x in req.order_enabled_directory_ids]
 
     await db.commit()
     return await get_table_detail(table_id, db, current_user)
@@ -721,20 +753,120 @@ async def list_orders(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     status_filter: str | None = Query(None, alias="status"),
+    assignee_user_id: int | None = Query(None),
+    from_ts: datetime | None = Query(None, alias="from"),
+    to_ts: datetime | None = Query(None, alias="to"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ) -> list[TableOrderDto]:
     await _require_table_access(db, current_user, table_id)
-    q = select(TableOrder).where(TableOrder.table_id == table_id).order_by(TableOrder.created_at.desc())
+    q = select(TableOrder).where(TableOrder.table_id == table_id).order_by(TableOrder.starts_at.asc(), TableOrder.created_at.desc())
     if status_filter:
         q = q.where(TableOrder.status == status_filter)
+    if assignee_user_id is not None:
+        q = q.where(TableOrder.assignee_user_id == assignee_user_id)
+    if from_ts is not None:
+        q = q.where(TableOrder.ends_at >= from_ts)
+    if to_ts is not None:
+        q = q.where(TableOrder.starts_at <= to_ts)
     q = q.limit(limit).offset(offset)
     res = await db.execute(q)
     orders = res.scalars().all()
-    return [
-        TableOrderDto(id=o.id, title=o.title, status=o.status, created_at=o.created_at, completed_at=o.completed_at)
-        for o in orders
-    ]
+    return [_order_dto(o) for o in orders]
+
+
+async def _resolve_service_total(db: AsyncSession, service_item_ids: list[int]) -> float:
+    if not service_item_ids:
+        return 0.0
+    res = await db.execute(select(TableDirectoryItem).where(TableDirectoryItem.id.in_(service_item_ids)))
+    rows = res.scalars().all()
+    total = 0.0
+    for row in rows:
+        payload = row.payload or {}
+        cost = payload.get("cost")
+        try:
+            total += float(cost or 0.0)
+        except (TypeError, ValueError):
+            continue
+    return total
+
+
+def _derive_order_title(order_number: str, base_title: str | None) -> str:
+    if base_title and base_title.strip():
+        return base_title.strip()
+    return f"Заказ {order_number}"
+
+
+def _next_order_number(table_id: int) -> str:
+    stamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+    return f"ORD-{table_id}-{stamp}"
+
+
+async def _notify_order_change(
+    db: AsyncSession,
+    *,
+    order: TableOrder,
+    action: str,
+    message: str,
+    extra_payload: dict | None = None,
+) -> None:
+    payload = {"order_id": order.id, "order_number": order.order_number, "action": action, **(extra_payload or {})}
+    if order.assignee_user_id:
+        await create_user_notification(
+            db,
+            user_id=order.assignee_user_id,
+            kind="order.assignee",
+            title=f"Заказ {order.order_number}",
+            message=message,
+            payload=payload,
+        )
+    if order.client_directory_item_id:
+        client_row = await db.get(TableDirectoryItem, order.client_directory_item_id)
+        if client_row and isinstance(client_row.payload, dict):
+            user_id = client_row.payload.get("user_id")
+            if isinstance(user_id, int) and user_id > 0:
+                await create_user_notification(
+                    db,
+                    user_id=user_id,
+                    kind="order.client",
+                    title=f"Заказ {order.order_number}",
+                    message=message,
+                    payload=payload,
+                )
+
+
+async def _append_client_history_event(
+    db: AsyncSession,
+    *,
+    order: TableOrder,
+    event: str,
+    metadata: dict | None = None,
+) -> None:
+    if not order.client_directory_item_id:
+        return
+    client_row = await db.get(TableDirectoryItem, order.client_directory_item_id)
+    if not client_row:
+        return
+    payload = dict(client_row.payload or {})
+    detail = dict(payload.get("detail") or {})
+    order_history = list(detail.get("orderHistory") or [])
+    order_history.append(
+        {
+            "event": event,
+            "orderId": order.id,
+            "orderNumber": order.order_number,
+            "startsAt": order.starts_at.isoformat(),
+            "endsAt": order.ends_at.isoformat(),
+            "status": order.status,
+            "priceTotal": float(order.price_total or 0.0),
+            "metadata": metadata or {},
+            "createdAt": datetime.now(UTC).isoformat(),
+        }
+    )
+    detail["orderHistory"] = order_history[-50:]
+    payload["detail"] = detail
+    client_row.payload = payload
+    db.add(client_row)
 
 
 @router.post("/{table_id}/workspace/orders", response_model=TableOrderDto)
@@ -745,11 +877,40 @@ async def create_order(
     current_user: User = Depends(get_current_user),
 ) -> TableOrderDto:
     await _require_table_access(db, current_user, table_id)
-    o = TableOrder(table_id=table_id, title=req.title.strip(), status="queued")
+    service_total = await _resolve_service_total(db, req.service_item_ids)
+    order_number = _next_order_number(table_id)
+    o = TableOrder(
+        table_id=table_id,
+        order_number=order_number,
+        title=_derive_order_title(order_number, req.title),
+        starts_at=req.starts_at,
+        ends_at=req.ends_at,
+        client_directory_item_id=req.client_directory_item_id,
+        assignee_user_id=req.assignee_user_id,
+        service_item_ids=req.service_item_ids,
+        custom_directory_links=req.custom_directory_links,
+        status="queued",
+        price_base=service_total,
+        price_adjustment=float(req.price_adjustment or 0.0),
+        price_total=service_total + float(req.price_adjustment or 0.0),
+        parent_order_id=req.parent_order_id,
+        child_type=req.child_type,
+        metadata_json=req.metadata,
+    )
+    if o.status == "completed":
+        o.completed_at = datetime.now(UTC)
     db.add(o)
+    await db.flush()
+    await _append_client_history_event(db, order=o, event="created", metadata={"createdBy": current_user.id})
+    await _notify_order_change(
+        db,
+        order=o,
+        action="created",
+        message=f"Создан заказ {o.order_number}",
+    )
     await db.commit()
     await db.refresh(o)
-    return TableOrderDto(id=o.id, title=o.title, status=o.status, created_at=o.created_at, completed_at=o.completed_at)
+    return _order_dto(o)
 
 
 @router.patch("/{table_id}/workspace/orders/{order_id}", response_model=TableOrderDto)
@@ -765,15 +926,197 @@ async def update_order(
     o = res.scalar_one_or_none()
     if not o:
         raise HTTPException(status_code=404, detail="Заказ не найден")
-    st = req.status.strip()
-    if st not in ("queued", "in_progress", "completed", "cancelled"):
-        raise HTTPException(status_code=400, detail="Недопустимый статус")
-    o.status = st
+    previous_assignee = o.assignee_user_id
+    if req.title is not None:
+        o.title = req.title.strip()
+    if req.starts_at is not None:
+        o.starts_at = req.starts_at
+    if req.ends_at is not None:
+        o.ends_at = req.ends_at
+    if o.ends_at <= o.starts_at:
+        raise HTTPException(status_code=400, detail="Время окончания должно быть позже начала")
+    st = o.status
+    if req.status is not None:
+        st = req.status.strip()
+        if st not in ("queued", "in_progress", "completed", "cancelled"):
+            raise HTTPException(status_code=400, detail="Недопустимый статус")
+        o.status = st
+    if req.client_directory_item_id is not None:
+        o.client_directory_item_id = req.client_directory_item_id
+    if req.assignee_user_id is not None:
+        o.assignee_user_id = req.assignee_user_id
+    if req.service_item_ids is not None:
+        o.service_item_ids = req.service_item_ids
+        o.price_base = await _resolve_service_total(db, req.service_item_ids)
+    if req.custom_directory_links is not None:
+        o.custom_directory_links = req.custom_directory_links
+    if req.price_adjustment is not None:
+        o.price_adjustment = float(req.price_adjustment)
+    if req.metadata is not None:
+        o.metadata_json = req.metadata
+    o.price_total = float(o.price_base or 0.0) + float(o.price_adjustment or 0.0)
     if st == "completed":
         o.completed_at = datetime.now(UTC)
     elif st != "completed":
         o.completed_at = None
     db.add(o)
+    await _append_client_history_event(db, order=o, event="updated", metadata={"updatedBy": current_user.id})
+    await _notify_order_change(
+        db,
+        order=o,
+        action="updated",
+        message=f"Заказ {o.order_number} изменён",
+        extra_payload={"previous_assignee_user_id": previous_assignee},
+    )
     await db.commit()
     await db.refresh(o)
-    return TableOrderDto(id=o.id, title=o.title, status=o.status, created_at=o.created_at, completed_at=o.completed_at)
+    return _order_dto(o)
+
+
+@router.delete("/{table_id}/workspace/orders/{order_id}")
+async def delete_order(
+    table_id: int,
+    order_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    await _require_table_access(db, current_user, table_id)
+    res = await db.execute(select(TableOrder).where(TableOrder.id == order_id, TableOrder.table_id == table_id))
+    order = res.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    await _append_client_history_event(db, order=order, event="deleted", metadata={"deletedBy": current_user.id})
+    await _notify_order_change(db, order=order, action="deleted", message=f"Заказ {order.order_number} удалён")
+    await db.execute(delete(TableOrder).where(TableOrder.id == order_id, TableOrder.table_id == table_id))
+    await db.commit()
+    return {"detail": "Удалено"}
+
+
+@router.post("/{table_id}/workspace/orders/{order_id}/child", response_model=TableOrderDto)
+async def create_child_order(
+    table_id: int,
+    order_id: int,
+    req: TableOrderCreateChildRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TableOrderDto:
+    await _require_table_access(db, current_user, table_id)
+    parent_res = await db.execute(select(TableOrder).where(TableOrder.id == order_id, TableOrder.table_id == table_id))
+    parent = parent_res.scalar_one_or_none()
+    if not parent:
+        raise HTTPException(status_code=404, detail="Родительский заказ не найден")
+    duration = parent.ends_at - parent.starts_at
+    starts_at = req.starts_at or parent.ends_at
+    ends_at = req.ends_at or (starts_at + duration)
+    child = TableOrder(
+        table_id=table_id,
+        order_number=_next_order_number(table_id),
+        title=f"{parent.title} (дочерний)",
+        starts_at=starts_at,
+        ends_at=ends_at,
+        client_directory_item_id=parent.client_directory_item_id,
+        assignee_user_id=parent.assignee_user_id,
+        service_item_ids=list(parent.service_item_ids or []),
+        custom_directory_links=list(parent.custom_directory_links or []),
+        status="queued",
+        price_base=float(parent.price_base or 0.0),
+        price_adjustment=float(parent.price_adjustment or 0.0),
+        price_total=float(parent.price_total or 0.0),
+        parent_order_id=parent.id,
+        child_type=req.child_type,
+        metadata_json={"derivedFrom": parent.id, "childType": req.child_type},
+    )
+    db.add(child)
+    await db.flush()
+    await _append_client_history_event(db, order=child, event="child_created", metadata={"parentOrderId": parent.id, "childType": req.child_type})
+    await _notify_order_change(db, order=child, action="child_created", message=f"Создан дочерний заказ {child.order_number}")
+    await db.commit()
+    await db.refresh(child)
+    return _order_dto(child)
+
+
+@router.post("/{table_id}/workspace/orders/{order_id}/reschedule", response_model=TableOrderDto)
+async def reschedule_order(
+    table_id: int,
+    order_id: int,
+    req: TableOrderRescheduleRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TableOrderDto:
+    await _require_table_access(db, current_user, table_id)
+    res = await db.execute(select(TableOrder).where(TableOrder.id == order_id, TableOrder.table_id == table_id))
+    order = res.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Заказ не найден")
+    order.starts_at = req.starts_at
+    order.ends_at = req.ends_at
+    if not req.keep_assignee:
+        order.assignee_user_id = None
+    db.add(order)
+    await _append_client_history_event(
+        db,
+        order=order,
+        event="rescheduled",
+        metadata={"reason": req.reason, "rescheduledBy": current_user.id, "keepAssignee": req.keep_assignee},
+    )
+    await _notify_order_change(db, order=order, action="rescheduled", message=f"Заказ {order.order_number} перенесён")
+    await db.commit()
+    await db.refresh(order)
+    return _order_dto(order)
+
+
+@router.post("/{table_id}/workspace/orders/check-availability", response_model=OrderAvailabilityCheckResponse)
+async def check_order_availability(
+    table_id: int,
+    req: TableOrderCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> OrderAvailabilityCheckResponse:
+    await _require_table_access(db, current_user, table_id)
+    warnings: list[OrderAvailabilityWarningDto] = []
+    if req.assignee_user_id is None:
+        return OrderAvailabilityCheckResponse(warnings=warnings)
+
+    shift_res = await db.execute(
+        select(TableCalendarSlot).where(
+            TableCalendarSlot.table_id == table_id,
+            TableCalendarSlot.title.ilike("%смена%"),
+            TableCalendarSlot.starts_at <= req.starts_at,
+            TableCalendarSlot.ends_at >= req.ends_at,
+        )
+    )
+    if shift_res.scalar_one_or_none() is None:
+        warnings.append(
+            OrderAvailabilityWarningDto(
+                code="shift_missing",
+                message="У выбранного сотрудника нет подтверждённой смены на этот интервал.",
+            )
+        )
+
+    overlap_res = await db.execute(
+        select(func.count())
+        .select_from(TableOrder)
+        .where(
+            TableOrder.table_id == table_id,
+            TableOrder.assignee_user_id == req.assignee_user_id,
+            TableOrder.status != "cancelled",
+            TableOrder.starts_at < req.ends_at,
+            TableOrder.ends_at > req.starts_at,
+        )
+    )
+    overlap_count = int(overlap_res.scalar() or 0)
+    if overlap_count > 0:
+        warnings.append(
+            OrderAvailabilityWarningDto(
+                code="overlap",
+                message=f"У сотрудника уже есть пересекающиеся заказы: {overlap_count}.",
+            )
+        )
+    if overlap_count >= 3:
+        warnings.append(
+            OrderAvailabilityWarningDto(
+                code="high_load",
+                message="Высокая загрузка сотрудника в этот период.",
+            )
+        )
+    return OrderAvailabilityCheckResponse(warnings=warnings)

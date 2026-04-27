@@ -36,9 +36,23 @@
           @if (state.queuedOrders().length === 0) {
             <p class="tw-muted">В очереди пусто.</p>
           } @else {
-            <ul class="tw-side-list compact">
+            <ul class="tw-side-orders">
               @for (o of state.queuedOrders(); track o.id) {
-                <li>{{ o.title }}</li>
+                <li class="tw-order-card">
+                  <div class="tw-order-top">
+                    <strong class="tw-order-number">{{ o.order_number ?? ('#' + o.id) }}</strong>
+                    <span class="tw-order-status" [class]="'tw-order-status ' + orderStatusClass(o.status)">{{ orderStatusLabel(o.status) }}</span>
+                  </div>
+                  <p class="tw-order-title">{{ o.title }}</p>
+                  <div class="tw-order-meta">
+                    <span><i class="pi pi-clock"></i>{{ formatOrderDateTime(o.starts_at ?? o.created_at) }}</span>
+                    <span><i class="pi pi-wallet"></i>{{ o.price_total ?? 0 }}</span>
+                  </div>
+                  <div class="tw-order-actions">
+                    <button type="button" (click)="openOrderInCalendar(o)">Открыть</button>
+                    <button type="button" (click)="copyOrderNumber(o)">Копировать №</button>
+                  </div>
+                </li>
               }
             </ul>
           }
@@ -48,9 +62,23 @@
           @if (state.historyOrders().length === 0) {
             <p class="tw-muted">Нет завершённых.</p>
           } @else {
-            <ul class="tw-side-list compact">
+            <ul class="tw-side-orders tw-side-orders--history">
               @for (o of state.historyOrders(); track o.id) {
-                <li>{{ o.title }}</li>
+                <li class="tw-order-card">
+                  <div class="tw-order-top">
+                    <strong class="tw-order-number">{{ o.order_number ?? ('#' + o.id) }}</strong>
+                    <span class="tw-order-status" [class]="'tw-order-status ' + orderStatusClass(o.status)">{{ orderStatusLabel(o.status) }}</span>
+                  </div>
+                  <p class="tw-order-title">{{ o.title }}</p>
+                  <div class="tw-order-meta">
+                    <span><i class="pi pi-calendar"></i>{{ formatOrderDateTime(o.completed_at ?? o.ends_at ?? o.created_at) }}</span>
+                    <span><i class="pi pi-wallet"></i>{{ o.price_total ?? 0 }}</span>
+                  </div>
+                  <div class="tw-order-actions">
+                    <button type="button" (click)="openOrderInCalendar(o)">Открыть</button>
+                    <button type="button" (click)="copyOrderNumber(o)">Копировать №</button>
+                  </div>
+                </li>
               }
             </ul>
           }

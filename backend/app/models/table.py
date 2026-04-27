@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, JSON, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -20,6 +20,7 @@ class Table(Base):
     time_format: Mapped[str | None] = mapped_column(String(10), nullable=True)
     week_start_day: Mapped[str | None] = mapped_column(String(20), nullable=True)
     work_hours: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    order_enabled_directory_ids: Mapped[list[int] | None] = mapped_column(JSON, nullable=True)
 
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
 

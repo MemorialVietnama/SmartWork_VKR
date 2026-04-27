@@ -11,6 +11,7 @@ export class TableWorkspaceState {
   readonly queuedOrders = signal<WorkspaceOrderDto[]>([]);
   readonly historyOrders = signal<WorkspaceOrderDto[]>([]);
   readonly calendarReloadTick = signal(0);
+  readonly contextReloadTick = signal(0);
   readonly loading = signal(true);
   readonly sidebarError = signal<string | null>(null);
 
@@ -20,5 +21,9 @@ export class TableWorkspaceState {
 
   bumpCalendarReload(): void {
     this.calendarReloadTick.update((value) => value + 1);
+  }
+
+  bumpContextReload(): void {
+    this.contextReloadTick.update((value) => value + 1);
   }
 }

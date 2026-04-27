@@ -21,6 +21,7 @@ class TablePatchRequest(BaseModel):
     week_start_day: str | None = Field(default=None, max_length=20)
     work_hours: str | None = Field(default=None, max_length=30)
     color: str | None = Field(default=None, max_length=20)
+    order_enabled_directory_ids: list[int] | None = None
 
     @model_validator(mode="after")
     def at_least_one_field(self) -> "TablePatchRequest":
@@ -33,6 +34,7 @@ class TablePatchRequest(BaseModel):
                 "week_start_day",
                 "work_hours",
                 "color",
+                "order_enabled_directory_ids",
             )
         ):
             raise ValueError("Укажите хотя бы одно поле для обновления.")
@@ -53,6 +55,7 @@ class TableDetailDto(BaseModel):
     stats: TableStatDto
     can_edit_settings: bool
     bonuses: list[TableBonusDto] = Field(default_factory=list)
+    order_enabled_directory_ids: list[int] = Field(default_factory=list)
 
 
 class CalendarSlotDto(BaseModel):
@@ -150,15 +153,88 @@ class PresetDirectoriesRepairResultDto(BaseModel):
 
 class TableOrderDto(BaseModel):
     id: int
+    order_uuid: str
+    order_number: str
     title: str
+    starts_at: datetime
+    ends_at: datetime
+    client_directory_item_id: int | None = None
+    assignee_user_id: int | None = None
+    service_item_ids: list[int] = Field(default_factory=list)
+    custom_directory_links: list[dict[str, Any]] = Field(default_factory=list)
     status: str
+    price_base: float = 0.0
+    price_adjustment: float = 0.0
+    price_total: float = 0.0
+    parent_order_id: int | None = None
+    child_type: str | None = None
+    metadata: dict[str, Any] | None = None
     created_at: datetime
     completed_at: datetime | None
 
 
 class TableOrderCreateRequest(BaseModel):
     title: str = Field(min_length=1, max_length=300)
+    starts_at: datetime
+    ends_at: datetime
+    client_directory_item_id: int | None = None
+    assignee_user_id: int | None = None
+    service_item_ids: list[int] = Field(default_factory=list)
+    custom_directory_links: list[dict[str, Any]] = Field(default_factory=list)
+    price_adjustment: float = 0.0
+    parent_order_id: int | None = None
+    child_type: str | None = Field(default=None, pattern="^(follow_up|repeat_copy)$")
+    metadata: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def validate_dates(self) -> "TableOrderCreateRequest":
+        if self.ends_at <= self.starts_at:
+            raise ValueError("Время окончания должно быть позже начала.")
+        return self
 
 
 class TableOrderUpdateRequest(BaseModel):
-    status: str = Field(max_length=20)
+    title: str | None = Field(default=None, max_length=300)
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    status: str | None = Field(default=None, max_length=20)
+    client_directory_item_id: int | None = None
+    assignee_user_id: int | None = None
+    service_item_ids: list[int] | None = None
+    custom_directory_links: list[dict[str, Any]] | None = None
+    price_adjustment: float | None = None
+    metadata: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def validate_dates(self) -> "TableOrderUpdateRequest":
+        if self.starts_at is not None and self.ends_at is not None and self.ends_at <= self.starts_at:
+            raise ValueError("Время окончания должно быть позже начала.")
+        return self
+
+
+class TableOrderCreateChildRequest(BaseModel):
+    child_type: str = Field(pattern="^(follow_up|repeat_copy)$")
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+
+
+class TableOrderRescheduleRequest(BaseModel):
+    starts_at: datetime
+    ends_at: datetime
+    reason: str | None = Field(default=None, max_length=500)
+    keep_assignee: bool = True
+
+    @model_validator(mode="after")
+    def validate_dates(self) -> "TableOrderRescheduleRequest":
+        if self.ends_at <= self.starts_at:
+            raise ValueError("Время окончания должно быть позже начала.")
+        return self
+
+
+class OrderAvailabilityWarningDto(BaseModel):
+    code: str
+    message: str
+
+
+class OrderAvailabilityCheckResponse(BaseModel):
+    warnings: list[OrderAvailabilityWarningDto] = Field(default_factory=list)

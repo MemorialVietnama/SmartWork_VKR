@@ -40,6 +40,7 @@ export class WorkspaceCalendarWidgetComponent {
   readonly anchorDate = input.required<Date>();
   readonly anchorChange = output<Date>();
   readonly slotContextMenu = output<{ slot: CalendarSlotDto; clientX: number; clientY: number }>();
+  readonly dayContextMenu = output<{ dateKey: string; clientX: number; clientY: number }>();
   readonly slotDateDrop = output<{ slotId: number; targetDate: string }>();
 
   readonly weekStartDay = input<string | null>(null);
@@ -178,7 +179,17 @@ export class WorkspaceCalendarWidgetComponent {
 
   protected onSlotContextMenu(event: MouseEvent, slot: CalendarSlotDto): void {
     event.preventDefault();
+    event.stopPropagation();
     this.slotContextMenu.emit({ slot, clientX: event.clientX, clientY: event.clientY });
+  }
+
+  protected onDayContextMenu(event: MouseEvent, date: Date): void {
+    event.preventDefault();
+    this.dayContextMenu.emit({
+      dateKey: dayKeyLocal(date),
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
   }
 
   protected onSlotDragStart(event: DragEvent, slot: CalendarSlotDto): void {
@@ -210,6 +221,9 @@ export class WorkspaceCalendarWidgetComponent {
       return 'tw-cal-slot tw-cal-slot--shift';
     }
     if (t.startsWith('заказ')) {
+      if (t.includes('завершен')) {
+        return 'tw-cal-slot tw-cal-slot--order-completed';
+      }
       return 'tw-cal-slot tw-cal-slot--order';
     }
     if (t.startsWith('поручение')) {

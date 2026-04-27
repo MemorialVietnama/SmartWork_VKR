@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { distinctUntilChanged, forkJoin } from 'rxjs';
 
 import { ButtonModule } from 'primeng/button';
 
-import { AuthService } from '../../core/auth/auth.service';
+import { AuthService, WorkspaceOrderDto } from '../../core/auth/auth.service';
 import { TableWorkspaceState } from './table-workspace.state';
 
 @Component({
@@ -35,11 +35,22 @@ export class TableWorkspacePageComponent implements OnInit {
       this.state.tableId.set(id);
       this.reloadContext(id);
     });
+
+    toObservable(this.state.contextReloadTick)
+      .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const id = this.state.tableId();
+        if (id > 0) {
+          this.reloadContext(id, true);
+        }
+      });
   }
 
-  private reloadContext(tableId: number): void {
-    this.state.loading.set(true);
-    this.state.sidebarError.set(null);
+  private reloadContext(tableId: number, silent = false): void {
+    if (!silent) {
+      this.state.loading.set(true);
+      this.state.sidebarError.set(null);
+    }
     forkJoin({
       detail: this.auth.getTableDetail(tableId),
       members: this.auth.listTableWorkspaceMembers(tableId),
@@ -56,16 +67,67 @@ export class TableWorkspacePageComponent implements OnInit {
         this.state.bonusMap.set(map);
         this.state.queuedOrders.set(queued);
         this.state.historyOrders.set(history);
-        this.state.loading.set(false);
+        if (!silent) {
+          this.state.loading.set(false);
+        }
       },
       error: () => {
-        this.state.loading.set(false);
-        this.state.sidebarError.set('Не удалось загрузить стол или нет доступа.');
+        if (!silent) {
+          this.state.loading.set(false);
+          this.state.sidebarError.set('Не удалось загрузить стол или нет доступа.');
+        }
       },
     });
   }
 
   protected backToTables(): void {
     void this.router.navigate(['/dashboard'], { queryParams: { section: 'tables' } });
+  }
+
+  protected openOrderInCalendar(order: WorkspaceOrderDto): void {
+    const at = order.starts_at ?? order.created_at ?? null;
+    void this.router.navigate(['calendar'], {
+      relativeTo: this.route,
+      queryParams: {
+        focusOrderId: order.id,
+        focusAt: at,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  protected copyOrderNumber(order: WorkspaceOrderDto): void {
+    const value = order.order_number ?? String(order.id);
+    void navigator.clipboard?.writeText(value);
+  }
+
+  protected orderStatusLabel(status: string | null | undefined): string {
+    const normalized = (status ?? '').toLowerCase();
+    if (normalized === 'queued') return 'В очереди';
+    if (normalized === 'in_progress') return 'В работе';
+    if (normalized === 'completed') return 'Завершен';
+    if (normalized === 'cancelled') return 'Отменен';
+    return status ?? '—';
+  }
+
+  protected orderStatusClass(status: string | null | undefined): string {
+    const normalized = (status ?? '').toLowerCase();
+    if (normalized === 'queued') return 'queued';
+    if (normalized === 'in_progress') return 'in-progress';
+    if (normalized === 'completed') return 'completed';
+    if (normalized === 'cancelled') return 'cancelled';
+    return 'unknown';
+  }
+
+  protected formatOrderDateTime(value: string | null | undefined): string {
+    if (!value) return '—';
+    const dt = new Date(value);
+    if (!Number.isFinite(dt.getTime())) return '—';
+    return dt.toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 }

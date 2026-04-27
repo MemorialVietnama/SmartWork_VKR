@@ -3,10 +3,11 @@
   <p class="tw-muted">Слоты записей по этому столу. Режим и период выберите в виджете ниже.</p>
   <div class="tw-cal-actions">
     <p-button label="Создать слот" icon="pi pi-plus" (onClick)="openCreateSlotDialog()" />
+    <p-button label="Новый заказ" icon="pi pi-shopping-cart" (onClick)="openCreateOrderDialog()" />
   </div>
 
   <app-workspace-calendar-widget
-    [slots]="slots()"
+    [slots]="calendarEntries()"
     [slotsLoading]="slotsLoading()"
     [loadError]="loadError()"
     [promoTheme]="true"
@@ -17,13 +18,27 @@
     [weekStartDay]="state.detail()?.week_start_day ?? null"
     [workHours]="state.detail()?.work_hours ?? null"
     (slotContextMenu)="onSlotContextMenu($event)"
+    (dayContextMenu)="onDayContextMenu($event)"
     (slotDateDrop)="onSlotDateDrop($event)"
   />
 
-  @if (slotMenuVisible && selectedSlot) {
-    <div class="tw-slot-menu" [style.left.px]="slotMenuX" [style.top.px]="slotMenuY" (mouseleave)="closeSlotMenu()">
-      <button type="button" (click)="openEditSlotDialog()">Изменить</button>
-      <button type="button" class="danger" (click)="deleteSelectedSlot()">Удалить</button>
+  @if (slotMenuVisible) {
+    <div class="tw-slot-menu" [style.left.px]="slotMenuX" [style.top.px]="slotMenuY" (click)="$event.stopPropagation()" (contextmenu)="$event.preventDefault(); $event.stopPropagation()">
+      <button type="button" (click)="openCreateOrderFromContext()">Новый заказ</button>
+      @if (selectedOrder) {
+        @if (selectedOrder.status !== 'completed') {
+          <button type="button" (click)="openEditOrderDialog()">Редактировать заказ</button>
+          <button type="button" class="success" (click)="openCompleteOrderDialog()">Завершить и оценить</button>
+        }
+        <button type="button" (click)="openCreateChildOrderDialog('follow_up')">Дочерний: продолжение</button>
+        <button type="button" (click)="openCreateChildOrderDialog('repeat_copy')">Дочерний: повтор</button>
+        @if (selectedOrder.status !== 'completed') {
+          <button type="button" class="danger" (click)="openDeleteOrderConfirm()">Удалить заказ</button>
+        }
+      } @else if (selectedSlot) {
+        <button type="button" (click)="openEditSlotDialog()">Изменить</button>
+        <button type="button" class="danger" (click)="deleteSelectedSlot()">Удалить</button>
+      }
     </div>
   }
 
@@ -106,6 +121,241 @@
     } @else {
       <p-button label="Создать слот" icon="pi pi-check" (onClick)="addSlot()" />
     }
+  </div>
+</p-dialog>
+
+<p-dialog
+  [visible]="createOrderDialogVisible"
+  (visibleChange)="closeCreateOrderDialog()"
+  [modal]="true"
+  [style]="{ width: '64rem', maxWidth: '96vw' }"
+  [header]="editOrderId ? 'Редактирование заказа' : 'Новый заказ'"
+>
+  <div class="tw-step-head">
+    <button type="button" [class.active]="createOrderStep === 1">1. Время</button>
+    <button type="button" [class.active]="createOrderStep === 2">2. Клиент</button>
+    <button type="button" [class.active]="createOrderStep === 3">3. Услуги</button>
+    <button type="button" [class.active]="createOrderStep === 4">4. Справочники</button>
+    <button type="button" [class.active]="createOrderStep === 5">5. Сотрудник</button>
+    <button type="button" [class.active]="createOrderStep === 6">6. Цена</button>
+    <button type="button" [class.active]="createOrderStep === 7">7. Подтверждение</button>
+  </div>
+
+  @if (createOrderStep === 1) {
+    <div class="tw-form-grid">
+      <label>
+        <span>Дата</span>
+        <input type="date" [(ngModel)]="orderDate" />
+      </label>
+      <label>
+        <span>Время</span>
+        <input type="time" [(ngModel)]="orderTimeFrom" />
+      </label>
+      <label>
+        <span>Длительность (мин)</span>
+        <input type="number" pInputText [(ngModel)]="orderDurationMinutes" min="30" step="15" />
+      </label>
+      <label class="full">
+        <span>Обозначение заказа</span>
+        <input type="text" pInputText [(ngModel)]="orderTitle" placeholder="Например: Стрижка + SPA" />
+      </label>
+    </div>
+  }
+
+  @if (createOrderStep === 2) {
+    <div class="tw-form-grid">
+      <label class="full">
+        <span>Клиент</span>
+        <select pInputText [(ngModel)]="orderClientId">
+          <option [ngValue]="null">Выберите клиента</option>
+          @for (opt of clientOptions(); track opt.value) {
+            <option [ngValue]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+      <div class="full">
+        <p-button label="Создать клиента" icon="pi pi-user-plus" styleClass="p-button-outlined" (onClick)="openQuickClientDialog()" />
+      </div>
+    </div>
+  }
+
+  @if (createOrderStep === 3) {
+    <div class="tw-form-grid">
+      <label class="full">
+        <span>Услуги</span>
+        <p-multiSelect
+          [options]="serviceOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="orderServiceIds"
+          (ngModelChange)="orderServiceIds = $event ?? []"
+          appendTo="body"
+          defaultLabel="Выберите услуги"
+          [filter]="true"
+        />
+      </label>
+      <div class="full">
+        <p-button label="Создать услугу" icon="pi pi-plus" styleClass="p-button-outlined" (onClick)="openQuickServiceDialog()" />
+      </div>
+    </div>
+  }
+
+  @if (createOrderStep === 4) {
+    <div class="tw-form-grid">
+      @for (dir of orderCustomDirectories(); track dir.id) {
+        <label class="full">
+          <span>{{ dir.name }}</span>
+          <p-multiSelect
+            [options]="customDirectoryOptions(dir)"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="customSelectionFor(dir.id)"
+            (ngModelChange)="setCustomSelection(dir.id, $event ?? [])"
+            appendTo="body"
+            defaultLabel="Выберите записи"
+            [filter]="true"
+          />
+        </label>
+      }
+      @if (orderCustomDirectories().length === 0) {
+        <p class="tw-muted full">Для заказов не подключены кастомные справочники в настройках стола.</p>
+      }
+    </div>
+  }
+
+  @if (createOrderStep === 5) {
+    <div class="tw-form-grid">
+      <label class="full">
+        <span>Сотрудник</span>
+        <select pInputText [(ngModel)]="orderAssigneeId">
+          <option [ngValue]="null">Без назначения</option>
+          @for (member of state.members(); track member.user_id) {
+            <option [ngValue]="member.user_id">{{ member.short_name }}</option>
+          }
+        </select>
+      </label>
+      @if (orderWarnings.length > 0) {
+        <ul class="full tw-tab-error">
+          @for (warning of orderWarnings; track warning) {
+            <li>{{ warning }}</li>
+          }
+        </ul>
+      }
+    </div>
+  }
+
+  @if (createOrderStep === 6) {
+    <div class="tw-form-grid">
+      <label>
+        <span>База из услуг</span>
+        <input type="number" pInputText [ngModel]="selectedServiceCost()" readonly />
+      </label>
+      <label>
+        <span>Корректировка</span>
+        <input type="number" pInputText [(ngModel)]="orderPriceAdjustment" />
+      </label>
+      <label>
+        <span>Итог</span>
+        <input type="number" pInputText [ngModel]="orderPriceTotal()" readonly />
+      </label>
+      <label>
+        <span>Статус</span>
+        <select pInputText [(ngModel)]="orderStatus">
+          <option value="queued">В очереди</option>
+          <option value="in_progress">В работе</option>
+          <option value="completed">Завершен</option>
+          <option value="cancelled">Отменен</option>
+        </select>
+      </label>
+    </div>
+  }
+
+  @if (createOrderStep === 7) {
+    <div class="tw-form-grid">
+      <p class="full tw-muted">Проверьте данные и нажмите сохранить.</p>
+      <p class="full"><strong>Клиент:</strong> {{ selectedClientLabel() }}</p>
+      <p class="full"><strong>Услуг:</strong> {{ orderServiceIds.length }}</p>
+      <p class="full"><strong>Итог:</strong> {{ orderPriceTotal() }}</p>
+    </div>
+  }
+
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeCreateOrderDialog()" />
+    @if (createOrderStep > 1) {
+      <p-button label="Назад" styleClass="p-button-text" (onClick)="prevOrderStep()" />
+    }
+    @if (createOrderStep < 7) {
+      <p-button label="Далее" icon="pi pi-angle-right" iconPos="right" (onClick)="nextOrderStep()" />
+    } @else {
+      <p-button [label]="editOrderId ? 'Сохранить' : 'Создать заказ'" icon="pi pi-check" (onClick)="saveOrderFromStepper()" />
+    }
+  </div>
+</p-dialog>
+
+<p-dialog [visible]="quickCreateClientVisible" (visibleChange)="quickCreateClientVisible = false" [modal]="true" [style]="{ width: '30rem', maxWidth: '96vw' }" header="Новый клиент">
+  <div class="tw-form-grid">
+    <label class="full">
+      <span>Имя клиента</span>
+      <input type="text" pInputText [(ngModel)]="quickClientName" />
+    </label>
+  </div>
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="quickCreateClientVisible = false" />
+    <p-button label="Создать" icon="pi pi-check" (onClick)="saveQuickClient()" />
+  </div>
+</p-dialog>
+
+<p-dialog [visible]="quickCreateServiceVisible" (visibleChange)="quickCreateServiceVisible = false" [modal]="true" [style]="{ width: '30rem', maxWidth: '96vw' }" header="Новая услуга">
+  <div class="tw-form-grid">
+    <label class="full">
+      <span>Название услуги</span>
+      <input type="text" pInputText [(ngModel)]="quickServiceName" />
+    </label>
+    <label>
+      <span>Стоимость</span>
+      <input type="number" pInputText [(ngModel)]="quickServiceCost" />
+    </label>
+  </div>
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="quickCreateServiceVisible = false" />
+    <p-button label="Создать" icon="pi pi-check" (onClick)="saveQuickService()" />
+  </div>
+</p-dialog>
+
+<p-dialog [visible]="orderDeleteConfirmVisible" (visibleChange)="orderDeleteConfirmVisible = false" [modal]="true" [style]="{ width: '26rem', maxWidth: '96vw' }" header="Удаление заказа">
+  <p>Удалить заказ без возможности восстановления?</p>
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="orderDeleteConfirmVisible = false" />
+    <p-button label="Удалить" icon="pi pi-trash" (onClick)="deleteSelectedOrderConfirmed()" />
+  </div>
+</p-dialog>
+
+<p-dialog [visible]="childOrderDialogVisible" (visibleChange)="childOrderDialogVisible = false" [modal]="true" [style]="{ width: '30rem', maxWidth: '96vw' }" header="Создать дочерний заказ">
+  <p>Создать дочерний заказ типа: <strong>{{ childOrderType === 'follow_up' ? 'продолжение' : 'повтор' }}</strong>?</p>
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="childOrderDialogVisible = false" />
+    <p-button label="Создать" icon="pi pi-check" (onClick)="createChildOrderConfirmed()" />
+  </div>
+</p-dialog>
+
+<p-dialog [visible]="orderCompleteDialogVisible" (visibleChange)="orderCompleteDialogVisible = false" [modal]="true" [style]="{ width: '32rem', maxWidth: '96vw' }" header="Завершение заказа">
+  <div class="tw-form-grid">
+    <label class="full">
+      <span>Оценка клиента</span>
+      <div class="tw-rating-stars">
+        @for (star of [1,2,3,4,5]; track star) {
+          <button type="button" [class.active]="star <= completeOrderRating" (click)="setCompleteOrderRating(star)">★</button>
+        }
+      </div>
+    </label>
+    <label class="full">
+      <span>Комментарий (необязательно)</span>
+      <input type="text" pInputText [(ngModel)]="completeOrderComment" maxlength="500" placeholder="Что понравилось или что улучшить" />
+    </label>
+  </div>
+  <div class="dialog-actions">
+    <p-button label="Отмена" styleClass="p-button-text" (onClick)="orderCompleteDialogVisible = false" />
+    <p-button label="Завершить заказ" icon="pi pi-check" (onClick)="confirmCompleteOrder()" />
   </div>
 </p-dialog>
 

@@ -93,7 +93,14 @@ async def build_table_analytics(
     calendar_hours_series = _series_template(points)
 
     orders_res = await db.execute(
-        select(TableOrder.created_at, TableOrder.completed_at).where(
+        select(
+            TableOrder.created_at,
+            TableOrder.completed_at,
+            TableOrder.status,
+            TableOrder.price_total,
+            TableOrder.parent_order_id,
+            TableOrder.assignee_user_id,
+        ).where(
             TableOrder.table_id == table_id,
             TableOrder.created_at >= rng.start,
             TableOrder.created_at <= rng.end,
@@ -147,7 +154,13 @@ async def build_table_analytics(
     )
     assignee_values = sorted((int(count) for _, count in assignee_res.all()), reverse=True)[:10]
 
-    for created_at, completed_at in orders:
+    cancelled_total = 0
+    rescheduled_total = 0
+    repeat_total = 0
+    child_total = 0
+    revenue_total = 0.0
+    assignee_load: dict[int, int] = {}
+    for created_at, completed_at, status, price_total, parent_order_id, assignee_user_id in orders:
         key = _floor_bucket(created_at, rng.bucket)
         if key in created_orders:
             created_orders[key] += 1
@@ -155,9 +168,17 @@ async def build_table_analytics(
             c_key = _floor_bucket(completed_at, rng.bucket)
             if c_key in completed_orders:
                 completed_orders[c_key] += 1
+        if status == "cancelled":
+            cancelled_total += 1
+        if parent_order_id is not None:
+            child_total += 1
+            repeat_total += 1
+        revenue_total += float(price_total or 0.0)
+        if assignee_user_id is not None:
+            assignee_load[int(assignee_user_id)] = assignee_load.get(int(assignee_user_id), 0) + 1
 
     cycle_minutes: list[float] = []
-    for created_at, completed_at in orders:
+    for created_at, completed_at, _status, _price_total, _parent_order_id, _assignee_user_id in orders:
         if completed_at:
             delta = completed_at - created_at
             cycle_minutes.append(max(delta.total_seconds() / 60.0, 0.0))
@@ -247,6 +268,8 @@ async def build_table_analytics(
             return 0.0
         return round(((curr - prev) / prev) * 100.0, 2)
 
+    average_check = round(revenue_total / orders_created_total, 2) if orders_created_total > 0 else 0.0
+    assignee_peak = max(assignee_load.values()) if assignee_load else 0
     kpis = [
         AnalyticsKpiDto(
             key="orders_created",
@@ -277,6 +300,13 @@ async def build_table_analytics(
             delta_percent=None,
         ),
         AnalyticsKpiDto(key="active_employees", title="Активные сотрудники", value=float(active_employees), unit="чел", delta_percent=None),
+        AnalyticsKpiDto(key="revenue_total", title="Выручка", value=round(revenue_total, 2), unit="₽", delta_percent=None),
+        AnalyticsKpiDto(key="average_check", title="Средний чек", value=average_check, unit="₽", delta_percent=None),
+        AnalyticsKpiDto(key="cancelled_total", title="Отмены", value=float(cancelled_total), unit="шт", delta_percent=None),
+        AnalyticsKpiDto(key="rescheduled_total", title="Переносы", value=float(rescheduled_total), unit="шт", delta_percent=None),
+        AnalyticsKpiDto(key="child_orders_total", title="Дочерние заказы", value=float(child_total), unit="шт", delta_percent=None),
+        AnalyticsKpiDto(key="repeated_total", title="Повторные заказы", value=float(repeat_total), unit="шт", delta_percent=None),
+        AnalyticsKpiDto(key="assignee_peak_load", title="Пик нагрузки сотрудника", value=float(assignee_peak), unit="шт", delta_percent=None),
     ]
 
     breakdown = [
@@ -286,6 +316,9 @@ async def build_table_analytics(
         AnalyticsBreakdownRowDto(label="Заказов завершено", value=float(orders_completed_total)),
         AnalyticsBreakdownRowDto(label="Очередь сейчас", value=float(queued_current)),
         AnalyticsBreakdownRowDto(label="Суммарные часы календаря", value=float(sum(calendar_values))),
+        AnalyticsBreakdownRowDto(label="Выручка", value=round(revenue_total, 2)),
+        AnalyticsBreakdownRowDto(label="Средний чек", value=average_check),
+        AnalyticsBreakdownRowDto(label="Дочерние заказы", value=float(child_total)),
     ]
 
     return TableAnalyticsDto(
