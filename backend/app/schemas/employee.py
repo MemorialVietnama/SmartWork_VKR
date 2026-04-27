@@ -86,3 +86,27 @@ class EmployeeTableBindingDto(BaseModel):
 
 class EmployeeTableBindingUpdateRequest(BaseModel):
     table_ids: list[int] = Field(default_factory=list)
+
+
+class DetachRequest(BaseModel):
+    table_id: int
+    reason: str = Field(min_length=5, max_length=1000)
+
+
+class DetachRequestDto(BaseModel):
+    id: int
+    table_id: int
+    table_title: str
+    staff_user_id: int
+    staff_short_name: str
+    staff_login: str
+    reason: str
+    status: str
+    created_at: datetime
+
+
+class DetachRequestStatusDto(BaseModel):
+    table_id: int
+    request_id: int
+    status_label: str
+    is_read: bool

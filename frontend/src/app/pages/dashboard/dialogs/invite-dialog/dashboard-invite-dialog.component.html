@@ -2,12 +2,67 @@
   [visible]="visible()"
   (visibleChange)="visibleChange.emit($event)"
   [modal]="true"
-  [style]="{ width: '30rem', maxWidth: '95vw' }"
+  [style]="{ width: '34rem', maxWidth: '96vw' }"
   header="Приглашение сотрудника"
 >
-  <p>Отправьте сотруднику код приглашения:</p>
-  <div class="invite-link">
-    <code>{{ inviteLink() }}</code>
+  <div class="invite-form-grid">
+    <label for="invite-table-select">Стол для приглашения</label>
+    <select
+      id="invite-table-select"
+      [ngModel]="selectedTableId()"
+      (ngModelChange)="onTableChange($event)"
+    >
+      <option [ngValue]="null">Выберите стол</option>
+      @for (table of tables(); track table.id) {
+        <option [ngValue]="table.id">{{ table.title }}</option>
+      }
+    </select>
+
+    <label>Формат приглашения</label>
+    <div class="invite-type-row">
+      <label class="radio-item">
+        <input
+          type="radio"
+          name="invite-type"
+          [checked]="inviteType() === 'code'"
+          (change)="inviteTypeChange.emit('code')"
+        />
+        <span>Код</span>
+      </label>
+      <label class="radio-item">
+        <input
+          type="radio"
+          name="invite-type"
+          [checked]="inviteType() === 'link'"
+          (change)="inviteTypeChange.emit('link')"
+        />
+        <span>Ссылка</span>
+      </label>
+    </div>
+
+    <p-button
+      label="Сгенерировать приглашение"
+      icon="pi pi-send"
+      [loading]="generating()"
+      (onClick)="generateInvite.emit()"
+    />
   </div>
-  <small>Сотрудник вводит код в разделе «Сотрудники» и принимает приглашение.</small>
+
+  @if (inviteType() === 'code' && inviteCode()) {
+    <p>Передайте сотруднику код:</p>
+    <div class="invite-link">
+      <code>{{ inviteCode() }}</code>
+    </div>
+  }
+
+  @if (inviteType() === 'link' && inviteLink()) {
+    <p>Передайте сотруднику ссылку:</p>
+    <div class="invite-link">
+      <code>{{ inviteLink() }}</code>
+    </div>
+  }
+
+  @if (error()) {
+    <small class="invite-error">{{ error() }}</small>
+  }
 </p-dialog>

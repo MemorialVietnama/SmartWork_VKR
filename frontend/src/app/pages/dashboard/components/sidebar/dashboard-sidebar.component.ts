@@ -27,9 +27,15 @@ export class DashboardSidebarComponent {
   readonly categories = input<SidebarItemView[]>([]);
   readonly selectedCategory = input('');
   readonly badges = input<Record<string, string>>({});
+  readonly unreadNotifications = input(0);
   readonly categorySelect = output<string>();
+  readonly notificationsOpen = output<void>();
 
   protected onSelect(categoryId: string): void {
     this.categorySelect.emit(categoryId);
+  }
+
+  protected openNotifications(): void {
+    this.notificationsOpen.emit();
   }
 }

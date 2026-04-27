@@ -21,6 +21,8 @@ from app.routers import tables as tables_router
 from app.routers import settings as settings_router
 from app.routers import employees as employees_router
 from app.routers import table_workspace as table_workspace_router
+from app.routers import notifications as notifications_router
+from app.routers import audit as audit_router
 
 configure_logging()
 logger = logging.getLogger("app")
@@ -177,6 +179,18 @@ app.include_router(
     employees_router.router,
     prefix=f"{settings.API_V1_PREFIX}/employees",
     tags=["employees"],
+)
+
+app.include_router(
+    notifications_router.router,
+    prefix=f"{settings.API_V1_PREFIX}/notifications",
+    tags=["notifications"],
+)
+
+app.include_router(
+    audit_router.router,
+    prefix=f"{settings.API_V1_PREFIX}/audit",
+    tags=["audit"],
 )
 
 

@@ -1,0 +1,53 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [style]="{ width: '32rem', maxWidth: '95vw' }"
+  header="Присоединение к столу"
+>
+  <div class="join-dialog-grid">
+    <label class="join-label" for="join-code-input">Код или ссылка приглашения</label>
+    <input
+      id="join-code-input"
+      type="text"
+      pInputText
+      [ngModel]="code()"
+      (ngModelChange)="codeChange.emit($event)"
+      autocomplete="off"
+      placeholder="Вставьте код или ссылку"
+    />
+    <div class="join-actions">
+      <p-button
+        label="Проверить код"
+        icon="pi pi-search"
+        [loading]="previewLoading()"
+        [disabled]="loading()"
+        (onClick)="previewRequest.emit()"
+      />
+      <p-button
+        label="Подтвердить присоединение"
+        icon="pi pi-check"
+        styleClass="p-button-outlined"
+        [loading]="loading()"
+        [disabled]="!preview() || previewLoading()"
+        (onClick)="confirmRequest.emit()"
+      />
+    </div>
+  </div>
+
+  @if (preview()) {
+    <div class="preview-card">
+      <strong>Владелец: {{ preview()?.ownerShortName }}</strong>
+      <span>Стол: {{ preview()?.tableTitle || 'не указан' }}</span>
+      <span>Действует до: {{ preview()?.expiresAt }}</span>
+    </div>
+  }
+
+  @if (success()) {
+    <p-message severity="success" [text]="success()!" [closable]="false" />
+  }
+
+  @if (error()) {
+    <p-message severity="error" [text]="error()!" [closable]="false" />
+  }
+</p-dialog>

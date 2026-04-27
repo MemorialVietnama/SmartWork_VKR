@@ -1,3 +1,46 @@
 :host {
   display: contents;
 }
+
+.invite-form-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.invite-form-grid label {
+  font-weight: 600;
+}
+
+.invite-form-grid select {
+  width: 100%;
+  min-height: 2.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.55rem;
+  padding: 0 0.65rem;
+}
+
+.invite-type-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.radio-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 500;
+}
+
+.invite-link {
+  margin-top: 0.5rem;
+  padding: 0.65rem;
+  border-radius: 0.6rem;
+  background: rgba(99, 102, 241, 0.08);
+  overflow-x: auto;
+}
+
+.invite-error {
+  display: block;
+  margin-top: 0.65rem;
+  color: #dc2626;
+}

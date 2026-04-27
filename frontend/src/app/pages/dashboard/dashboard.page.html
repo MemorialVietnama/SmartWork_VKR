@@ -24,7 +24,9 @@
         [categories]="sidebarCategories"
         [selectedCategory]="selectedCategory"
         [badges]="sidebarBadges()"
+        [unreadNotifications]="unreadNotifications"
         (categorySelect)="onSidebarCategorySelect($event)"
+        (notificationsOpen)="openNotifications()"
       />
 
       <section class="content">
@@ -61,7 +63,85 @@
   (submit)="submitEmployeeForm()"
 />
 
-<app-dashboard-invite-dialog [(visible)]="inviteDialogVisible" [inviteLink]="inviteLink" />
+<app-dashboard-invite-dialog
+  [(visible)]="inviteDialogVisible"
+  [tables]="inviteTableOptions()"
+  [selectedTableId]="inviteTableId"
+  (selectedTableIdChange)="inviteTableId = $event"
+  [inviteType]="inviteType"
+  (inviteTypeChange)="inviteType = $event"
+  [generating]="inviteGenerating"
+  [error]="inviteError"
+  [inviteCode]="inviteCode"
+  [inviteLink]="inviteLink"
+  (generateInvite)="generateInvite()"
+/>
+
+<app-dashboard-join-table-dialog
+  [(visible)]="joinDialogVisible"
+  [code]="joinCode"
+  (codeChange)="joinCode = $event"
+  [loading]="joinLoading"
+  [previewLoading]="joinPreviewLoading"
+  [error]="joinError"
+  [success]="joinSuccess"
+  [preview]="joinPreview"
+  (previewRequest)="previewInviteCode()"
+  (confirmRequest)="confirmJoinByCode()"
+/>
+
+<app-dashboard-notifications-center
+  [(visible)]="notificationsDialogVisible"
+  [loading]="notificationsLoading"
+  [canOpenDetachAction]="isOwner"
+  [items]="notifications"
+  (markAllRead)="markAllNotificationsRead()"
+  (markOneRead)="markNotificationRead($event)"
+  (openAction)="openNotificationAction($event)"
+/>
+
+<p-dialog
+  [visible]="staffDetachDialogVisible"
+  (visibleChange)="staffDetachDialogVisible = $event"
+  [modal]="true"
+  [style]="{ width: '34rem', maxWidth: '96vw' }"
+  header="Заявка на открепление"
+>
+  <div class="state-card">
+    <p>Опишите причину открепления от стола:</p>
+    <textarea [ngModel]="staffDetachReason" (ngModelChange)="staffDetachReason = $event" rows="4" style="width: 100%; resize: vertical;" placeholder="Например: смена проекта, расписание, перевод в другой стол"></textarea>
+    <div class="dialog-actions">
+      <p-button label="Закрыть" styleClass="p-button-text" (onClick)="staffDetachDialogVisible = false" />
+      <p-button label="Отправить заявку" icon="pi pi-send" [loading]="staffDetachLoading" (onClick)="submitDetachRequest()" />
+    </div>
+    @if (staffDetachError) {
+      <p-message severity="error" [text]="staffDetachError" [closable]="false" />
+    }
+  </div>
+</p-dialog>
+
+<p-dialog
+  [visible]="ownerDetachDialogVisible"
+  (visibleChange)="closeOwnerDetachDialog()"
+  [modal]="true"
+  [style]="{ width: '36rem', maxWidth: '96vw' }"
+  header="Заявка на открепление сотрудника"
+>
+  @if (ownerDetachRequest) {
+    <div class="state-card">
+      <div class="stats-row"><span>Сотрудник</span><strong>{{ ownerDetachRequest.staffName }} ({{ ownerDetachRequest.staffLogin }})</strong></div>
+      <div class="stats-row"><span>Стол</span><strong>{{ ownerDetachRequest.tableTitle }}</strong></div>
+      <div class="stats-row"><span>Причина</span><strong>{{ ownerDetachRequest.reason }}</strong></div>
+      <div class="dialog-actions">
+        <p-button label="Закрыть" styleClass="p-button-text" (onClick)="closeOwnerDetachDialog()" />
+        <p-button label="Открепить" severity="danger" icon="pi pi-user-minus" [loading]="ownerDetachLoading" (onClick)="approveOwnerDetachRequest()" />
+      </div>
+    </div>
+  }
+  @if (ownerDetachError) {
+    <p-message severity="error" [text]="ownerDetachError" [closable]="false" />
+  }
+</p-dialog>
 
 <app-dashboard-table-members-dialog
   [(visible)]="tableMembersDialogVisible"

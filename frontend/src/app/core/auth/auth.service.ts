@@ -200,6 +200,55 @@ export interface EmployeeTableBindingDto {
   table_ids: number[];
 }
 
+export interface UserNotificationDto {
+  id: number;
+  kind: string;
+  title: string;
+  message: string;
+  priority: 'low' | 'normal' | 'high';
+  is_read: boolean;
+  payload?: Record<string, unknown> | null;
+  created_at: string;
+  read_at?: string | null;
+}
+
+export interface NotificationsListDto {
+  items: UserNotificationDto[];
+  unread_count: number;
+}
+
+export interface AuditEventDto {
+  id: number;
+  actor_user_id?: number | null;
+  actor_role?: string | null;
+  owner_id?: number | null;
+  action: string;
+  entity_type: string;
+  entity_id?: string | null;
+  status: string;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface DetachRequestDto {
+  id: number;
+  table_id: number;
+  table_title: string;
+  staff_user_id: number;
+  staff_short_name: string;
+  staff_login: string;
+  reason: string;
+  status: string;
+  created_at: string;
+}
+
+export interface DetachRequestStatusDto {
+  table_id: number;
+  request_id: number;
+  status_label: 'Не прочитано' | 'Прочитано';
+  is_read: boolean;
+}
+
 export interface SecuritySettingsDto {
   email_masked: string;
   password_masked: string;
@@ -247,6 +296,7 @@ export class AuthService {
   private readonly router = inject(Router);
 
   private readonly TOKEN_KEY = 'smartwork_access_token';
+  private sessionExpiryRedirectInProgress = false;
 
   private url(path: string): string {
     const base = environment.apiUrl.replace(/\/$/, '');
@@ -416,6 +466,58 @@ export class AuthService {
       { table_ids: tableIds },
       { headers: this.authHeaders() },
     );
+  }
+
+  requestDetachFromTable(tableId: number, reason: string): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(
+      this.url('/api/v1/employees/detach-request'),
+      { table_id: tableId, reason },
+      { headers: this.authHeaders() },
+    );
+  }
+
+  getDetachRequest(requestId: number): Observable<DetachRequestDto> {
+    return this.http.get<DetachRequestDto>(this.url(`/api/v1/employees/detach-request/${requestId}`), {
+      headers: this.authHeaders(),
+    });
+  }
+
+  approveDetachRequest(requestId: number): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(
+      this.url(`/api/v1/employees/detach-request/${requestId}/approve`),
+      {},
+      { headers: this.authHeaders() },
+    );
+  }
+
+  myDetachRequestStatuses(): Observable<DetachRequestStatusDto[]> {
+    return this.http.get<DetachRequestStatusDto[]>(this.url('/api/v1/employees/detach-request-statuses'), {
+      headers: this.authHeaders(),
+    });
+  }
+
+  myNotifications(limit = 30, offset = 0): Observable<NotificationsListDto> {
+    const params = new HttpParams().set('limit', String(limit)).set('offset', String(offset));
+    return this.http.get<NotificationsListDto>(this.url('/api/v1/notifications/my'), {
+      headers: this.authHeaders(),
+      params,
+    });
+  }
+
+  markNotificationsRead(ids: number[]): Observable<{ detail: string; updated: number }> {
+    return this.http.post<{ detail: string; updated: number }>(
+      this.url('/api/v1/notifications/mark-read'),
+      { ids },
+      { headers: this.authHeaders() },
+    );
+  }
+
+  myAuditEvents(limit = 50, offset = 0): Observable<AuditEventDto[]> {
+    const params = new HttpParams().set('limit', String(limit)).set('offset', String(offset));
+    return this.http.get<AuditEventDto[]>(this.url('/api/v1/audit/events'), {
+      headers: this.authHeaders(),
+      params,
+    });
   }
 
   createTableInvite(tableId: number): Observable<{ code: string; expires_at: string }> {
@@ -691,6 +793,17 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.TOKEN_KEY);
     void this.router.navigate(['/welcome']);
+  }
+
+  redirectToLoginOnSessionExpired(): void {
+    localStorage.removeItem(this.TOKEN_KEY);
+    if (this.sessionExpiryRedirectInProgress) {
+      return;
+    }
+    this.sessionExpiryRedirectInProgress = true;
+    void this.router.navigate(['/auth/login']).finally(() => {
+      this.sessionExpiryRedirectInProgress = false;
+    });
   }
 }
 

@@ -1,0 +1,50 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [style]="{ width: '42rem', maxWidth: '96vw' }"
+  header="Уведомления"
+>
+  <div class="notifications-head">
+    <p-button
+      label="Отметить все прочитанными"
+      icon="pi pi-check"
+      styleClass="p-button-text p-button-sm"
+      [disabled]="loading() || items().length === 0"
+      (onClick)="markAllRead.emit()"
+    />
+  </div>
+
+  @if (items().length === 0) {
+    <div class="empty-state">Пока нет уведомлений.</div>
+  } @else {
+    <div class="notifications-list">
+      @for (item of items(); track item.id) {
+        <div class="notification-row" [class.unread]="!item.isRead">
+          <div class="notification-main">
+            <strong>{{ item.title }}</strong>
+            <p>{{ item.message }}</p>
+            <small>{{ item.createdAt | date: 'dd.MM.yyyy HH:mm' }}</small>
+          </div>
+          <div class="notification-meta">
+            <p-tag [value]="item.priority" [severity]="severity(item.priority)" />
+            @if (canOpenDetachAction() && item.kind === 'table.detach' && item.payload?.['detach_request_id']) {
+              <p-button
+                label="Открыть"
+                styleClass="p-button-text p-button-sm"
+                (onClick)="openAction.emit(item.id)"
+              />
+            }
+            @if (!item.isRead) {
+              <p-button
+                icon="pi pi-check"
+                styleClass="p-button-rounded p-button-text p-button-sm"
+                (onClick)="markOneRead.emit(item.id)"
+              />
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</p-dialog>

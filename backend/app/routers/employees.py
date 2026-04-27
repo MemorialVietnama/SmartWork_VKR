@@ -14,6 +14,8 @@ from app.core.security import hash_password
 from app.db.session import get_db
 from app.models.table import Table
 from app.models.table_member import TableMember
+from app.models.table_detach_request import TableDetachRequest
+from app.models.user_notification import UserNotification
 from app.models.user import User
 from app.routers.auth import _send_registration_code, get_current_user
 from app.schemas.employee import (
@@ -28,8 +30,12 @@ from app.schemas.employee import (
     InviteCreateResponse,
     RegisterByInviteRequest,
     RegisterByInviteResponse,
+    DetachRequest,
+    DetachRequestDto,
+    DetachRequestStatusDto,
     TempCredentialsDto,
 )
+from app.services.audit import create_user_notification, log_audit_event, notification_title_for_action
 
 router = APIRouter()
 
@@ -219,6 +225,17 @@ async def create_invite(
     table_res = await db.execute(select(Table).where(Table.id == req.table_id, Table.owner_id == current_user.id))
     table = table_res.scalar_one_or_none()
     if not table:
+        await log_audit_event(
+            db,
+            actor_user=current_user,
+            owner_id=current_user.id,
+            action="table.invite.create_failed",
+            entity_type="table",
+            entity_id=str(req.table_id),
+            status="error",
+            metadata={"reason": "table_not_found"},
+        )
+        await db.commit()
         raise HTTPException(status_code=404, detail="Стол не найден")
 
     code = secrets.token_urlsafe(18)
@@ -235,6 +252,25 @@ async def create_invite(
     finally:
         await r.aclose()
 
+    await log_audit_event(
+        db,
+        actor_user=current_user,
+        owner_id=current_user.id,
+        action="table.invite.created",
+        entity_type="table",
+        entity_id=str(table.id),
+        status="success",
+        metadata={"expires_at": expires_at.isoformat()},
+    )
+    await create_user_notification(
+        db,
+        user_id=current_user.id,
+        kind="table.invite",
+        title=notification_title_for_action("table.invite.created"),
+        message=f"Создан код приглашения для стола «{table.title}».",
+        payload={"table_id": table.id},
+    )
+    await db.commit()
     return InviteCreateResponse(code=code, expires_at=expires_at)
 
 
@@ -253,12 +289,52 @@ async def accept_invite(
     finally:
         await r.aclose()
     if not raw:
+        await log_audit_event(
+            db,
+            actor_user=current_user,
+            owner_id=current_user.owner_id,
+            action="table.invite.failed",
+            entity_type="invite",
+            entity_id=req.code,
+            status="error",
+            metadata={"reason": "expired_or_not_found"},
+        )
+        await create_user_notification(
+            db,
+            user_id=current_user.id,
+            kind="table.invite",
+            title=notification_title_for_action("table.invite.failed"),
+            message="Код приглашения не найден или истек.",
+            priority="high",
+            payload={"code": req.code},
+        )
+        await db.commit()
         raise HTTPException(status_code=400, detail="Инвайт не найден или истек")
     payload = json.loads(raw)
     owner_id = int(payload["owner_id"])
     table_id = int(payload["table_id"])
 
     if current_user.owner_id is not None and current_user.owner_id != owner_id:
+        await log_audit_event(
+            db,
+            actor_user=current_user,
+            owner_id=owner_id,
+            action="table.invite.failed",
+            entity_type="invite",
+            entity_id=req.code,
+            status="error",
+            metadata={"reason": "already_bound_to_other_owner"},
+        )
+        await create_user_notification(
+            db,
+            user_id=current_user.id,
+            kind="table.invite",
+            title=notification_title_for_action("table.invite.failed"),
+            message="Подключение отклонено: сотрудник уже привязан к другому владельцу.",
+            priority="high",
+            payload={"owner_id": owner_id},
+        )
+        await db.commit()
         raise HTTPException(status_code=409, detail="Сотрудник уже привязан к другому владельцу")
 
     current_user.owner_id = owner_id
@@ -269,6 +345,32 @@ async def accept_invite(
     )
     if not existing_member.scalar_one_or_none():
         db.add(TableMember(table_id=table_id, user_id=current_user.id))
+    await log_audit_event(
+        db,
+        actor_user=current_user,
+        owner_id=owner_id,
+        action="table.invite.accepted",
+        entity_type="table",
+        entity_id=str(table_id),
+        status="success",
+        metadata={"invite_code": req.code},
+    )
+    await create_user_notification(
+        db,
+        user_id=current_user.id,
+        kind="table.invite",
+        title=notification_title_for_action("table.invite.accepted"),
+        message=f"Вы успешно присоединились к столу #{table_id}.",
+        payload={"table_id": table_id},
+    )
+    await create_user_notification(
+        db,
+        user_id=owner_id,
+        kind="table.invite",
+        title=notification_title_for_action("table.invite.accepted"),
+        message=f"Сотрудник {current_user.login} присоединился к столу #{table_id}.",
+        payload={"table_id": table_id, "staff_user_id": current_user.id},
+    )
     await db.commit()
     return {"detail": "Приглашение принято"}
 
@@ -434,3 +536,227 @@ async def update_employee_table_bindings(
 
     await db.commit()
     return EmployeeTableBindingDto(employee_id=employee_id, table_ids=sorted(target_table_ids))
+
+
+@router.post("/detach-request")
+async def request_detach_from_table(
+    req: DetachRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if current_user.role != "staff":
+        raise HTTPException(status_code=403, detail="Только сотрудник может отправить заявку")
+    if current_user.owner_id is None:
+        raise HTTPException(status_code=400, detail="Сотрудник не привязан к владельцу")
+
+    table_res = await db.execute(select(Table).where(Table.id == req.table_id))
+    table = table_res.scalar_one_or_none()
+    if not table:
+        raise HTTPException(status_code=404, detail="Стол не найден")
+    if table.owner_id != current_user.owner_id:
+        raise HTTPException(status_code=403, detail="Нельзя отправить заявку по чужому столу")
+    member_res = await db.execute(
+        select(TableMember).where(TableMember.table_id == req.table_id, TableMember.user_id == current_user.id),
+    )
+    if not member_res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Вы не состоите в этом столе")
+    duplicate_res = await db.execute(
+        select(TableDetachRequest).where(
+            TableDetachRequest.table_id == req.table_id,
+            TableDetachRequest.staff_user_id == current_user.id,
+            TableDetachRequest.status == "pending",
+        ),
+    )
+    if duplicate_res.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="У вас уже есть открытая заявка по этому столу")
+
+    request_row = TableDetachRequest(
+        table_id=req.table_id,
+        owner_user_id=current_user.owner_id,
+        staff_user_id=current_user.id,
+        reason=req.reason.strip(),
+        status="pending",
+    )
+    db.add(request_row)
+    await db.flush()
+
+    await log_audit_event(
+        db,
+        actor_user=current_user,
+        owner_id=current_user.owner_id,
+        action="table.detach.requested",
+        entity_type="table",
+        entity_id=str(req.table_id),
+        status="success",
+    )
+    await create_user_notification(
+        db,
+        user_id=current_user.owner_id,
+        kind="table.detach",
+        title=notification_title_for_action("table.detach.requested"),
+        message=f"Сотрудник {current_user.login} отправил заявку на открепление от стола «{table.title}».",
+        priority="high",
+        payload={"table_id": req.table_id, "staff_user_id": current_user.id, "detach_request_id": request_row.id},
+    )
+    await create_user_notification(
+        db,
+        user_id=current_user.id,
+        kind="table.detach",
+        title=notification_title_for_action("table.detach.requested"),
+        message=f"Заявка на открепление от стола «{table.title}» отправлена владельцу.",
+        payload={"table_id": req.table_id, "detach_request_id": request_row.id},
+    )
+    await db.commit()
+    return {"detail": "Заявка отправлена"}
+
+
+@router.get("/detach-request/{request_id}", response_model=DetachRequestDto)
+async def get_detach_request(
+    request_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DetachRequestDto:
+    row_res = await db.execute(select(TableDetachRequest).where(TableDetachRequest.id == request_id))
+    row = row_res.scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+    if current_user.role == "owner" and row.owner_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    if current_user.role == "staff" and row.staff_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Доступ запрещен")
+    table_res = await db.execute(select(Table).where(Table.id == row.table_id))
+    table = table_res.scalar_one_or_none()
+    staff_res = await db.execute(select(User).where(User.id == row.staff_user_id))
+    staff = staff_res.scalar_one_or_none()
+    if not table or not staff:
+        raise HTTPException(status_code=404, detail="Данные заявки повреждены")
+    return DetachRequestDto(
+        id=row.id,
+        table_id=row.table_id,
+        table_title=table.title,
+        staff_user_id=staff.id,
+        staff_short_name=_owner_short_name(staff),
+        staff_login=staff.login,
+        reason=row.reason,
+        status=row.status,
+        created_at=row.created_at,
+    )
+
+
+@router.post("/detach-request/{request_id}/approve")
+async def approve_detach_request(
+    request_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Только владелец может подтверждать заявки")
+    row_res = await db.execute(select(TableDetachRequest).where(TableDetachRequest.id == request_id))
+    row = row_res.scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Заявка не найдена")
+    if row.owner_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Нельзя обработать чужую заявку")
+    if row.status != "pending":
+        raise HTTPException(status_code=409, detail="Заявка уже обработана")
+
+    member_res = await db.execute(
+        select(TableMember).where(TableMember.table_id == row.table_id, TableMember.user_id == row.staff_user_id),
+    )
+    member = member_res.scalar_one_or_none()
+    if member:
+        await db.delete(member)
+
+    row.status = "approved"
+    row.resolved_at = datetime.now(UTC)
+    db.add(row)
+
+    table_res = await db.execute(select(Table).where(Table.id == row.table_id))
+    table = table_res.scalar_one_or_none()
+    table_title = table.title if table else f"#{row.table_id}"
+
+    await log_audit_event(
+        db,
+        actor_user=current_user,
+        owner_id=current_user.id,
+        action="table.detach.approved",
+        entity_type="table_detach_request",
+        entity_id=str(row.id),
+        status="success",
+        metadata={"table_id": row.table_id, "staff_user_id": row.staff_user_id},
+    )
+    await create_user_notification(
+        db,
+        user_id=current_user.id,
+        kind="table.detach",
+        title="Заявка обработана",
+        message=f"Вы открепили сотрудника от стола «{table_title}».",
+        payload={"table_id": row.table_id, "detach_request_id": row.id},
+    )
+    await create_user_notification(
+        db,
+        user_id=row.staff_user_id,
+        kind="table.detach",
+        title="Заявка одобрена",
+        message=f"Вас открепили от стола «{table_title}».",
+        payload={"table_id": row.table_id, "detach_request_id": row.id},
+    )
+    await db.commit()
+    return {"detail": "Сотрудник откреплен"}
+
+
+@router.get("/detach-request-statuses", response_model=list[DetachRequestStatusDto])
+async def my_detach_request_statuses(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[DetachRequestStatusDto]:
+    if current_user.role != "staff":
+        return []
+    members_res = await db.execute(select(TableMember.table_id).where(TableMember.user_id == current_user.id))
+    member_table_ids = {item[0] for item in members_res.all()}
+    if not member_table_ids:
+        return []
+
+    rows_res = await db.execute(
+        select(TableDetachRequest).where(
+            TableDetachRequest.staff_user_id == current_user.id,
+            TableDetachRequest.status == "pending",
+            TableDetachRequest.table_id.in_(member_table_ids),
+        ),
+    )
+    rows = rows_res.scalars().all()
+    if not rows:
+        return []
+
+    request_ids = [row.id for row in rows]
+    notif_res = await db.execute(
+        select(UserNotification).where(
+            UserNotification.user_id == current_user.id,
+            UserNotification.kind == "table.detach",
+        ),
+    )
+    notifications = notif_res.scalars().all()
+
+    read_by_request_id: dict[int, bool] = {}
+    for notification in notifications:
+        payload = notification.payload or {}
+        raw_request_id = payload.get("detach_request_id")
+        if isinstance(raw_request_id, int):
+            prev = read_by_request_id.get(raw_request_id)
+            if prev is None:
+                read_by_request_id[raw_request_id] = bool(notification.is_read)
+            elif prev is False and notification.is_read:
+                read_by_request_id[raw_request_id] = True
+
+    result: list[DetachRequestStatusDto] = []
+    for row in rows:
+        is_read = read_by_request_id.get(row.id, False)
+        result.append(
+            DetachRequestStatusDto(
+                table_id=row.table_id,
+                request_id=row.id,
+                status_label="Прочитано" if is_read else "Не прочитано",
+                is_read=is_read,
+            ),
+        )
+    return result

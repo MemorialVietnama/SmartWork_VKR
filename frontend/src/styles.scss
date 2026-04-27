@@ -29,12 +29,17 @@ body {
 }
 
 .dashboard-page,
-.table-workspace-page,
 .landing-section-inner,
 .landing-header__container {
   width: min(100%, var(--sw-content-max));
   margin-inline: auto;
   padding-inline: var(--sw-content-padding);
+}
+
+.table-workspace-page {
+  width: min(100%, var(--sw-content-max));
+  margin-inline: auto;
+  padding-inline: 0;
 }
 
 @media (min-width: 768px) {

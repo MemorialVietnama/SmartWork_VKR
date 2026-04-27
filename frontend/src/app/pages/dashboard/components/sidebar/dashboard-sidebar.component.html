@@ -3,7 +3,15 @@
     <img src="/full_logo.png" alt="SmartWork" class="sidebar-brand__full" />
   </a>
   <div class="sidebar-head">
-    <p-tag [severity]="'info'" [value]="isOwner() ? 'owner' : 'staff'" />
+    <div class="sidebar-head-top">
+      <p-tag [severity]="'info'" [value]="isOwner() ? 'owner' : 'staff'" />
+      <button type="button" class="notify-btn" (click)="openNotifications()" aria-label="Открыть уведомления">
+        <i class="pi pi-bell"></i>
+        @if (unreadNotifications() > 0) {
+          <small class="notify-badge">{{ unreadNotifications() }}</small>
+        }
+      </button>
+    </div>
     <h3>{{ user()?.last_name }} {{ user()?.first_name }}</h3>
     <small>{{ user()?.login }}</small>
   </div>

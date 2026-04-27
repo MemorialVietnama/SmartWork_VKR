@@ -1,0 +1,27 @@
+:host {
+  display: contents;
+}
+
+.join-dialog-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.join-label {
+  font-weight: 600;
+}
+
+.join-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.preview-card {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(99, 102, 241, 0.08);
+}

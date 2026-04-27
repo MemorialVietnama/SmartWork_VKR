@@ -1,4 +1,4 @@
-import { Component, ViewEncapsulation, inject, OnInit } from '@angular/core';
+import { Component, ViewEncapsulation, inject, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -23,12 +23,18 @@ import { DashboardEmployeesCategoryComponent } from './categories/employees/dash
 import { DashboardAnalyticsCategoryComponent } from './categories/analytics/dashboard-analytics-category.component';
 import { DashboardSettingsCategoryComponent } from './categories/settings/dashboard-settings-category.component';
 import { DashboardSubscriptionCategoryComponent } from './categories/subscription/dashboard-subscription-category.component';
+import { DashboardJoinTableDialogComponent } from './dialogs/join-table-dialog/dashboard-join-table-dialog.component';
+import { DashboardNotificationsCenterComponent } from './components/notifications-center/dashboard-notifications-center.component';
 
 import {
   AuthService,
   EmployeeDto,
+  DetachRequestDto,
+  DetachRequestStatusDto,
+  InviteInfoDto,
   MeDto,
   NotificationSettingsDto,
+  UserNotificationDto,
   TableAnalyticsDto,
   TableDto,
   UserSettingsDto,
@@ -61,17 +67,20 @@ import { ThemeService } from '../../core/theme.service';
     DashboardAnalyticsCategoryComponent,
     DashboardSettingsCategoryComponent,
     DashboardSubscriptionCategoryComponent,
+    DashboardJoinTableDialogComponent,
+    DashboardNotificationsCenterComponent,
   ],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss',
   encapsulation: ViewEncapsulation.None,
 })
-export class DashboardPageComponent implements OnInit {
+export class DashboardPageComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly themeService = inject(ThemeService);
   private readonly analyticsBonusKey = 'unlock_analytics';
+  private liveRefreshTimerId: ReturnType<typeof setInterval> | null = null;
 
   protected user: MeDto | null = null;
   protected loading = true;
@@ -114,9 +123,37 @@ export class DashboardPageComponent implements OnInit {
   protected employeeDialogVisible = false;
   protected employeeDialogMode: 'create' | 'edit' = 'create';
   protected inviteDialogVisible = false;
+  protected inviteGenerating = false;
+  protected inviteError: string | null = null;
+  protected inviteType: 'code' | 'link' = 'link';
+  protected inviteTableId: number | null = null;
+  protected inviteCode = '';
   protected inviteLink = '';
+  protected joinDialogVisible = false;
+  protected joinCode = '';
+  protected joinPreview: JoinInvitePreview | null = null;
+  protected joinLoading = false;
+  protected joinPreviewLoading = false;
+  protected joinError: string | null = null;
+  protected joinSuccess: string | null = null;
   protected staffInviteCode = '';
   protected staffInviteMessage: string | null = null;
+  protected staffDetachDialogVisible = false;
+  protected staffDetachReason = '';
+  protected staffDetachTableId: number | null = null;
+  protected staffDetachError: string | null = null;
+  protected staffDetachLoading = false;
+  protected notificationsDialogVisible = false;
+  protected notificationsLoading = false;
+  protected notificationsError: string | null = null;
+  protected notifications: DashboardNotification[] = [];
+  protected unreadNotifications = 0;
+  protected staffDetachStatusByTable: Record<number, StaffDetachStatusLabel> = {};
+  protected ownerDetachDialogVisible = false;
+  protected ownerDetachRequest: OwnerDetachRequestView | null = null;
+  protected ownerDetachError: string | null = null;
+  protected ownerDetachLoading = false;
+  protected auditEvents: DashboardAuditEvent[] = [];
   protected logoutConfirmVisible = false;
   protected openedTableMenuId: number | null = null;
   protected tableMembersDialogVisible = false;
@@ -196,6 +233,11 @@ export class DashboardPageComponent implements OnInit {
       this.selectedCategory = section as SidebarCategoryId;
     }
     this.load();
+    this.startLiveRefresh();
+  }
+
+  ngOnDestroy(): void {
+    this.stopLiveRefresh();
   }
 
   protected load(): void {
@@ -208,9 +250,13 @@ export class DashboardPageComponent implements OnInit {
         this.user = u;
         this.loadSettings();
         this.loadOwnerTables();
+        this.loadNotifications();
+        this.loadAuditEvents();
         if (u.role === 'owner') {
           this.loadOwnerEmployees();
           this.loadEmployeeTableBindings();
+        } else {
+          this.loadStaffDetachStatuses();
         }
         this.loading = false;
       },
@@ -241,6 +287,98 @@ export class DashboardPageComponent implements OnInit {
     this.selectCategory(matched.id);
   }
 
+  protected openNotifications(): void {
+    this.notificationsDialogVisible = true;
+    this.loadNotifications();
+    if (!this.isOwner) {
+      this.loadStaffDetachStatuses();
+    }
+  }
+
+  protected markNotificationRead(notificationId: number): void {
+    this.auth.markNotificationsRead([notificationId]).subscribe({
+      next: () => {
+        this.notifications = this.notifications.map((item) => (item.id === notificationId ? { ...item, isRead: true } : item));
+        this.unreadNotifications = Math.max(
+          this.notifications.reduce((sum, item) => sum + (item.isRead ? 0 : 1), 0),
+          0,
+        );
+        this.recomputeStaffDetachStatuses();
+        if (!this.isOwner) {
+          this.loadStaffDetachStatuses();
+        }
+      },
+    });
+  }
+
+  protected markAllNotificationsRead(): void {
+    this.auth.markNotificationsRead([]).subscribe({
+      next: () => {
+        this.notifications = this.notifications.map((item) => ({ ...item, isRead: true }));
+        this.unreadNotifications = 0;
+        this.recomputeStaffDetachStatuses();
+        if (!this.isOwner) {
+          this.loadStaffDetachStatuses();
+        }
+      },
+    });
+  }
+
+  protected openNotificationAction(notificationId: number): void {
+    if (!this.isOwner) {
+      return;
+    }
+    const notification = this.notifications.find((item) => item.id === notificationId);
+    if (!notification) {
+      return;
+    }
+    const requestId = this.extractDetachRequestId(notification.payload);
+    if (!requestId) {
+      return;
+    }
+    this.ownerDetachLoading = true;
+    this.ownerDetachError = null;
+    this.auth.getDetachRequest(requestId).subscribe({
+      next: (request) => {
+        this.ownerDetachLoading = false;
+        this.ownerDetachRequest = this.mapDetachRequestDto(request);
+        this.ownerDetachDialogVisible = true;
+      },
+      error: (err) => {
+        this.ownerDetachLoading = false;
+        this.ownerDetachError = err?.error?.detail || 'Не удалось открыть заявку.';
+      },
+    });
+  }
+
+  protected closeOwnerDetachDialog(): void {
+    this.ownerDetachDialogVisible = false;
+    this.ownerDetachError = null;
+    this.ownerDetachLoading = false;
+  }
+
+  protected approveOwnerDetachRequest(): void {
+    const requestId = this.ownerDetachRequest?.id;
+    if (!requestId) {
+      return;
+    }
+    this.ownerDetachLoading = true;
+    this.ownerDetachError = null;
+    this.auth.approveDetachRequest(requestId).subscribe({
+      next: () => {
+        this.ownerDetachLoading = false;
+        this.ownerDetachDialogVisible = false;
+        this.ownerDetachRequest = null;
+        this.loadOwnerTables();
+        this.loadNotifications();
+      },
+      error: (err) => {
+        this.ownerDetachLoading = false;
+        this.ownerDetachError = err?.error?.detail || 'Не удалось открепить сотрудника.';
+      },
+    });
+  }
+
   protected get isOwner(): boolean {
     return this.user?.role === 'owner';
   }
@@ -255,6 +393,10 @@ export class DashboardPageComponent implements OnInit {
 
   protected get sidebarCategories(): SidebarCategory[] {
     return this.isOwner ? this.categories : this.categories.filter((item) => item.id !== 'employees');
+  }
+
+  protected staffDetachStatusLabel(tableId: number): StaffDetachStatusLabel | null {
+    return this.staffDetachStatusByTable[tableId] ?? null;
   }
 
   protected categoryBadge(categoryId: SidebarCategoryId): string | null {
@@ -279,6 +421,10 @@ export class DashboardPageComponent implements OnInit {
       }
     });
     return result;
+  }
+
+  protected inviteTableOptions(): Array<{ id: number; title: string }> {
+    return this.ownerTables.map((table) => ({ id: table.id, title: table.title }));
   }
 
   protected get hasOwnerEmployees(): boolean {
@@ -441,18 +587,97 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected showInviteDialog(): void {
-    const tableId = this.ownerTables[0]?.id;
-    if (!tableId) {
+    if (!this.ownerTables.length) {
       this.formError = 'Сначала создайте стол для приглашения.';
       return;
     }
+    this.inviteDialogVisible = true;
+    this.inviteGenerating = false;
+    this.inviteError = null;
+    this.inviteCode = '';
+    this.inviteLink = '';
+    this.inviteType = 'link';
+    this.inviteTableId = this.ownerTables[0]?.id ?? null;
+  }
+
+  protected generateInvite(): void {
+    const tableId = this.inviteTableId;
+    if (!tableId) {
+      this.inviteError = 'Выберите стол для приглашения.';
+      return;
+    }
+    this.inviteGenerating = true;
+    this.inviteError = null;
+    this.inviteCode = '';
+    this.inviteLink = '';
     this.auth.createTableInvite(tableId).subscribe({
       next: (resp) => {
+        this.inviteGenerating = false;
+        this.inviteCode = resp.code;
         this.inviteLink = `${window.location.origin}/auth/invite-register?code=${encodeURIComponent(resp.code)}`;
-        this.inviteDialogVisible = true;
       },
-      error: () => {
-        this.formError = 'Не удалось создать приглашение.';
+      error: (err) => {
+        this.inviteGenerating = false;
+        this.inviteError = err?.error?.detail || 'Не удалось создать приглашение.';
+      },
+    });
+  }
+
+  protected openJoinTableDialog(): void {
+    this.joinDialogVisible = true;
+    this.resetJoinDialogState();
+  }
+
+  protected previewInviteCode(): void {
+    const code = this.extractInviteCode(this.joinCode);
+    if (!code || code.length < 8) {
+      this.joinError = 'Введите корректный код или ссылку приглашения.';
+      this.joinPreview = null;
+      return;
+    }
+    this.joinCode = code;
+    this.joinPreviewLoading = true;
+    this.joinError = null;
+    this.joinSuccess = null;
+    this.auth.inviteInfo(code).subscribe({
+      next: (info) => {
+        this.joinPreviewLoading = false;
+        this.joinPreview = this.mapJoinPreview(info);
+      },
+      error: (err) => {
+        this.joinPreviewLoading = false;
+        this.joinPreview = null;
+        this.joinError = err?.error?.detail || 'Не удалось проверить код приглашения.';
+      },
+    });
+  }
+
+  protected confirmJoinByCode(): void {
+    const code = this.extractInviteCode(this.joinCode);
+    if (!this.joinPreview) {
+      this.joinError = 'Сначала проверьте код приглашения.';
+      return;
+    }
+    if (!code || code.length < 8) {
+      this.joinError = 'Введите корректный код или ссылку приглашения.';
+      return;
+    }
+    this.joinCode = code;
+    this.joinLoading = true;
+    this.joinError = null;
+    this.joinSuccess = null;
+    this.auth.acceptTableInvite(code).subscribe({
+      next: () => {
+        this.joinLoading = false;
+        this.joinSuccess = 'Вы успешно присоединились к столу.';
+        this.loadOwnerTables();
+        this.loadNotifications();
+        this.joinDialogVisible = false;
+        this.resetJoinDialogState();
+      },
+      error: (err) => {
+        this.joinLoading = false;
+        this.joinError = err?.error?.detail || 'Не удалось присоединиться к столу.';
       },
     });
   }
@@ -473,6 +698,39 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
+  protected resetJoinDialogState(): void {
+    this.joinCode = '';
+    this.joinPreview = null;
+    this.joinError = null;
+    this.joinSuccess = null;
+    this.joinLoading = false;
+    this.joinPreviewLoading = false;
+  }
+
+  private extractInviteCode(raw: string): string {
+    const value = raw.trim();
+    if (!value) {
+      return '';
+    }
+    if (!value.includes('://') && !value.includes('?')) {
+      return value;
+    }
+    try {
+      const parsed = new URL(value);
+      return (parsed.searchParams.get('code') ?? '').trim() || value;
+    } catch {
+      const queryMatch = /[?&]code=([^&]+)/i.exec(value);
+      if (!queryMatch) {
+        return value;
+      }
+      try {
+        return decodeURIComponent(queryMatch[1]).trim();
+      } catch {
+        return queryMatch[1].trim();
+      }
+    }
+  }
+
   protected toggleTableMenu(tableId: number): void {
     this.openedTableMenuId = this.openedTableMenuId === tableId ? null : tableId;
   }
@@ -490,8 +748,44 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected requestDetachFromTable(tableId: number): void {
-    this.staffInviteMessage = `Заявка на открепление от стола #${tableId} отправлена владельцу.`;
+    this.staffDetachTableId = tableId;
+    this.staffDetachReason = '';
+    this.staffDetachError = null;
+    this.staffDetachLoading = false;
+    this.staffDetachDialogVisible = true;
     this.openedTableMenuId = null;
+  }
+
+  protected submitDetachRequest(): void {
+    if (!this.staffDetachTableId) {
+      return;
+    }
+    const reason = this.staffDetachReason.trim();
+    if (reason.length < 5) {
+      this.staffDetachError = 'Укажите причину (минимум 5 символов).';
+      return;
+    }
+    this.staffDetachLoading = true;
+    this.staffDetachError = null;
+    this.auth.requestDetachFromTable(this.staffDetachTableId, reason).subscribe({
+      next: () => {
+        const submittedTableId = this.staffDetachTableId;
+        this.staffDetachLoading = false;
+        this.staffInviteMessage = `Заявка на открепление от стола #${this.staffDetachTableId} отправлена владельцу.`;
+        if (submittedTableId !== null) {
+          this.staffDetachStatusByTable[submittedTableId] = 'Отправлено';
+        }
+        this.staffDetachDialogVisible = false;
+        this.staffDetachReason = '';
+        this.staffDetachTableId = null;
+        this.loadNotifications();
+        this.loadStaffDetachStatuses();
+      },
+      error: (err) => {
+        this.staffDetachLoading = false;
+        this.staffDetachError = err?.error?.detail || 'Не удалось отправить заявку на открепление.';
+      },
+    });
   }
 
   protected openTableSettings(tableId: number): void {
@@ -1274,6 +1568,174 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
+  private loadNotifications(): void {
+    this.notificationsLoading = true;
+    this.notificationsError = null;
+    this.auth.myNotifications(40, 0).subscribe({
+      next: (resp) => {
+        this.notifications = resp.items.map((item) => this.mapNotificationDto(item));
+        this.unreadNotifications = resp.unread_count;
+        this.recomputeStaffDetachStatuses();
+        this.notificationsLoading = false;
+      },
+      error: () => {
+        this.notificationsLoading = false;
+        this.notificationsError = 'Не удалось загрузить уведомления.';
+      },
+    });
+  }
+
+  private loadStaffDetachStatuses(): void {
+    if (this.isOwner) {
+      this.staffDetachStatusByTable = {};
+      return;
+    }
+    this.auth.myDetachRequestStatuses().subscribe({
+      next: (rows) => {
+        this.staffDetachStatusByTable = this.mapStaffDetachStatuses(rows);
+      },
+      error: () => {
+        this.staffDetachStatusByTable = {};
+      },
+    });
+  }
+
+  private loadAuditEvents(): void {
+    this.auth.myAuditEvents(50, 0).subscribe({
+      next: (events) => {
+        this.auditEvents = events.map((item) => ({
+          id: item.id,
+          action: item.action,
+          status: item.status,
+          createdAt: item.created_at,
+        }));
+      },
+      error: () => {
+        this.auditEvents = [];
+      },
+    });
+  }
+
+  private mapNotificationDto(item: UserNotificationDto): DashboardNotification {
+    return {
+      id: item.id,
+      kind: item.kind,
+      title: item.title,
+      message: item.message,
+      priority: item.priority ?? 'normal',
+      isRead: item.is_read,
+      createdAt: item.created_at,
+      payload: item.payload ?? null,
+    };
+  }
+
+  private extractDetachRequestId(payload: Record<string, unknown> | null | undefined): number | null {
+    if (!payload) {
+      return null;
+    }
+    const raw = payload['detach_request_id'];
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      return raw;
+    }
+    if (typeof raw === 'string') {
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  private mapDetachRequestDto(request: DetachRequestDto): OwnerDetachRequestView {
+    return {
+      id: request.id,
+      staffName: request.staff_short_name,
+      staffLogin: request.staff_login,
+      tableTitle: request.table_title,
+      reason: request.reason,
+      createdAt: request.created_at,
+      status: request.status,
+    };
+  }
+
+  private recomputeStaffDetachStatuses(): void {
+    if (this.isOwner) {
+      return;
+    }
+    if (Object.keys(this.staffDetachStatusByTable).length === 0) {
+      return;
+    }
+    const next = { ...this.staffDetachStatusByTable };
+    const sorted = [...this.notifications].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    for (const item of sorted) {
+      if (item.kind !== 'table.detach') {
+        continue;
+      }
+      const tableId = this.extractTableId(item.payload);
+      if (!tableId || !next[tableId]) {
+        continue;
+      }
+      next[tableId] = item.isRead ? 'Прочитано' : 'Не прочитано';
+    }
+    this.staffDetachStatusByTable = next;
+  }
+
+  private extractTableId(payload: Record<string, unknown> | null | undefined): number | null {
+    if (!payload) {
+      return null;
+    }
+    const raw = payload['table_id'];
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      return raw;
+    }
+    if (typeof raw === 'string') {
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  private mapStaffDetachStatuses(rows: DetachRequestStatusDto[]): Record<number, StaffDetachStatusLabel> {
+    return rows.reduce<Record<number, StaffDetachStatusLabel>>((acc, row) => {
+      acc[row.table_id] = row.status_label;
+      return acc;
+    }, {});
+  }
+
+  private startLiveRefresh(): void {
+    this.stopLiveRefresh();
+    this.liveRefreshTimerId = setInterval(() => {
+      if (this.loading || !this.user) {
+        return;
+      }
+      this.loadOwnerTables();
+      this.loadNotifications();
+      if (this.isOwner) {
+        this.loadOwnerEmployees();
+      } else {
+        this.loadStaffDetachStatuses();
+      }
+    }, 10000);
+  }
+
+  private stopLiveRefresh(): void {
+    if (this.liveRefreshTimerId === null) {
+      return;
+    }
+    clearInterval(this.liveRefreshTimerId);
+    this.liveRefreshTimerId = null;
+  }
+
+  private mapJoinPreview(info: InviteInfoDto): JoinInvitePreview {
+    return {
+      ownerShortName: info.owner_short_name,
+      tableTitle: info.table_title ?? null,
+      expiresAt: new Date(info.expires_at).toLocaleString('ru-RU'),
+    };
+  }
+
   private mapTableDto(table: TableDto): WorkspaceTableCard {
     return {
       id: table.id,
@@ -1766,4 +2228,40 @@ interface AccountSubscriptionPlan {
   description: string;
   price: number;
 }
+
+interface JoinInvitePreview {
+  ownerShortName: string;
+  tableTitle: string | null;
+  expiresAt: string;
+}
+
+interface DashboardNotification {
+  id: number;
+  kind: string;
+  title: string;
+  message: string;
+  priority: 'low' | 'normal' | 'high';
+  isRead: boolean;
+  createdAt: string;
+  payload?: Record<string, unknown> | null;
+}
+
+interface DashboardAuditEvent {
+  id: number;
+  action: string;
+  status: string;
+  createdAt: string;
+}
+
+interface OwnerDetachRequestView {
+  id: number;
+  staffName: string;
+  staffLogin: string;
+  tableTitle: string;
+  reason: string;
+  createdAt: string;
+  status: string;
+}
+
+type StaffDetachStatusLabel = 'Отправлено' | 'Не прочитано' | 'Прочитано' | 'Выполнена';
 

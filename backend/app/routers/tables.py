@@ -34,6 +34,7 @@ from app.schemas.table import (
 )
 from app.services.email_sender import send_email
 from app.services.analytics import build_analytics_range, build_table_analytics, table_members_count
+from app.services.audit import create_user_notification, log_audit_event, notification_title_for_action
 from app.use_cases.table_creation import TableCreationUseCase
 
 router = APIRouter()
@@ -67,7 +68,26 @@ async def confirm_create_table(
     current_user: User = Depends(get_current_user),
     table_creation_use_case: TableCreationUseCase = Depends(get_table_creation_use_case),
 ) -> TableDto:
-    return await table_creation_use_case.confirm_create(code=req.code, db=db, current_user=current_user)
+    table = await table_creation_use_case.confirm_create(code=req.code, db=db, current_user=current_user)
+    await log_audit_event(
+        db,
+        actor_user=current_user,
+        owner_id=current_user.id,
+        action="table.created",
+        entity_type="table",
+        entity_id=str(table.id),
+        status="success",
+    )
+    await create_user_notification(
+        db,
+        user_id=current_user.id,
+        kind="table.lifecycle",
+        title=notification_title_for_action("table.created"),
+        message=f"Создан стол «{table.title}».",
+        payload={"table_id": table.id},
+    )
+    await db.commit()
+    return table
 
 
 @router.post("/{table_id}/delete/request-code")
@@ -81,6 +101,17 @@ async def request_delete_table_code(
     table_res = await db.execute(select(Table).where(Table.id == table_id, Table.owner_id == current_user.id))
     table = table_res.scalar_one_or_none()
     if not table:
+        await log_audit_event(
+            db,
+            actor_user=current_user,
+            owner_id=current_user.id,
+            action="table.delete.request_failed",
+            entity_type="table",
+            entity_id=str(table_id),
+            status="error",
+            metadata={"reason": "table_not_found"},
+        )
+        await db.commit()
         raise HTTPException(status_code=404, detail="Стол не найден")
 
     code = f"{secrets.randbelow(1000000):06d}"
@@ -118,6 +149,17 @@ async def confirm_delete_table(
     table_res = await db.execute(select(Table).where(Table.id == table_id, Table.owner_id == current_user.id))
     table = table_res.scalar_one_or_none()
     if not table:
+        await log_audit_event(
+            db,
+            actor_user=current_user,
+            owner_id=current_user.id,
+            action="table.delete.confirm_failed",
+            entity_type="table",
+            entity_id=str(table_id),
+            status="error",
+            metadata={"reason": "table_not_found"},
+        )
+        await db.commit()
         raise HTTPException(status_code=404, detail="Стол не найден")
 
     r = redis.from_url(settings.REDIS_URL, decode_responses=True)
@@ -131,6 +173,7 @@ async def confirm_delete_table(
     finally:
         await r.aclose()
 
+    table_title = table.title
     await db.execute(delete(TableMember).where(TableMember.table_id == table_id))
     await db.execute(delete(TableBonus).where(TableBonus.table_id == table_id))
     await db.execute(delete(TableCalendarSlot).where(TableCalendarSlot.table_id == table_id))
@@ -138,6 +181,23 @@ async def confirm_delete_table(
     await db.execute(delete(TableOrder).where(TableOrder.table_id == table_id))
     await db.execute(delete(TableDirectory).where(TableDirectory.table_id == table_id))
     await db.delete(table)
+    await log_audit_event(
+        db,
+        actor_user=current_user,
+        owner_id=current_user.id,
+        action="table.deleted",
+        entity_type="table",
+        entity_id=str(table_id),
+        status="success",
+    )
+    await create_user_notification(
+        db,
+        user_id=current_user.id,
+        kind="table.lifecycle",
+        title=notification_title_for_action("table.deleted"),
+        message=f"Стол «{table_title}» удален.",
+        payload={"table_id": table_id},
+    )
     await db.commit()
     return {"detail": "Стол удален"}
 
@@ -224,6 +284,31 @@ async def add_table_member(
         raise HTTPException(status_code=409, detail="Сотрудник уже в столе")
 
     db.add(TableMember(table_id=table_id, user_id=req.employee_id))
+    await log_audit_event(
+        db,
+        actor_user=current_user,
+        owner_id=current_user.id,
+        action="table.member.added",
+        entity_type="table_member",
+        entity_id=f"{table_id}:{req.employee_id}",
+        status="success",
+    )
+    await create_user_notification(
+        db,
+        user_id=req.employee_id,
+        kind="table.access",
+        title="Доступ к столу обновлен",
+        message=f"Вас добавили в стол «{table.title}».",
+        payload={"table_id": table_id},
+    )
+    await create_user_notification(
+        db,
+        user_id=current_user.id,
+        kind="table.member",
+        title="Сотрудник добавлен",
+        message=f"Сотрудник {employee.login} добавлен в стол «{table.title}».",
+        payload={"table_id": table_id, "employee_id": employee.id},
+    )
     await db.commit()
     return {"detail": "Сотрудник добавлен в стол"}
 

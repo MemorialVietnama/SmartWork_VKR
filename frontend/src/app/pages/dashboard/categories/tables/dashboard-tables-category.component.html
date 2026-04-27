@@ -1,4 +1,4 @@
-﻿<div class="content-head tables-hero">
+<div class="content-head tables-hero">
   <div>
     <h2>Столы</h2>
     <p>Рабочие пространства, в которых находится ваш аккаунт.</p>
@@ -36,16 +36,11 @@
           <i class="pi pi-plus-circle"></i>
           <span>Создать стол</span>
         </button>
-        <button type="button" class="square-action">
-          <i class="pi pi-sign-in"></i>
-          <span>Присоединиться к столу</span>
-        </button>
       </div>
     </div>
   } @else {
     <div class="table-toolbar">
       <p-button label="Создать стол" icon="pi pi-plus" (onClick)="$any(ctx())?.openCreateTableDialog()" />
-      <p-button label="Присоединиться к столу" icon="pi pi-sign-in" styleClass="p-button-outlined" />
       <p-button label="Пригласить сотрудника" icon="pi pi-send" styleClass="p-button-outlined" (onClick)="$any(ctx())?.showInviteDialog()" />
     </div>
 
@@ -148,9 +143,12 @@
       </div>
       <h3>У вас пока нет подключенных столов</h3>
       <p>Попросите владельца отправить приглашение и введите код для присоединения.</p>
-      <p-button label="Перейти в раздел сотрудников" icon="pi pi-users" styleClass="p-button-outlined" (onClick)="$any(ctx())?.selectCategory('employees')" />
+      <p-button label="Присоединиться к столу" icon="pi pi-sign-in" styleClass="p-button-outlined" (onClick)="$any(ctx())?.openJoinTableDialog()" />
     </div>
   } @else {
+    <div class="table-toolbar">
+      <p-button label="Присоединиться к столу" icon="pi pi-sign-in" styleClass="p-button-outlined" (onClick)="$any(ctx())?.openJoinTableDialog()" />
+    </div>
     <div class="table-grid">
       @for (table of $any(ctx())?.ownerTables ?? []; track table.id) {
         <p-card class="table-card">
@@ -176,23 +174,42 @@
                     <i class="pi pi-eye"></i>
                     <span>Просмотр настроек стола</span>
                   </button>
-                  <button type="button" role="menuitem" class="danger" (click)="$any(ctx())?.requestDetachFromTable(table.id)">
-                    <i class="pi pi-times-circle"></i>
-                    <span>Заявка на открепление от стола</span>
-                  </button>
+                  @if (!$any(ctx())?.staffDetachStatusLabel(table.id)) {
+                    <button type="button" role="menuitem" class="danger" (click)="$any(ctx())?.requestDetachFromTable(table.id)">
+                      <i class="pi pi-times-circle"></i>
+                      <span>Заявка на открепление от стола</span>
+                    </button>
+                  } @else {
+                    <button type="button" role="menuitem" disabled>
+                      <i class="pi pi-info-circle"></i>
+                      <span>Статус заявки: {{ $any(ctx())?.staffDetachStatusLabel(table.id) }}</span>
+                    </button>
+                  }
                 </div>
               }
             </div>
           </div>
           <div class="table-meta table-actions-row">
             <p-button label="Рабочий стол" icon="pi pi-desktop" styleClass="p-button-sm" (onClick)="$any(ctx())?.goTableWorkspace(table.id)" />
-            <p-button
-              label="Открепиться"
-              icon="pi pi-times-circle"
-              severity="danger"
-              styleClass="p-button-sm p-button-outlined"
-              (onClick)="$any(ctx())?.requestDetachFromTable(table.id)"
-            />
+            @if (!$any(ctx())?.staffDetachStatusLabel(table.id)) {
+              <p-button
+                label="Открепиться"
+                icon="pi pi-times-circle"
+                severity="danger"
+                styleClass="p-button-sm p-button-outlined"
+                (onClick)="$any(ctx())?.requestDetachFromTable(table.id)"
+              />
+            } @else {
+              <span
+                class="table-badge detach-status-badge"
+                [class.detach-status-unread]="$any(ctx())?.staffDetachStatusLabel(table.id) === 'Не прочитано'"
+                [class.detach-status-read]="$any(ctx())?.staffDetachStatusLabel(table.id) === 'Прочитано'"
+                [class.detach-status-sent]="$any(ctx())?.staffDetachStatusLabel(table.id) === 'Отправлено'"
+                [class.detach-status-done]="$any(ctx())?.staffDetachStatusLabel(table.id) === 'Выполнена'"
+              >
+                {{ $any(ctx())?.staffDetachStatusLabel(table.id) }}
+              </span>
+            }
           </div>
         </p-card>
       }
