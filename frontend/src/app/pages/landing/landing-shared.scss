@@ -1,30 +1,12 @@
 /* Shared typography, sections, blocks, utilities for landing subcomponents */
 .landing-section-inner {
-  max-width: var(--sw-content-max, 1200px);
+  max-width: 1500px;
   margin: 0 auto;
-  padding-inline: var(--sw-content-padding, 1rem);
+  padding: 0;
 }
 
 .landing-section {
   padding: 3.5rem 0;
-}
-
-@media (max-width: 767px) {
-  .landing-section {
-    padding: 2.5rem 0;
-  }
-}
-
-@media (min-width: 1280px) {
-  .landing-section {
-    padding: 4rem 0;
-  }
-}
-
-@media (min-width: 1920px) {
-  .landing-section {
-    padding: 4.5rem 0;
-  }
 }
 
 .landing-h1 {
@@ -599,13 +581,6 @@ html[data-theme='dark'] .surface-ground {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-@media (max-width: 767px) {
-  .landing-feature-demo {
-    padding: 1rem;
-    min-height: 220px;
-  }
 }
 
 .landing-task-item {

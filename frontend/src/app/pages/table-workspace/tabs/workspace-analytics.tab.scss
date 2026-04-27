@@ -152,23 +152,6 @@
   }
 }
 
-@media (max-width: 479px) {
-  .wa-head {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .wa-period-switch button {
-    flex: 1 1 auto;
-  }
-}
-
-@media (min-width: 1280px) {
-  .wa-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 :host-context(.sw-dark) .wa-period-switch button,
 :host-context(.sw-dark) .wa-kpi-card,
 :host-context(.sw-dark) .wa-panel,

@@ -780,39 +780,6 @@
   background: color-mix(in srgb, var(--p-primary-50) 70%, var(--p-content-background));
 }
 
-@media (max-width: 479px) {
-  .landing-feature-description h3 {
-    font-size: 1.4rem;
-  }
-
-  .landing-kanban-column {
-    min-height: auto;
-  }
-}
-
-@media (min-width: 1024px) and (max-width: 1279px) {
-  .landing-kanban-mock,
-  .landing-analytics-kpis,
-  .landing-analytics-panels {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .landing-directory-cards,
-  .landing-extensions-preview {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1280px) {
-  .landing-features-shell {
-    gap: 1.5rem;
-  }
-
-  .landing-kanban-mock {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 1024px) {
   .landing-kanban-mock,
   .landing-analytics-kpis,

@@ -59,24 +59,3 @@
   object-fit: contain;
   border-radius: 6px;
 }
-
-@media (max-width: 767px) {
-  .sidebar-brand {
-    margin-bottom: 0.5rem;
-  }
-
-  .sidebar-brand__icon {
-    width: 30px;
-    height: 30px;
-  }
-
-  .sidebar-brand__full {
-    width: min(100%, 136px);
-  }
-}
-
-@media (min-width: 1440px) {
-  .sidebar-brand__full {
-    width: min(100%, 180px);
-  }
-}

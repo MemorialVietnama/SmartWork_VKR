@@ -2,16 +2,6 @@
 
 :root {
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --sw-content-max: 1200px;
-  --sw-content-padding: 0.875rem;
-  --sw-content-padding-lg: 1.25rem;
-  --sw-radius-lg: 1rem;
-  --sw-bp-sm: 480px;
-  --sw-bp-md: 768px;
-  --sw-bp-lg: 1024px;
-  --sw-bp-xl: 1280px;
-  --sw-bp-2xl: 1440px;
-  --sw-bp-3xl: 1920px;
 }
 
 html,
@@ -19,6 +9,7 @@ body {
   height: 100%;
   margin: 0;
   font-family: var(--font-family);
+<<<<<<< HEAD
   overflow-x: hidden;
 }
 
@@ -67,6 +58,8 @@ body {
     --sw-content-max: 1520px;
     --sw-content-padding: 1.5rem;
   }
+=======
+>>>>>>> dfdb2ebfbe64a05734fdf18e38a0fee20bf078de
 }
 
 .dashboard-page .subscription-summary {
