@@ -7,16 +7,18 @@
 >
   <div class="invite-form-grid">
     <label for="invite-table-select">Стол для приглашения</label>
-    <select
+    <p-select
+      inputId="invite-table-select"
+      styleClass="invite-table-select"
+      [options]="tables()"
+      optionLabel="title"
+      optionValue="id"
+      [showClear]="true"
+      placeholder="Выберите стол"
       id="invite-table-select"
       [ngModel]="selectedTableId()"
       (ngModelChange)="onTableChange($event)"
-    >
-      <option [ngValue]="null">Выберите стол</option>
-      @for (table of tables(); track table.id) {
-        <option [ngValue]="table.id">{{ table.title }}</option>
-      }
-    </select>
+    />
 
     <label>Формат приглашения</label>
     <div class="invite-type-row">

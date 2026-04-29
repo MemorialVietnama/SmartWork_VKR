@@ -4,16 +4,22 @@
     <p>{{ description() }}</p>
   </div>
 
-  <div class="otp-preview" aria-hidden="true">
+  <div class="otp-preview otp-inputs" aria-label="Код из email">
     @for (slot of previewSlots(); track $index) {
-      <span>{{ slot }}</span>
+      <input
+        #otgInput
+        type="text"
+        class="otp-slot-input"
+        [value]="slot === '•' ? '' : slot"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        maxlength="6"
+        (input)="onSlotInput($index, $any($event.target).value)"
+        (keydown)="onSlotKeydown($event, $index)"
+        (paste)="onSlotPaste($event, $index)"
+      />
     }
   </div>
-
-  <label class="full">
-    <span>Код из email</span>
-    <input type="text" pInputText [ngModel]="code()" (ngModelChange)="onCodeInput($event)" maxlength="6" inputmode="numeric" autocomplete="one-time-code" />
-  </label>
 
   <div class="dialog-actions">
     <p-button label="Назад" styleClass="p-button-text" (onClick)="back.emit()" />

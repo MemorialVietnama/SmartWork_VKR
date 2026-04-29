@@ -2,20 +2,25 @@
   [visible]="visible()"
   (visibleChange)="visibleChange.emit($event)"
   [modal]="true"
+  [dismissableMask]="true"
   [style]="{ width: '34rem', maxWidth: '95vw' }"
   header="Добавление сотрудников в стол"
 >
   @if (tableTitle()) {
-    <p><strong>Стол:</strong> {{ tableTitle() }}</p>
+    <p class="table-title"><strong>Стол:</strong> {{ tableTitle() }}</p>
   }
   @if (employees().length === 0) {
-    <p>Нет сотрудников для добавления.</p>
+    <p class="muted">Нет сотрудников для добавления.</p>
   } @else {
-    <div class="checkbox-list">
+    <div class="members-grid">
       @for (employee of employees(); track employee.id) {
-        <button type="button" class="member-add-btn" (click)="addEmployee.emit(employee.id)">
-          {{ employee.lastName }} {{ employee.firstName }} <span>Добавить</span>
-        </button>
+        <div class="member-card">
+          <div>
+            <strong>{{ employee.lastName }} {{ employee.firstName }}</strong>
+            <small>Готов к добавлению в стол</small>
+          </div>
+          <p-button label="Добавить" icon="pi pi-user-plus" size="small" (onClick)="addEmployee.emit(employee.id)" />
+        </div>
       }
     </div>
   }

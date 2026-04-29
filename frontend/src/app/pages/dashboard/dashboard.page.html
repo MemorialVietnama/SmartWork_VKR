@@ -1,4 +1,5 @@
 <div class="dashboard-page">
+  <p-toast position="bottom-right" />
   @if (loading) {
     <div class="state-card">
       <div class="spinner">
@@ -17,38 +18,59 @@
   }
 
   @if (!loading && user) {
-    <div class="layout">
-      <app-dashboard-sidebar
-        [user]="user"
-        [isOwner]="isOwner"
-        [categories]="sidebarCategories"
-        [selectedCategory]="selectedCategory"
-        [badges]="sidebarBadges()"
-        [unreadNotifications]="unreadNotifications"
-        (categorySelect)="onSidebarCategorySelect($event)"
-        (notificationsOpen)="openNotifications()"
-      />
+    <div class="dashboard-shell">
+      <div class="dashboard-backdrop dashboard-backdrop-main" aria-hidden="true"></div>
+      <div class="dashboard-backdrop dashboard-backdrop-accent" aria-hidden="true"></div>
 
-      <section class="content">
-        @if (selectedCategory === 'tables') {
-          <app-dashboard-tables-category [ctx]="self" />
-        } @else if (selectedCategory === 'employees') {
-          <app-dashboard-employees-category [ctx]="self" />
-        } @else if (selectedCategory === 'analytics') {
-          <app-dashboard-analytics-category [ctx]="self" />
-        } @else if (selectedCategory === 'settings') {
-          <app-dashboard-settings-category [ctx]="self" />
-        } @else if (selectedCategory === 'subscription') {
-          <app-dashboard-subscription-category [ctx]="self" />
-        } @else {
-          <p-card>
-            <div class="stub">
-              <h3>Раздел «{{ selectedCategoryLabel }}»</h3>
-              <p>Этот модуль подготовим следующим шагом.</p>
+      <header class="dashboard-hero">
+        <div class="hero-main">
+          <span class="hero-kicker">SmartWork Workspace</span>
+          <h1>Панель управления</h1>
+          <p>Управляйте столами, сотрудниками и процессами в одном пространстве.</p>
+        </div>
+        <div class="hero-meta">
+          @if (unreadNotifications > 0) {
+            <div class="hero-chip hero-chip-notifications">
+              <i class="pi pi-bell"></i>
+              <span>Новых уведомлений: {{ unreadNotifications }}</span>
             </div>
-          </p-card>
-        }
-      </section>
+          }
+        </div>
+      </header>
+
+      <div class="layout">
+        <app-dashboard-sidebar
+          [user]="user"
+          [isOwner]="isOwner"
+          [categories]="sidebarCategories"
+          [selectedCategory]="selectedCategory"
+          [badges]="sidebarBadges()"
+          [unreadNotifications]="unreadNotifications"
+          (categorySelect)="onSidebarCategorySelect($event)"
+          (notificationsOpen)="openNotifications()"
+        />
+
+        <section class="content">
+          @if (selectedCategory === 'tables') {
+            <app-dashboard-tables-category [ctx]="self" />
+          } @else if (selectedCategory === 'employees') {
+            <app-dashboard-employees-category [ctx]="self" />
+          } @else if (selectedCategory === 'analytics') {
+            <app-dashboard-analytics-category [ctx]="self" />
+          } @else if (selectedCategory === 'settings') {
+            <app-dashboard-settings-category [ctx]="self" />
+          } @else if (selectedCategory === 'subscription') {
+            <app-dashboard-subscription-category [ctx]="self" />
+          } @else {
+            <p-card>
+              <div class="stub">
+                <h3>Раздел «{{ selectedCategoryLabel }}»</h3>
+                <p>Этот модуль подготовим следующим шагом.</p>
+              </div>
+            </p-card>
+          }
+        </section>
+      </div>
     </div>
   }
 </div>
@@ -121,6 +143,75 @@
 </p-dialog>
 
 <p-dialog
+  [visible]="securityDialogVisible"
+  (visibleChange)="securityDialogVisible = $event"
+  [modal]="true"
+  [style]="{ width: '32rem', maxWidth: '96vw' }"
+  [header]="securityAction === 'email' ? 'Смена email' : 'Смена пароля'"
+>
+  <div class="state-card">
+    @if (securityStep === 'request') {
+      <p>{{ securityAction === 'email' ? 'Введите новый email для отправки кода подтверждения.' : 'Введите новый пароль. Код подтверждения придет на вашу почту.' }}</p>
+      <input
+        type="{{ securityAction === 'email' ? 'email' : 'password' }}"
+        pInputText
+        style="width: 100%"
+        [ngModel]="securityNewValue"
+        (ngModelChange)="securityNewValue = $event"
+        [placeholder]="securityAction === 'email' ? 'you@example.com' : 'Новый пароль'"
+      />
+      <div class="dialog-actions">
+        <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeSecurityFlow()" />
+        <p-button label="Отправить код" icon="pi pi-send" [loading]="securityLoading" (onClick)="submitSecurityRequest()" />
+      </div>
+    } @else {
+      <p>Введите код подтверждения из письма:</p>
+      <input type="text" pInputText style="width: 100%" [ngModel]="securityCode" (ngModelChange)="securityCode = $event" placeholder="Код подтверждения" />
+      <div class="dialog-actions">
+        <p-button label="Назад" styleClass="p-button-text" (onClick)="securityStep = 'request'" />
+        <p-button label="Подтвердить" icon="pi pi-check" [loading]="securityLoading" (onClick)="confirmSecurityChange()" />
+      </div>
+    }
+    @if (settingsError) {
+      <p-message severity="error" [text]="settingsError" [closable]="false" />
+    }
+  </div>
+</p-dialog>
+
+<p-dialog
+  [visible]="purchaseDialogVisible"
+  (visibleChange)="purchaseDialogVisible = $event"
+  [modal]="true"
+  [style]="{ width: '36rem', maxWidth: '96vw' }"
+  header="Подтверждение покупки"
+>
+  <div class="state-card">
+    @if (purchaseFlowStage === 'review' && purchaseTargetTableId) {
+      <div class="stats-row"><span>Стол</span><strong>{{ tableTitleById(purchaseTargetTableId) }}</strong></div>
+      <div class="stats-row"><span>К оплате</span><strong>{{ formatRub(tableMonthlyTotal(purchaseTargetTableId)) }}/мес</strong></div>
+      <div class="promo-row">
+        <input type="text" pInputText placeholder="Промокод" [ngModel]="purchasePromoCode" (ngModelChange)="purchasePromoCode = $event" />
+        <p-button label="Применить" size="small" (onClick)="applyPurchasePromo()" />
+      </div>
+      <div class="dialog-actions">
+        <p-button label="Отмена" styleClass="p-button-text" (onClick)="closePurchaseDialog()" />
+        <p-button label="Оплатить" icon="pi pi-wallet" (onClick)="startMockPurchase()" />
+      </div>
+    } @else if (purchaseFlowStage === 'processing') {
+      <div class="purchase-stepper">
+        <div class="purchase-step" [class.active]="purchaseProgressStep >= 1">1. Проверка заказа</div>
+        <div class="purchase-step" [class.active]="purchaseProgressStep >= 2">2. Резервирование</div>
+        <div class="purchase-step" [class.active]="purchaseProgressStep >= 3">3. Подтверждение оплаты</div>
+      </div>
+      <p-progressSpinner strokeWidth="4" ariaLabel="Обработка оплаты" />
+    }
+    @if (purchaseError) {
+      <p-message severity="error" [text]="purchaseError" [closable]="false" />
+    }
+  </div>
+</p-dialog>
+
+<p-dialog
   [visible]="ownerDetachDialogVisible"
   (visibleChange)="closeOwnerDetachDialog()"
   [modal]="true"
@@ -151,6 +242,69 @@
   (addEmployee)="addEmployeeToSelectedTable($event)"
 />
 
+<p-dialog
+  [visible]="tableSettingsDialogVisible"
+  (visibleChange)="closeTableSettingsDialog()"
+  [modal]="true"
+  [dismissableMask]="true"
+  [style]="{ width: '36rem', maxWidth: '96vw' }"
+  styleClass="table-settings-dialog"
+  header="Настройки стола"
+>
+  <div class="state-card table-settings-shell">
+    @if (tableSettingsLoading) {
+      <div class="spinner">
+        <p-progressSpinner strokeWidth="4" ariaLabel="Загрузка" />
+      </div>
+    } @else {
+      <div class="table-settings-headline">
+        <strong>{{ tableSettingsForm.title || 'Стол' }}</strong>
+        <small>Управление настройками и доступами рабочего пространства.</small>
+      </div>
+      <div class="settings-form-grid">
+        <label class="full">
+          <span>Название стола</span>
+          <input type="text" pInputText [disabled]="!tableSettingsCanEdit" [ngModel]="tableSettingsForm.title" (ngModelChange)="tableSettingsForm.title = $event" />
+        </label>
+        <label class="full">
+          <span>Описание</span>
+          <textarea rows="4" pInputText [disabled]="!tableSettingsCanEdit" [ngModel]="tableSettingsForm.description" (ngModelChange)="tableSettingsForm.description = $event"></textarea>
+        </label>
+        <label>
+          <span>Формат времени</span>
+          <p-select [disabled]="!tableSettingsCanEdit" [options]="[{label:'AM/PM',value:'us'},{label:'24ч',value:'eu'}]" optionLabel="label" optionValue="value" [ngModel]="tableSettingsForm.timeFormat" (ngModelChange)="tableSettingsForm.timeFormat = $event" />
+        </label>
+        <label>
+          <span>Начало недели</span>
+          <p-select [disabled]="!tableSettingsCanEdit" [options]="[{label:'Понедельник',value:'monday'},{label:'Вторник',value:'tuesday'},{label:'Среда',value:'wednesday'},{label:'Четверг',value:'thursday'},{label:'Пятница',value:'friday'},{label:'Суббота',value:'saturday'},{label:'Воскресенье',value:'sunday'}]" optionLabel="label" optionValue="value" [ngModel]="tableSettingsForm.weekStartDay" (ngModelChange)="tableSettingsForm.weekStartDay = $event" />
+        </label>
+        <label class="full">
+          <span>Рабочие часы</span>
+          <input type="text" pInputText [disabled]="!tableSettingsCanEdit" [ngModel]="tableSettingsForm.workHours" (ngModelChange)="tableSettingsForm.workHours = $event" placeholder="09:00-18:00" />
+        </label>
+      </div>
+      @if (tableSettingsError) {
+        <p-message severity="error" [text]="tableSettingsError" [closable]="false" />
+      }
+      <div class="dialog-actions">
+        @if (tableSettingsCanEdit) {
+          <p-button
+            label="Удалить стол"
+            icon="pi pi-trash"
+            severity="danger"
+            styleClass="p-button-outlined"
+            (onClick)="deleteTableFromSettings()"
+          />
+        }
+        <p-button label="Закрыть" styleClass="p-button-text" (onClick)="closeTableSettingsDialog()" />
+        @if (tableSettingsCanEdit) {
+          <p-button label="Сохранить" icon="pi pi-check" [loading]="tableSettingsLoading" (onClick)="saveTableSettings()" />
+        }
+      </div>
+    }
+  </div>
+</p-dialog>
+
 <app-dashboard-logout-confirm-dialog [(visible)]="logoutConfirmVisible" (confirm)="confirmLogout()" />
 
 <app-dashboard-table-create-dialog
@@ -159,6 +313,12 @@
   (tableCodeDialogVisibleChange)="tableCodeDialogVisible = $event"
   [tableCreateCode]="tableCreateCode"
   (tableCreateCodeChange)="tableCreateCode = $event"
+  [tableCreatePromoCode]="tableCreatePromoCode"
+  (tableCreatePromoCodeChange)="setTableCreatePromoCode($event)"
+  [tableCreatePromoError]="tableCreatePromoError"
+  [tableCreateAppliedPromoPercent]="tableCreateAppliedPromoPercent"
+  [tableCreateFinalMonthlyTotal]="createFormFinalMonthlyTotal()"
+  [tableCreatePromoDiscount]="createFormPromoDiscount()"
   [tableFormError]="tableFormError"
   [creatingTable]="creatingTable"
   [tableCreateStep]="tableCreateStep"
@@ -166,6 +326,7 @@
   [tableForm]="tableForm"
   [ownerEmployees]="ownerEmployees"
   [subscriptionBonuses]="subscriptionBonuses"
+  (applyPromoCode)="applyTableCreatePromoCode()"
   (submitCreate)="submitCreateTable()"
   (confirmCreate)="confirmCreateTableByCode()"
   (toggleEmployee)="toggleTableEmployee($event.employeeId, $event.checked)"

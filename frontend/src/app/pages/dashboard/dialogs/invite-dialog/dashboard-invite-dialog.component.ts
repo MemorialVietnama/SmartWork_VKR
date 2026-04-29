@@ -2,6 +2,7 @@ import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
 
 interface InviteTableOptionView {
   id: number;
@@ -11,7 +12,7 @@ interface InviteTableOptionView {
 @Component({
   selector: 'app-dashboard-invite-dialog',
   standalone: true,
-  imports: [DialogModule, FormsModule, ButtonModule],
+  imports: [DialogModule, FormsModule, ButtonModule, SelectModule],
   templateUrl: './dashboard-invite-dialog.component.html',
   styleUrl: './dashboard-invite-dialog.component.scss',
 })

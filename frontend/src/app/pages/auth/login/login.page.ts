@@ -4,8 +4,6 @@ import { Router, RouterLink } from '@angular/router';
 
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { IconField } from 'primeng/iconfield';
-import { InputIcon } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 
@@ -21,8 +19,6 @@ import { AuthService } from '../../../core/auth/auth.service';
     ButtonModule,
     InputTextModule,
     PasswordModule,
-    IconField,
-    InputIcon,
   ],
   templateUrl: './login.page.html',
   styleUrl: './login.page.scss',

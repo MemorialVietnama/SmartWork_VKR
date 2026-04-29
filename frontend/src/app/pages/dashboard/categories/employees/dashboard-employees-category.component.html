@@ -4,7 +4,17 @@
 </div>
 
 @if ($any(ctx())?.isOwner) {
-  @if (!$any(ctx())?.hasOwnerEmployees) {
+  @if ($any(ctx())?.employeesLoading) {
+    <div class="employee-grid">
+      @for (s of [1,2,3,4]; track s) {
+        <div class="employee-skeleton-card">
+          <div class="line w50"></div>
+          <div class="line w70"></div>
+          <div class="line w80"></div>
+        </div>
+      }
+    </div>
+  } @else if (!$any(ctx())?.hasOwnerEmployees) {
     <div class="owner-empty-actions">
       <button type="button" class="square-action" (click)="$any(ctx())?.openCreateEmployeeDialog()">
         <i class="pi pi-user-plus"></i>
@@ -35,6 +45,9 @@
               <h3>{{ employee.lastName }} {{ employee.firstName }} {{ employee.middleName ?? '' }}</h3>
               <small>{{ employee.position }}</small>
             </div>
+            <button type="button" class="employee-expand-btn" (click)="$any(ctx())?.toggleEmployeeCardExpanded(employee.id)">
+              <i class="pi" [class.pi-chevron-down]="!$any(ctx())?.employeeCardsExpanded?.[employee.id]" [class.pi-chevron-up]="$any(ctx())?.employeeCardsExpanded?.[employee.id]"></i>
+            </button>
           </div>
 
           <div class="employee-meta">
@@ -74,17 +87,17 @@
                 <i class="pi pi-key"></i>
               </button>
             </div>
-            <select
-              multiple
-              class="employee-tables-select"
+            <p-multiSelect
+              styleClass="employee-tables-select"
               [disabled]="!$any(ctx())?.employeeTableEditMode?.[employee.id]"
+              [options]="$any(ctx())?.ownerTables ?? []"
+              optionLabel="title"
+              optionValue="id"
               [ngModel]="$any(ctx())?.employeeTableSelections?.[employee.id]"
-              (change)="$any(ctx())?.onEmployeeTablesSelectChange(employee.id, $event)"
-            >
-              @for (table of $any(ctx())?.ownerTables ?? []; track table.id) {
-                <option [value]="table.id">{{ table.title }}</option>
-              }
-            </select>
+              (ngModelChange)="$any(ctx())?.employeeTableSelections[employee.id] = $event"
+              placeholder="Выберите столы"
+              [showToggleAll]="false"
+            />
             <div class="binding-actions">
               <p-button
                 size="small"
@@ -99,16 +112,26 @@
             </div>
           </div>
 
-          <div class="employee-actions">
-            <p-button label="Редактировать" icon="pi pi-pencil" (onClick)="$any(ctx())?.openEditEmployeeDialog(employee)" />
-            <p-button
-              label="Открепить"
-              icon="pi pi-times"
-              severity="danger"
-              styleClass="p-button-outlined"
-              (onClick)="$any(ctx())?.detachEmployee(employee.id)"
-            />
-          </div>
+          @if ($any(ctx())?.employeeCardsExpanded?.[employee.id]) {
+            <div class="employee-linked-tables">
+              <strong>Подключенные столы</strong>
+              <div class="table-badges">
+                @for (tableId of ($any(ctx())?.employeeTableSelections?.[employee.id] ?? []); track tableId) {
+                  <span class="table-badge">{{ $any(ctx())?.tableTitleById(tableId) }}</span>
+                }
+              </div>
+            </div>
+            <div class="employee-actions">
+              <p-button label="Редактировать" icon="pi pi-pencil" (onClick)="$any(ctx())?.openEditEmployeeDialog(employee)" />
+              <p-button
+                label="Открепить"
+                icon="pi pi-times"
+                severity="danger"
+                styleClass="p-button-outlined"
+                (onClick)="$any(ctx())?.detachEmployee(employee.id)"
+              />
+            </div>
+          }
         </p-card>
       }
     </div>

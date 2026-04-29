@@ -157,42 +157,62 @@
   color: var(--p-text-muted-color);
 }
 
-::ng-deep .login-iconfield.p-iconfield,
-::ng-deep .login-iconfield.p-input-icon {
+.login-input-shell {
   width: 100%;
-}
-
-::ng-deep .login-iconfield .p-inputtext,
-::ng-deep .login-iconfield .p-password {
-  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--p-inputtext-border-color, var(--p-content-border-color));
   border-radius: var(--p-inputtext-border-radius, 0.6rem);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: color-mix(in srgb, var(--p-primary-50) 25%, var(--p-content-background));
+  padding-inline: 0.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-::ng-deep .login-iconfield--password .p-password,
-::ng-deep .login-iconfield--password .p-password .p-inputtext {
+.login-input-shell:focus-within {
+  border-color: var(--p-inputtext-focus-border-color, var(--p-primary-color));
+  background: var(--p-content-background);
+  box-shadow: var(--p-inputtext-focus-ring-shadow, 0 0 0 0.2rem color-mix(in srgb, var(--p-primary-color) 20%, transparent));
+}
+
+.login-input-shell__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--p-primary-600) 82%, var(--p-text-muted-color));
+  font-size: 1rem;
+}
+
+::ng-deep .login-input-shell__control.p-inputtext,
+::ng-deep .login-input-shell .login-password-input.p-password .p-inputtext {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-inline: 0;
+}
+
+::ng-deep .login-input-shell .login-password-input.p-password {
   width: 100%;
 }
 
-::ng-deep .login-iconfield--password .p-inputicon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1;
-  pointer-events: none;
-}
-
-::ng-deep .login-iconfield--password .p-password .p-inputtext {
-  padding-left: 2.3rem;
-}
-
-::ng-deep .login-password-input.p-password .p-inputtext {
+::ng-deep .login-input-shell .login-password-input.p-password .p-inputtext {
+  padding-right: 2rem;
   border-radius: var(--p-inputtext-border-radius, var(--p-border-radius-md));
 }
 
-::ng-deep .login-iconfield .p-inputicon {
-  color: var(--p-primary-500);
+::ng-deep .login-input-shell .login-password-input.p-password .p-password-toggle-mask-icon {
+  right: 0;
+  color: var(--p-text-muted-color);
+  transition: color 0.2s ease;
+}
+
+::ng-deep .login-input-shell .login-password-input.p-password .p-password-toggle-mask-icon:hover {
+  color: var(--p-primary-600);
 }
 
 ::ng-deep .login-submit.p-button {

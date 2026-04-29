@@ -34,9 +34,24 @@
     </div>
   </p-card>
 } @else {
+  @if ($any(ctx())?.subscriptionsLoading) {
+    <div class="sub-bonus-grid">
+      @for (s of [1,2,3,4]; track s) {
+        <div class="sub-skeleton-card">
+          <div class="line w50"></div>
+          <div class="line w70"></div>
+          <div class="line w80"></div>
+        </div>
+      }
+    </div>
+  } @else {
   <div class="sub-accordion-list">
     @for (table of $any(ctx())?.ownerTables ?? []; track table.id) {
-      <details class="sub-accordion">
+      <details
+        class="sub-accordion sub-animated"
+        [open]="$any(ctx())?.isSubscriptionTableExpanded(table.id)"
+        (toggle)="$any(ctx())?.handleSubscriptionDetailsToggle(table.id, $any($event.target)?.open === true)"
+      >
         <summary>
           <div class="sub-accordion-summary">
             <div>
@@ -53,9 +68,12 @@
             @if (($any(ctx())?.activeBonusLabels(table.id) ?? []).length === 0) {
               <p>Пока ничего не выбрано.</p>
             } @else {
-              <ul>
+              <ul class="bento-bonus-list">
                 @for (item of $any(ctx())?.activeBonusLabels(table.id) ?? []; track item) {
-                  <li>{{ item }}</li>
+                  <li class="bento-bonus-item">
+                    <i class="pi pi-check-circle"></i>
+                    <span>{{ item }}</span>
+                  </li>
                 }
               </ul>
             }
@@ -110,9 +128,13 @@
             </p>
             <p>Скидка по промокоду: <strong>-{{ $any(ctx())?.formatRub($any(ctx())?.tablePromoDiscount(table.id) ?? 0) }}</strong></p>
             <p class="monthly-total">Итого к оплате в месяц: <strong>{{ $any(ctx())?.formatRub($any(ctx())?.tableMonthlyTotal(table.id) ?? 0) }}</strong></p>
+            <div class="dialog-actions">
+              <p-button label="Оплатить" icon="pi pi-wallet" (onClick)="$any(ctx())?.openPurchaseDialog(table.id)" />
+            </div>
           </div>
         </div>
       </details>
     }
   </div>
+  }
 }

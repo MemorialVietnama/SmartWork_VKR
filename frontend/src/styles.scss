@@ -18,6 +18,16 @@ body {
   box-sizing: border-box;
 }
 
+select {
+  width: 100%;
+  min-height: 2.5rem;
+  border: 1px solid var(--p-content-border-color, #d5deee);
+  border-radius: 0.65rem;
+  background: var(--p-content-background, #ffffff);
+  color: var(--p-text-color, #0f172a);
+  padding: 0.5rem 0.7rem;
+}
+
 .dashboard-page,
 .landing-section-inner,
 .landing-header__container {

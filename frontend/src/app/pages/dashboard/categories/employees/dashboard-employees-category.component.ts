@@ -4,11 +4,12 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
+import { MultiSelectModule } from 'primeng/multiselect';
 
 @Component({
   selector: 'app-dashboard-employees-category',
   standalone: true,
-  imports: [FormsModule, ButtonModule, CardModule, InputTextModule, TagModule],
+  imports: [FormsModule, ButtonModule, CardModule, InputTextModule, TagModule, MultiSelectModule],
   templateUrl: './dashboard-employees-category.component.html',
   styleUrl: './dashboard-employees-category.component.scss',
   encapsulation: ViewEncapsulation.None,

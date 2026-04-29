@@ -19,7 +19,13 @@
   </aside>
 
   <div class="settings-content">
-    @if ($any(ctx())?.selectedSettingsTab === 'account') {
+    @if ($any(ctx())?.settingsLoading) {
+      <div class="settings-skeleton">
+        <div class="line w40"></div>
+        <div class="line w70"></div>
+        <div class="line w80"></div>
+      </div>
+    } @else if ($any(ctx())?.selectedSettingsTab === 'account') {
       <p-card>
         <div class="settings-section-head">
           <h3>Аккаунт</h3>
@@ -30,10 +36,6 @@
           <label class="full">
             <span>Профиль</span>
             <input type="text" pInputText [ngModel]="$any(ctx())?.accountForm?.fullName" disabled />
-          </label>
-          <label class="full">
-            <span>Логин</span>
-            <input type="text" pInputText [ngModel]="$any(ctx())?.accountForm?.login" disabled />
           </label>
         </div>
 
@@ -60,11 +62,21 @@
           </label>
         </div>
 
-        <div class="settings-section-head section-gap">
+        @if ($any(ctx())?.settingsError) {
+          <p-message severity="error" [text]="$any(ctx())?.settingsError ?? ''" [closable]="false" />
+        }
+        <div class="dialog-actions">
+          <p-button label="Сохранить настройки" icon="pi pi-check" [loading]="$any(ctx())?.settingsLoading" (onClick)="$any(ctx())?.saveAccountSettings()" />
+        </div>
+      </p-card>
+    }
+
+    @if ($any(ctx())?.selectedSettingsTab === 'notifications') {
+      <p-card>
+        <div class="settings-section-head">
           <h3>Уведомления</h3>
           <p>Выберите, откуда принимать уведомления и куда их доставлять.</p>
         </div>
-
         <div class="notify-grid">
           <div class="notify-col">
             <h4>Откуда принимать</h4>
@@ -84,7 +96,7 @@
           <div class="notify-col">
             <h4>Куда принимать</h4>
             <label class="switch-row">
-              <span>PK (desktop)</span>
+              <span>ПК</span>
               <p-inputSwitch [ngModel]="$any(ctx())?.notificationsSettings?.targets?.desktop" (ngModelChange)="$any(ctx()).notificationsSettings.targets.desktop = $event" />
             </label>
             <label class="switch-row">
@@ -97,15 +109,8 @@
             </label>
           </div>
         </div>
-
-        @if ($any(ctx())?.settingsError) {
-          <p-message severity="error" [text]="$any(ctx())?.settingsError ?? ''" [closable]="false" />
-        }
-        @if ($any(ctx())?.settingsSaved) {
-          <p-message severity="success" text="Настройки сохранены." [closable]="false" />
-        }
         <div class="dialog-actions">
-          <p-button label="Сохранить настройки" icon="pi pi-check" [loading]="$any(ctx())?.settingsLoading" (onClick)="$any(ctx())?.saveAccountSettings()" />
+          <p-button label="Сохранить уведомления" icon="pi pi-check" [loading]="$any(ctx())?.settingsLoading" (onClick)="$any(ctx())?.saveNotificationsSettings()" />
         </div>
       </p-card>
     }
@@ -119,33 +124,48 @@
         <div class="settings-form-grid">
           <label>
             <span>Тема</span>
-            <select [ngModel]="$any(ctx())?.appearanceSettings?.theme" (ngModelChange)="$any(ctx()).appearanceSettings.theme = $event">
-              <option value="light">Светлая</option>
-              <option value="dark">Темная</option>
-              <option value="auto">Авто</option>
-            </select>
+            <p-select
+              [options]="[
+                { label: 'Светлая', value: 'light' },
+                { label: 'Темная', value: 'dark' },
+                { label: 'Авто', value: 'auto' }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="$any(ctx())?.appearanceSettings?.theme"
+              (ngModelChange)="$any(ctx()).appearanceSettings.theme = $event"
+            />
           </label>
           <label>
             <span>Плотность интерфейса</span>
-            <select [ngModel]="$any(ctx())?.appearanceSettings?.density" (ngModelChange)="$any(ctx()).appearanceSettings.density = $event">
-              <option value="compact">Компактная</option>
-              <option value="comfortable">Комфортная</option>
-            </select>
+            <p-select
+              [options]="[
+                { label: 'Компактная', value: 'compact' },
+                { label: 'Комфортная', value: 'comfortable' }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="$any(ctx())?.appearanceSettings?.density"
+              (ngModelChange)="$any(ctx()).appearanceSettings.density = $event"
+            />
           </label>
           <label>
             <span>Размер карточек</span>
-            <select [ngModel]="$any(ctx())?.appearanceSettings?.cardSize" (ngModelChange)="$any(ctx()).appearanceSettings.cardSize = $event">
-              <option value="small">Маленькие</option>
-              <option value="medium">Средние</option>
-              <option value="large">Крупные</option>
-            </select>
+            <p-select
+              [options]="[
+                { label: 'Маленькие', value: 'small' },
+                { label: 'Средние', value: 'medium' },
+                { label: 'Крупные', value: 'large' }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="$any(ctx())?.appearanceSettings?.cardSize"
+              (ngModelChange)="$any(ctx()).appearanceSettings.cardSize = $event"
+            />
           </label>
         </div>
         @if ($any(ctx())?.settingsError) {
           <p-message severity="error" [text]="$any(ctx())?.settingsError ?? ''" [closable]="false" />
-        }
-        @if ($any(ctx())?.settingsSaved) {
-          <p-message severity="success" text="Оформление сохранено." [closable]="false" />
         }
         <div class="dialog-actions">
           <p-button label="Применить оформление" icon="pi pi-check" [loading]="$any(ctx())?.settingsLoading" (onClick)="$any(ctx())?.saveAppearanceSettings()" />

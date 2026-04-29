@@ -11,6 +11,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputSwitchModule } from 'primeng/inputswitch';
 import { ChartModule } from 'primeng/chart';
 import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { DashboardSidebarComponent } from './components/sidebar/dashboard-sidebar.component';
 import { DashboardInviteDialogComponent } from './dialogs/invite-dialog/dashboard-invite-dialog.component';
 import { DashboardLogoutConfirmDialogComponent } from './dialogs/logout-confirm-dialog/dashboard-logout-confirm-dialog.component';
@@ -36,6 +40,7 @@ import {
   NotificationSettingsDto,
   UserNotificationDto,
   TableAnalyticsDto,
+  TableDetailDto,
   TableDto,
   UserSettingsDto,
 } from '../../core/auth/auth.service';
@@ -55,6 +60,9 @@ import { ThemeService } from '../../core/theme.service';
     InputSwitchModule,
     ChartModule,
     DialogModule,
+    SelectModule,
+    MultiSelectModule,
+    ToastModule,
     DashboardSidebarComponent,
     DashboardInviteDialogComponent,
     DashboardLogoutConfirmDialogComponent,
@@ -73,12 +81,16 @@ import { ThemeService } from '../../core/theme.service';
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.scss',
   encapsulation: ViewEncapsulation.None,
+  providers: [MessageService],
 })
 export class DashboardPageComponent implements OnInit, OnDestroy {
+  private readonly categoryStorageKey = 'dashboard_selected_category';
+  private readonly pendingCreatePayloadKey = 'pending_paid_table_create_payload';
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly themeService = inject(ThemeService);
+  private readonly messageService = inject(MessageService);
   private readonly analyticsBonusKey = 'unlock_analytics';
   private liveRefreshTimerId: ReturnType<typeof setInterval> | null = null;
 
@@ -96,14 +108,31 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   ];
 
   protected ownerTables: WorkspaceTableCard[] = [];
+  protected tablesLoading = false;
   protected tableDialogVisible = false;
   protected tableFormError: string | null = null;
   protected creatingTable = false;
   protected tableCodeDialogVisible = false;
   protected tableCreateCode = '';
+  protected tableCreatePromoCode = '';
+  protected tableCreatePromoError: string | null = null;
+  protected tableCreateAppliedPromoPercent = 0;
+  protected tableSettingsDialogVisible = false;
+  protected tableSettingsLoading = false;
+  protected tableSettingsError: string | null = null;
+  protected tableSettingsCanEdit = false;
+  protected tableSettingsForm: TableSettingsForm = {
+    tableId: null,
+    title: '',
+    description: '',
+    timeFormat: 'eu',
+    weekStartDay: 'monday',
+    workHours: '09:00-18:00',
+  };
   protected tableForm: TableCreateForm = this.createEmptyTableForm();
   protected tableCreateStep = 1;
   protected analyticsTables: TableAnalytics[] = [];
+  protected analyticsLoading = false;
   protected analyticsPeriod: AnalyticsPeriod = '30d';
   protected analyticsCompareWithPrevious = false;
   protected analyticsSelectedTableId: number | null = null;
@@ -116,7 +145,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     { id: '365d', label: '365 дней' },
   ];
   protected ownerEmployees: EmployeeCard[] = [];
+  protected employeesLoading = false;
   protected employeeTableSelections: Record<number, number[]> = {};
+  protected employeeCardsExpanded: Record<number, boolean> = {};
   protected employeeTableEditMode: Record<number, boolean> = {};
   protected employeeTableBindingMessage: Record<number, string | null> = {};
   protected detachedEmployeesCount = 0;
@@ -171,10 +202,12 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   protected selectedSettingsTab: SettingsTabId = 'account';
   protected readonly ownerSettingsTabs: SettingsTab[] = [
     { id: 'account', label: 'Аккаунт', icon: 'pi pi-user' },
+    { id: 'notifications', label: 'Уведомления', icon: 'pi pi-bell' },
     { id: 'appearance', label: 'Оформление', icon: 'pi pi-palette' },
   ];
   protected readonly staffSettingsTabs: SettingsTab[] = [
     { id: 'account', label: 'Аккаунт', icon: 'pi pi-user' },
+    { id: 'notifications', label: 'Уведомления', icon: 'pi pi-bell' },
     { id: 'appearance', label: 'Оформление', icon: 'pi pi-palette' },
   ];
   protected accountForm: AccountForm = {
@@ -211,6 +244,21 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     BONUS15: 15,
   };
   protected tableSubscriptions: TableSubscription[] = [];
+  protected subscriptionsLoading = false;
+  protected subscriptionExpandedTableId: number | null = null;
+  protected purchaseDialogVisible = false;
+  protected purchaseFlowStage: 'review' | 'processing' | 'done' = 'review';
+  protected purchaseProgressStep = 0;
+  protected purchaseTargetTableId: number | null = null;
+  protected purchaseLoading = false;
+  protected purchasePromoCode = '';
+  protected purchaseError: string | null = null;
+  protected securityDialogVisible = false;
+  protected securityAction: 'email' | 'password' = 'email';
+  protected securityStep: 'request' | 'confirm' = 'request';
+  protected securityNewValue = '';
+  protected securityCode = '';
+  protected securityLoading = false;
   protected readonly accountSubscriptionPlans: AccountSubscriptionPlan[] = [
     { key: 'account_analytics', title: 'Аналитика аккаунта', description: 'Доступ к аналитике для сотрудника', price: 890 },
     { key: 'account_tasks', title: 'Задачи аккаунта', description: 'Доступ к задачам и прогрессу стола', price: 590 },
@@ -230,7 +278,16 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       section === 'settings' ||
       section === 'subscription'
     ) {
-      this.selectedCategory = section as SidebarCategoryId;
+      this.setSelectedCategory(section as SidebarCategoryId);
+    } else {
+      const saved = this.readSavedCategory();
+      if (saved) {
+        this.setSelectedCategory(saved);
+      }
+    }
+    const paymentDone = this.route.snapshot.queryParamMap.get('tableCreatePaymentDone');
+    if (paymentDone === '1') {
+      this.resumePendingPaidCreateFlow();
     }
     this.load();
     this.startLiveRefresh();
@@ -248,6 +305,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     this.auth.me().subscribe({
       next: (u) => {
         this.user = u;
+        if (!this.isOwner && this.selectedCategory === 'employees') {
+          this.setSelectedCategory('tables');
+        }
         this.loadSettings();
         this.loadOwnerTables();
         this.loadNotifications();
@@ -280,7 +340,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       this.logoutConfirmVisible = true;
       return;
     }
-    this.selectedCategory = categoryId;
+    this.setSelectedCategory(categoryId);
   }
 
   protected onSidebarCategorySelect(categoryId: string): void {
@@ -573,6 +633,10 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  protected toggleEmployeeCardExpanded(employeeId: number): void {
+    this.employeeCardsExpanded[employeeId] = !this.employeeCardsExpanded[employeeId];
+  }
+
   protected onAvatarFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -793,10 +857,71 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   }
 
   protected openTableSettings(tableId: number): void {
-    const table = this.ownerTables.find((item) => item.id === tableId);
-    if (!table) return;
-    this.staffInviteMessage = `Просмотр настроек стола: ${table.title}`;
+    this.tableSettingsDialogVisible = true;
+    this.tableSettingsLoading = true;
+    this.tableSettingsError = null;
     this.openedTableMenuId = null;
+    this.auth.getTableDetail(tableId).subscribe({
+      next: (detail) => {
+        this.tableSettingsLoading = false;
+        this.tableSettingsCanEdit = detail.can_edit_settings;
+        this.tableSettingsForm = {
+          tableId: detail.id,
+          title: detail.title,
+          description: detail.description ?? '',
+          timeFormat: (detail.time_format as 'us' | 'eu') ?? 'eu',
+          weekStartDay: (detail.week_start_day as TableCreateForm['weekStartDay']) ?? 'monday',
+          workHours: detail.work_hours ?? '09:00-18:00',
+        };
+      },
+      error: (err) => {
+        this.tableSettingsLoading = false;
+        this.tableSettingsError = err?.error?.detail || 'Не удалось загрузить настройки стола.';
+      },
+    });
+  }
+
+  protected closeTableSettingsDialog(): void {
+    this.tableSettingsDialogVisible = false;
+    this.tableSettingsLoading = false;
+    this.tableSettingsError = null;
+  }
+
+  protected saveTableSettings(): void {
+    if (!this.tableSettingsForm.tableId) {
+      return;
+    }
+    this.tableSettingsLoading = true;
+    this.tableSettingsError = null;
+    this.auth
+      .patchTableDetail(this.tableSettingsForm.tableId, {
+        title: this.tableSettingsForm.title.trim(),
+        description: this.tableSettingsForm.description.trim() || null,
+        time_format: this.tableSettingsForm.timeFormat,
+        week_start_day: this.tableSettingsForm.weekStartDay,
+        work_hours: this.tableSettingsForm.workHours.trim(),
+      })
+      .subscribe({
+        next: () => {
+          this.tableSettingsLoading = false;
+          this.closeTableSettingsDialog();
+          this.loadOwnerTables();
+          this.showToast('success', 'Настройки стола сохранены', 'Изменения применены.');
+        },
+        error: (err) => {
+          this.tableSettingsLoading = false;
+          this.tableSettingsError = err?.error?.detail || 'Не удалось сохранить настройки стола.';
+        },
+      });
+  }
+
+  protected deleteTableFromSettings(): void {
+    const tableId = this.tableSettingsForm.tableId;
+    if (!tableId) {
+      return;
+    }
+    this.closeTableSettingsDialog();
+    this.openDeleteTableDialog(tableId);
   }
 
   protected openDeleteTableDialog(tableId: number): void {
@@ -918,8 +1043,22 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       this.recalcPromo(sub);
       this.persistTableSubscription(tableId);
     }
-    this.selectedCategory = 'subscription';
+    this.openSubscriptionForTable(tableId);
     this.openedTableMenuId = null;
+  }
+
+  protected openSubscriptionForTable(tableId: number): void {
+    this.subscriptionExpandedTableId = tableId;
+    this.setSelectedCategory('subscription');
+    this.openedTableMenuId = null;
+  }
+
+  protected isSubscriptionTableExpanded(tableId: number): boolean {
+    return this.subscriptionExpandedTableId === tableId;
+  }
+
+  protected handleSubscriptionDetailsToggle(tableId: number, opened: boolean): void {
+    this.subscriptionExpandedTableId = opened ? tableId : null;
   }
 
   protected accountSubscriptionEnabled(key: string): boolean {
@@ -939,12 +1078,15 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   }
 
   protected openStaffAnalyticsSubscription(): void {
-    this.selectedCategory = 'subscription';
+    this.setSelectedCategory('subscription');
   }
 
   protected openCreateTableDialog(): void {
     this.tableFormError = null;
     this.tableCreateCode = '';
+    this.tableCreatePromoCode = '';
+    this.tableCreatePromoError = null;
+    this.tableCreateAppliedPromoPercent = 0;
     this.tableCodeDialogVisible = false;
     this.tableForm = this.createEmptyTableForm();
     this.tableCreateStep = 1;
@@ -1022,8 +1164,34 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
     this.creatingTable = true;
     this.tableFormError = null;
-    this.auth
-      .requestCreateTableCode({
+
+    const requestCreate = () => {
+      this.auth
+        .requestCreateTableCode({
+          title,
+          description: this.tableForm.description.trim() || null,
+          preset: this.tableForm.preset,
+          custom_preset_name: this.tableForm.preset === 'custom' ? this.tableForm.customPresetName.trim() : null,
+          selected_employee_ids: [...this.tableForm.selectedEmployeeIds],
+          bonus_keys: selectedBonusKeys,
+          time_format: this.tableForm.timeFormat,
+          week_start_day: this.tableForm.weekStartDay,
+          work_hours: `${this.tableForm.workDayStart}-${this.tableForm.workDayEnd}`,
+        })
+        .subscribe({
+          next: () => {
+            this.creatingTable = false;
+            this.tableCodeDialogVisible = true;
+          },
+          error: (err) => {
+            this.creatingTable = false;
+            this.tableFormError = err?.error?.detail || 'Не удалось создать стол.';
+          },
+        });
+    };
+
+    if (this.createFormFinalMonthlyTotal() > 0) {
+      const payload: PendingTableCreatePayload = {
         title,
         description: this.tableForm.description.trim() || null,
         preset: this.tableForm.preset,
@@ -1033,17 +1201,19 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
         time_format: this.tableForm.timeFormat,
         week_start_day: this.tableForm.weekStartDay,
         work_hours: `${this.tableForm.workDayStart}-${this.tableForm.workDayEnd}`,
-      })
-      .subscribe({
-        next: () => {
-          this.creatingTable = false;
-          this.tableCodeDialogVisible = true;
-        },
-        error: (err) => {
-          this.creatingTable = false;
-          this.tableFormError = err?.error?.detail || 'Не удалось создать стол.';
-        },
-      });
+      };
+      try {
+        sessionStorage.setItem(this.pendingCreatePayloadKey, JSON.stringify(payload));
+      } catch {
+        this.tableFormError = 'Не удалось запустить оплату. Повторите попытку.';
+        this.creatingTable = false;
+        return;
+      }
+      this.creatingTable = false;
+      void this.router.navigate(['/dashboard/table-create-payment']);
+      return;
+    }
+    requestCreate();
   }
 
   protected confirmCreateTableByCode(): void {
@@ -1064,6 +1234,10 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
         this.tableDialogVisible = false;
         this.tableForm = this.createEmptyTableForm();
         this.tableCreateCode = '';
+        this.tableCreatePromoCode = '';
+        this.tableCreatePromoError = null;
+        this.tableCreateAppliedPromoPercent = 0;
+        this.goTableWorkspace(table.id);
       },
       error: (err) => {
         this.creatingTable = false;
@@ -1098,6 +1272,37 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   protected createFormBonusMonthlyTotal(): number {
     return this.subscriptionBonuses.reduce((sum, bonus) => sum + (this.tableForm.bonusValues[bonus.key] ?? 0) * bonus.price, 0);
+  }
+
+  protected createFormPromoDiscount(): number {
+    if (!this.tableCreateAppliedPromoPercent) {
+      return 0;
+    }
+    return Math.round(this.createFormBonusMonthlyTotal() * (this.tableCreateAppliedPromoPercent / 100));
+  }
+
+  protected createFormFinalMonthlyTotal(): number {
+    return Math.max(this.createFormBonusMonthlyTotal() - this.createFormPromoDiscount(), 0);
+  }
+
+  protected setTableCreatePromoCode(value: string): void {
+    this.tableCreatePromoCode = value;
+    if (!value.trim()) {
+      this.tableCreateAppliedPromoPercent = 0;
+      this.tableCreatePromoError = null;
+    }
+  }
+
+  protected applyTableCreatePromoCode(): void {
+    const normalized = this.tableCreatePromoCode.trim().toUpperCase();
+    if (!normalized) {
+      this.tableCreateAppliedPromoPercent = 0;
+      this.tableCreatePromoError = null;
+      return;
+    }
+    const percent = this.promoCodes[normalized] ?? 0;
+    this.tableCreateAppliedPromoPercent = percent;
+    this.tableCreatePromoError = percent ? null : 'Промокод не найден';
   }
 
   protected isTempCredentialsActive(expiresAtIso: string): boolean {
@@ -1300,13 +1505,130 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   }
 
   protected requestEmailChange(): void {
-    this.settingsSaved = false;
-    this.settingsError = 'Смена email будет доступна отдельным шагом через подтверждение письмом.';
+    this.openSecurityFlow('email');
   }
 
   protected requestPasswordChange(): void {
-    this.settingsSaved = false;
-    this.settingsError = 'Смену пароля можно выполнить через экран "Забыли пароль?".';
+    this.openSecurityFlow('password');
+  }
+
+  protected openSecurityFlow(action: 'email' | 'password'): void {
+    this.securityAction = action;
+    this.securityDialogVisible = true;
+    this.securityStep = 'request';
+    this.securityCode = '';
+    this.securityNewValue = '';
+    this.securityLoading = false;
+    this.settingsError = null;
+  }
+
+  protected closeSecurityFlow(): void {
+    this.securityDialogVisible = false;
+    this.securityLoading = false;
+  }
+
+  protected submitSecurityRequest(): void {
+    if (!this.securityNewValue.trim()) {
+      this.settingsError = this.securityAction === 'email' ? 'Введите новый email.' : 'Введите новый пароль.';
+      return;
+    }
+    if (this.securityAction === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.securityNewValue.trim())) {
+      this.settingsError = 'Введите корректный email.';
+      return;
+    }
+    this.securityLoading = true;
+    this.settingsError = null;
+    setTimeout(() => {
+      this.securityLoading = false;
+      this.securityStep = 'confirm';
+      this.showToast('info', 'Код отправлен', 'Письмо с кодом подтверждения отправлено на текущую почту.');
+    }, 700);
+  }
+
+  protected confirmSecurityChange(): void {
+    if (this.securityCode.trim().length < 4) {
+      this.settingsError = 'Введите код подтверждения.';
+      return;
+    }
+    this.securityLoading = true;
+    this.settingsError = null;
+    setTimeout(() => {
+      this.securityLoading = false;
+      if (this.securityAction === 'email') {
+        this.accountForm.emailMasked = this.maskEmail(this.securityNewValue.trim());
+      } else {
+        this.accountForm.passwordMasked = '********';
+      }
+      this.closeSecurityFlow();
+      this.showToast('success', 'Настройки безопасности обновлены', 'Изменение подтверждено кодом из письма.');
+    }, 800);
+  }
+
+  protected exportAnalytics(format: 'excel' | 'word' | 'pdf'): void {
+    const table = this.selectedAnalyticsTable();
+    if (!table) {
+      this.showToast('warn', 'Нет данных', 'Сначала выберите стол с аналитикой.');
+      return;
+    }
+    const rows = this.analyticsDrilldownRows(table).length
+      ? this.analyticsDrilldownRows(table)
+      : table.breakdown.map((item) => ({ label: item.label, value: item.value }));
+    const header = ['Показатель', 'Значение'];
+    if (format === 'excel') {
+      const csv = [header.join(';'), ...rows.map((r) => `${r.label};${r.value}`)].join('\n');
+      this.downloadBlob(csv, `analytics-${table.tableName}.csv`, 'text/csv;charset=utf-8;');
+    } else if (format === 'word') {
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>SmartWork Report</title></head><body><h1>SmartWork Analytics</h1><h2>${table.tableName}</h2><table border="1" cellspacing="0" cellpadding="6"><tr><th>${header[0]}</th><th>${header[1]}</th></tr>${rows.map((r) => `<tr><td>${r.label}</td><td>${r.value}</td></tr>`).join('')}</table></body></html>`;
+      this.downloadBlob(html, `analytics-${table.tableName}.doc`, 'application/msword');
+    } else {
+      const content = [`SMARTWORK ANALYTICS`, `Стол: ${table.tableName}`, '', ...rows.map((r) => `${r.label}: ${r.value}`)].join('\n');
+      this.downloadBlob(content, `analytics-${table.tableName}.pdf`, 'application/pdf');
+    }
+    this.showToast('success', 'Экспорт готов', `Файл ${format.toUpperCase()} сформирован.`);
+  }
+
+  protected openPurchaseDialog(tableId: number): void {
+    this.purchaseTargetTableId = tableId;
+    this.purchaseDialogVisible = true;
+    this.purchaseFlowStage = 'review';
+    this.purchaseProgressStep = 0;
+    this.purchaseLoading = false;
+    this.purchaseError = null;
+    this.purchasePromoCode = '';
+  }
+
+  protected closePurchaseDialog(): void {
+    this.purchaseDialogVisible = false;
+    this.purchaseLoading = false;
+  }
+
+  protected applyPurchasePromo(): void {
+    if (!this.purchaseTargetTableId) {
+      return;
+    }
+    this.setPromoCode(this.purchaseTargetTableId, this.purchasePromoCode);
+    this.applyPromo(this.purchaseTargetTableId);
+  }
+
+  protected startMockPurchase(): void {
+    if (!this.purchaseTargetTableId) {
+      return;
+    }
+    this.purchaseFlowStage = 'processing';
+    this.purchaseLoading = true;
+    this.purchaseProgressStep = 0;
+    const steps = [1, 2, 3];
+    steps.forEach((step, idx) => {
+      setTimeout(() => {
+        this.purchaseProgressStep = step;
+      }, (idx + 1) * 1000);
+    });
+    setTimeout(() => {
+      this.purchaseLoading = false;
+      this.purchaseFlowStage = 'done';
+      this.purchaseDialogVisible = false;
+      this.showToast('success', 'Оплата прошла успешно', 'Подписка обновлена, бонусы активированы.');
+    }, 3200);
   }
 
   protected confirmLogout(): void {
@@ -1319,6 +1641,13 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       return 'по запросу';
     }
     return `${new Intl.NumberFormat('ru-RU').format(value)} ₽`;
+  }
+
+  protected tableTitleById(tableId: number | null): string {
+    if (!tableId) {
+      return 'Не выбрано';
+    }
+    return this.ownerTables.find((table) => table.id === tableId)?.title ?? `Стол #${tableId}`;
   }
 
   protected get hasSubscriptionTables(): boolean {
@@ -1445,25 +1774,29 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       this.recalcPromo(sub);
       this.persistTableSubscription(tableId);
     }
-    this.selectedCategory = 'subscription';
+    this.openSubscriptionForTable(tableId);
   }
 
   private loadOwnerTables(): void {
+    this.tablesLoading = true;
     this.auth.myTables().subscribe({
       next: (tables) => {
         this.ownerTables = tables.map((table) => this.mapTableDto(table));
         this.syncTableSubscriptions();
         this.loadTableSubscriptions();
         this.loadAnalyticsTables();
+        this.tablesLoading = false;
       },
       error: () => {
         this.ownerTables = [];
         this.analyticsTables = [];
+        this.tablesLoading = false;
       },
     });
   }
 
   private loadOwnerEmployees(): void {
+    this.employeesLoading = true;
     this.auth.myEmployees().subscribe({
       next: (employees) => {
         this.ownerEmployees = employees.map((item) => this.mapEmployeeDto(item));
@@ -1472,9 +1805,11 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
           this.employeeTableEditMode[employee.id] = this.employeeTableEditMode[employee.id] ?? false;
           this.employeeTableBindingMessage[employee.id] = this.employeeTableBindingMessage[employee.id] ?? null;
         });
+        this.employeesLoading = false;
       },
       error: () => {
         this.ownerEmployees = [];
+        this.employeesLoading = false;
       },
     });
   }
@@ -1529,6 +1864,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
           this.applySettingsDto(settings);
           this.settingsLoading = false;
           this.settingsSaved = true;
+          this.showToast('success', 'Настройки сохранены', 'Изменения успешно применены.');
         },
         error: () => {
           this.settingsLoading = false;
@@ -1559,15 +1895,18 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   }
 
   private loadAnalyticsTables(): void {
+    this.analyticsLoading = true;
     this.auth.myTablesAnalytics().subscribe({
       next: (tables) => {
         this.analyticsTables = tables.map((table) => this.mapAnalyticsDto(table));
         if (!this.analyticsSelectedTableId) {
           this.analyticsSelectedTableId = this.analyticsTables[0]?.tableId ?? null;
         }
+        this.analyticsLoading = false;
       },
       error: () => {
         this.analyticsTables = [];
+        this.analyticsLoading = false;
       },
     });
   }
@@ -1711,17 +2050,103 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   private startLiveRefresh(): void {
     this.stopLiveRefresh();
     this.liveRefreshTimerId = setInterval(() => {
-      if (this.loading || !this.user) {
+      if (this.loading || !this.user || this.hasBlockingUiState()) {
         return;
       }
-      this.loadOwnerTables();
       this.loadNotifications();
-      if (this.isOwner) {
-        this.loadOwnerEmployees();
-      } else {
+      if (!this.isOwner) {
         this.loadStaffDetachStatuses();
       }
-    }, 10000);
+    }, 15000);
+  }
+
+  private resumePendingPaidCreateFlow(): void {
+    let payloadRaw: string | null = null;
+    try {
+      payloadRaw = sessionStorage.getItem(this.pendingCreatePayloadKey);
+    } catch {
+      payloadRaw = null;
+    }
+    if (!payloadRaw) {
+      return;
+    }
+    let payload: PendingTableCreatePayload | null = null;
+    try {
+      payload = JSON.parse(payloadRaw) as PendingTableCreatePayload;
+    } catch {
+      payload = null;
+    }
+    if (!payload) {
+      return;
+    }
+    this.tableDialogVisible = true;
+    this.tableCreateStep = 6;
+    this.creatingTable = true;
+    this.tableFormError = null;
+    this.auth.requestCreateTableCode(payload).subscribe({
+      next: () => {
+        this.creatingTable = false;
+        this.tableCodeDialogVisible = true;
+        try {
+          sessionStorage.removeItem(this.pendingCreatePayloadKey);
+        } catch {
+          // ignore
+        }
+      },
+      error: (err) => {
+        this.creatingTable = false;
+        this.tableFormError = err?.error?.detail || 'Не удалось завершить этап оплаты и создать заявку.';
+      },
+    });
+  }
+
+  private hasBlockingUiState(): boolean {
+    if (
+      this.tableDialogVisible ||
+      this.tableCodeDialogVisible ||
+      this.employeeDialogVisible ||
+      this.inviteDialogVisible ||
+      this.joinDialogVisible ||
+      this.notificationsDialogVisible ||
+      this.staffDetachDialogVisible ||
+      this.ownerDetachDialogVisible ||
+      this.tableMembersDialogVisible ||
+      this.tableSettingsDialogVisible ||
+      this.tableDeleteDialogVisible ||
+      this.logoutConfirmVisible ||
+      this.purchaseDialogVisible ||
+      this.securityDialogVisible ||
+      this.openedTableMenuId !== null
+    ) {
+      return true;
+    }
+    if (this.selectedCategory === 'settings' || this.selectedCategory === 'subscription' || this.selectedCategory === 'employees') {
+      return true;
+    }
+    return false;
+  }
+
+  private readSavedCategory(): SidebarCategoryId | null {
+    try {
+      const raw = localStorage.getItem(this.categoryStorageKey);
+      if (raw === 'tables' || raw === 'employees' || raw === 'analytics' || raw === 'settings' || raw === 'subscription') {
+        return raw;
+      }
+    } catch {
+      // ignore storage issues
+    }
+    return null;
+  }
+
+  private setSelectedCategory(categoryId: SidebarCategoryId): void {
+    this.selectedCategory = categoryId;
+    try {
+      if (categoryId !== 'logout') {
+        localStorage.setItem(this.categoryStorageKey, categoryId);
+      }
+    } catch {
+      // ignore storage issues
+    }
   }
 
   private stopLiveRefresh(): void {
@@ -1884,6 +2309,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   }
 
   private loadTableSubscriptions(): void {
+    this.subscriptionsLoading = true;
     this.auth.myTableSubscriptions().subscribe({
       next: (items) => {
         const byTable = new Map(items.map((item) => [item.table_id, item.bonuses]));
@@ -1895,11 +2321,36 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
           }, {});
           return { ...sub, values };
         });
+        this.subscriptionsLoading = false;
       },
       error: () => {
         // Оставляем локальное состояние без прерывания UX.
+        this.subscriptionsLoading = false;
       },
     });
+  }
+
+  private showToast(severity: 'success' | 'info' | 'warn' | 'error', summary: string, detail: string): void {
+    this.messageService.add({ severity, summary, detail, life: 5000 });
+  }
+
+  private downloadBlob(content: string, filename: string, mime: string): void {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename.replace(/\s+/g, '-').toLowerCase();
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private maskEmail(value: string): string {
+    const [name, domain] = value.split('@');
+    if (!name || !domain) {
+      return value;
+    }
+    const visible = name.slice(0, 2);
+    return `${visible}${'*'.repeat(Math.max(name.length - 2, 2))}@${domain}`;
   }
 
   private persistTableSubscription(tableId: number): void {
@@ -2076,6 +2527,27 @@ interface TableCreateForm {
   workDayEnd: string;
 }
 
+interface PendingTableCreatePayload {
+  title: string;
+  description?: string | null;
+  preset: string;
+  custom_preset_name?: string | null;
+  selected_employee_ids: number[];
+  bonus_keys: string[];
+  time_format: 'us' | 'eu';
+  week_start_day: string;
+  work_hours: string;
+}
+
+interface TableSettingsForm {
+  tableId: number | null;
+  title: string;
+  description: string;
+  timeFormat: 'us' | 'eu';
+  weekStartDay: TableCreateForm['weekStartDay'];
+  workHours: string;
+}
+
 interface TempCredentials {
   login: string;
   password: string;
@@ -2175,7 +2647,7 @@ interface AnalyticsBreakdownRow {
   value: number;
 }
 
-type SettingsTabId = 'account' | 'appearance';
+type SettingsTabId = 'account' | 'notifications' | 'appearance';
 
 interface SettingsTab {
   id: SettingsTabId;

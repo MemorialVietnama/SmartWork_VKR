@@ -24,7 +24,18 @@
 </div>
 
 @if ($any(ctx())?.isOwner) {
-  @if (!$any(ctx())?.hasOwnerTables) {
+  @if ($any(ctx())?.tablesLoading) {
+    <div class="table-grid">
+      @for (s of [1,2,3,4]; track s) {
+        <div class="table-skeleton-card">
+          <div class="line w40"></div>
+          <div class="line w60"></div>
+          <div class="line w80"></div>
+          <div class="line w55"></div>
+        </div>
+      }
+    </div>
+  } @else if (!$any(ctx())?.hasOwnerTables) {
     <div class="empty-state-card">
       <div class="empty-state-icon" aria-hidden="true">
         <i class="pi pi-table"></i>
@@ -47,6 +58,7 @@
     <div class="table-grid">
       @for (table of $any(ctx())?.ownerTables ?? []; track table.id) {
         <p-card class="table-card">
+          <div class="table-card-bg" aria-hidden="true"></div>
           <div class="table-card-head">
             <div class="table-title-wrap">
               <h3>{{ table.title }}</h3>
@@ -73,28 +85,6 @@
                     <i class="pi pi-user-plus"></i>
                     <span>Добавление сотрудников</span>
                   </button>
-                  <div class="menu-row">
-                    <button type="button" role="menuitem" (click)="$any(ctx())?.openTableTasks(table.id)">
-                      <i class="pi pi-check-square"></i>
-                      <span>Просмотр задач</span>
-                    </button>
-                    @if (!$any(ctx())?.ownerCanOpenTasks(table.id)) {
-                      <button type="button" class="mini-dollar-btn" (click)="$any(ctx())?.openSubscriptionForBonus(table.id, 'unlock_tasks')">$</button>
-                    }
-                  </div>
-                  <div class="menu-row">
-                    <button type="button" role="menuitem" (click)="$any(ctx())?.openTableAnalytics(table.id)">
-                      <i class="pi pi-chart-line"></i>
-                      <span>Просмотр аналитики</span>
-                    </button>
-                    @if (!$any(ctx())?.ownerCanOpenAnalytics(table.id)) {
-                      <button type="button" class="mini-dollar-btn" (click)="$any(ctx())?.openSubscriptionForBonus(table.id, 'unlock_analytics')">$</button>
-                    }
-                  </div>
-                  <button type="button" role="menuitem" (click)="$any(ctx())?.selectCategory('subscription')">
-                    <i class="pi pi-wallet"></i>
-                    <span>Купить бонусы</span>
-                  </button>
                   <button type="button" role="menuitem" class="danger" (click)="$any(ctx())?.openDeleteTableDialog(table.id)">
                     <i class="pi pi-trash"></i>
                     <span>Удалить стол</span>
@@ -103,40 +93,63 @@
               }
             </div>
           </div>
-          <div class="stats-block table-metrics">
-            <div class="stats-row">
-              <span>Активные сотрудники</span>
-              <strong>{{ table.stats.activeEmployees }}</strong>
-            </div>
-            <div class="stats-row">
-              <span>Заказов в очереди</span>
-              <strong>{{ table.stats.queuedOrders }}</strong>
-            </div>
-            <div class="task-bars">
-              <div class="task-bars-head">
-                <span>Прогресс задач</span>
-                <strong>{{ $any(ctx())?.getTaskProgress(table.stats) }}%</strong>
+          <div class="table-bento-grid">
+            <div class="stats-block table-metrics">
+              <div class="stats-row">
+                <span>Активные сотрудники</span>
+                <strong>{{ table.stats.activeEmployees }}</strong>
               </div>
-              <div class="bars">
-                <div class="bar done" [style.flex]="table.stats.tasksDone"></div>
-                <div class="bar waiting" [style.flex]="table.stats.tasksWaiting"></div>
-                <div class="bar new" [style.flex]="table.stats.tasksNew"></div>
+              <div class="stats-row">
+                <span>Заказов в очереди</span>
+                <strong>{{ table.stats.queuedOrders }}</strong>
               </div>
-              <small>
-                Сделано: {{ table.stats.tasksDone }} | В ожидании: {{ table.stats.tasksWaiting }} | Новые:
-                {{ table.stats.tasksNew }}
-              </small>
+              <div class="task-bars">
+                <div class="task-bars-head">
+                  <span>Прогресс задач</span>
+                  <strong>{{ $any(ctx())?.getTaskProgress(table.stats) }}%</strong>
+                </div>
+                <div class="bars">
+                  <div class="bar done" [style.flex]="table.stats.tasksDone"></div>
+                  <div class="bar waiting" [style.flex]="table.stats.tasksWaiting"></div>
+                  <div class="bar new" [style.flex]="table.stats.tasksNew"></div>
+                </div>
+                <small>
+                  Сделано: {{ table.stats.tasksDone }} | В ожидании: {{ table.stats.tasksWaiting }} | Новые:
+                  {{ table.stats.tasksNew }}
+                </small>
+              </div>
+            </div>
+            <div class="table-card-side">
+              <div class="table-mini-stat">
+                <small>Участников</small>
+                <strong>{{ table.totalParticipants }}</strong>
+              </div>
+              <div class="table-mini-stat">
+                <small>Владелец</small>
+                <strong>{{ table.ownerShortName }}</strong>
+              </div>
             </div>
           </div>
           <div class="table-meta table-actions-row">
             <p-button label="Рабочий стол" icon="pi pi-desktop" styleClass="p-button-sm" (onClick)="$any(ctx())?.goTableWorkspace(table.id)" />
+            <p-button label="Купить бонусы" icon="pi pi-wallet" styleClass="p-button-sm p-button-outlined" (onClick)="$any(ctx())?.openSubscriptionForTable(table.id)" />
           </div>
         </p-card>
       }
     </div>
   }
 } @else {
-  @if (!$any(ctx())?.hasOwnerTables) {
+  @if ($any(ctx())?.tablesLoading) {
+    <div class="table-grid">
+      @for (s of [1,2,3]; track s) {
+        <div class="table-skeleton-card">
+          <div class="line w45"></div>
+          <div class="line w60"></div>
+          <div class="line w75"></div>
+        </div>
+      }
+    </div>
+  } @else if (!$any(ctx())?.hasOwnerTables) {
     <div class="empty-state-card empty-state-compact">
       <div class="empty-state-icon" aria-hidden="true">
         <i class="pi pi-inbox"></i>

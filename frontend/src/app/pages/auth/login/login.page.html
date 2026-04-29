@@ -20,13 +20,15 @@
       <form class="login-form" (ngSubmit)="onLogin()" novalidate>
         <div class="login-field">
           <label class="login-label" for="login-email">Email</label>
-          <p-iconfield iconPosition="left" styleClass="login-iconfield w-full">
-            <p-inputicon class="pi pi-envelope" />
+          <div class="login-input-shell login-input-shell--email">
+            <span class="login-input-shell__icon" aria-hidden="true">
+              <i class="pi pi-envelope"></i>
+            </span>
             <input
               id="login-email"
               type="email"
               pInputText
-              fluid
+              class="login-input-shell__control"
               name="login"
               [(ngModel)]="login"
               autocomplete="email"
@@ -36,14 +38,16 @@
               [attr.aria-invalid]="error ? 'true' : null"
               aria-describedby="login-email-hint"
             />
-          </p-iconfield>
+          </div>
           <p id="login-email-hint" class="login-hint">Адрес, который вы указывали при регистрации.</p>
         </div>
 
         <div class="login-field">
           <label class="login-label" for="login-password">Пароль</label>
-          <p-iconfield iconPosition="left" styleClass="login-iconfield login-iconfield--password w-full">
-            <p-inputicon class="pi pi-lock" />
+          <div class="login-input-shell login-input-shell--password">
+            <span class="login-input-shell__icon" aria-hidden="true">
+              <i class="pi pi-lock"></i>
+            </span>
             <p-password
               inputId="login-password"
               name="password"
@@ -58,7 +62,7 @@
               [attr.aria-invalid]="error ? 'true' : null"
               aria-describedby="login-password-hint"
             />
-          </p-iconfield>
+          </div>
           <p id="login-password-hint" class="login-hint">Проверьте раскладку клавиатуры и Caps Lock.</p>
         </div>
 
@@ -81,6 +85,9 @@
             <span class="login-link-card__title">Регистрация</span>
             <span class="login-link-card__desc">Создать новый аккаунт</span>
           </span>
+          <span class="login-link-card__chevron" aria-hidden="true">
+            <i class="pi pi-angle-right"></i>
+          </span>
         </a>
         <a routerLink="/auth/forgot-password" class="login-link-card login-link-card--muted">
           <span class="login-link-card__icon" aria-hidden="true">
@@ -89,6 +96,9 @@
           <span class="login-link-card__content">
             <span class="login-link-card__title">Забыли пароль?</span>
             <span class="login-link-card__desc">Восстановление по email</span>
+          </span>
+          <span class="login-link-card__chevron" aria-hidden="true">
+            <i class="pi pi-angle-right"></i>
           </span>
         </a>
       </div>

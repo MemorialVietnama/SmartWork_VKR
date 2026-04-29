@@ -70,22 +70,21 @@
             <div class="employee-form-grid" style="animation:fadein .25s ease;">
               <label>
                 <span>Формат времени *</span>
-                <select [(ngModel)]="tableForm().timeFormat">
-                  <option value="us">AM/PM</option>
-                  <option value="eu">24ч</option>
-                </select>
+                <p-select
+                  [options]="timeFormatOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [(ngModel)]="tableForm().timeFormat"
+                />
               </label>
               <label>
                 <span>Начало недели *</span>
-                <select [(ngModel)]="tableForm().weekStartDay">
-                  <option value="monday">Понедельник</option>
-                  <option value="tuesday">Вторник</option>
-                  <option value="wednesday">Среда</option>
-                  <option value="thursday">Четверг</option>
-                  <option value="friday">Пятница</option>
-                  <option value="saturday">Суббота</option>
-                  <option value="sunday">Воскресенье</option>
-                </select>
+                <p-select
+                  [options]="weekStartOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [(ngModel)]="tableForm().weekStartDay"
+                />
               </label>
               <label>
                 <span>Рабочие часы: с</span>
@@ -111,7 +110,15 @@
               </div>
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));gap:.6rem;max-height:16rem;overflow:auto;">
                 @for (employee of ownerEmployees(); track employee.id) {
-                  <button type="button" (click)="toggleEmployee.emit({ employeeId: employee.id, checked: !tableForm().selectedEmployeeIds.includes(employee.id) })" [style]="{border:'1px solid var(--p-content-border-color,#e2e8f0)',borderRadius:'.75rem',padding:'.6rem',textAlign:'left',background:tableForm().selectedEmployeeIds.includes(employee.id) ? 'rgba(99,102,241,.1)' : '#fff'}">
+                  <button
+                    type="button"
+                    class="select-employee-card"
+                    [class.selected]="isEmployeeSelected(employee.id)"
+                    (click)="toggleEmployee.emit({ employeeId: employee.id, checked: !isEmployeeSelected(employee.id) })"
+                  >
+                    @if (isEmployeeSelected(employee.id)) {
+                      <span class="selected-check"><i class="pi pi-check"></i></span>
+                    }
                     <strong>{{ employee.lastName }} {{ employee.firstName }}</strong>
                     <small style="display:block;color:var(--p-text-muted-color,#64748b);">{{ employee.position }}</small>
                   </button>
@@ -125,16 +132,19 @@
             <div style="display:grid;gap:.6rem;animation:fadein .25s ease;">
               <div class="sub-bonus-grid" style="margin-top:0;">
                 @for (bonus of subscriptionBonuses(); track bonus.key) {
-                  <div class="sub-bonus-card" style="border:1px solid var(--p-content-border-color,#e2e8f0);border-radius:.75rem;padding:.6rem;background:#fff;">
+                  <div class="sub-bonus-card selectable-bonus-card" [class.selected]="isBonusActive(bonus)">
+                    @if (isBonusActive(bonus)) {
+                      <span class="selected-check"><i class="pi pi-check"></i></span>
+                    }
                     <div>
                       <strong>{{ bonus.title }}</strong>
                       <small style="display:block;">{{ formatRub(bonus.price) }} / мес</small>
                     </div>
                     @if (bonus.kind === 'quantity') {
                       <div class="qty-controls">
-                        <button type="button" (click)="changeBonusQuantity.emit({ bonusKey: bonus.key, delta: -1, maxQty: bonus.maxQty ?? 0 })">-</button>
+                        <p-button size="small" icon="pi pi-minus" [rounded]="true" [text]="true" (onClick)="changeBonusQuantity.emit({ bonusKey: bonus.key, delta: -1, maxQty: bonus.maxQty ?? 0 })" />
                         <span>{{ bonusValue(bonus.key) }}</span>
-                        <button type="button" (click)="changeBonusQuantity.emit({ bonusKey: bonus.key, delta: 1, maxQty: bonus.maxQty ?? 0 })">+</button>
+                        <p-button size="small" icon="pi pi-plus" [rounded]="true" [text]="true" (onClick)="changeBonusQuantity.emit({ bonusKey: bonus.key, delta: 1, maxQty: bonus.maxQty ?? 0 })" />
                       </div>
                     } @else {
                       <p-inputSwitch [ngModel]="bonusValue(bonus.key) > 0" (ngModelChange)="setBonusToggle.emit({ bonusKey: bonus.key, enabled: $event })" />
@@ -160,7 +170,15 @@
                   <small style="display:block;color:var(--p-text-muted-color,#64748b);">{{ selectedBonusesCount() }} бонусов</small>
                 </div>
               </div>
-              <p class="monthly-total" style="margin:0;">Итого к оплате в месяц: <strong>{{ formatRub(bonusMonthlyTotal()) }}</strong></p>
+              <div class="promo-row">
+                <input type="text" pInputText placeholder="Промокод" [ngModel]="tableCreatePromoCode()" (ngModelChange)="tableCreatePromoCodeChange.emit($event)" />
+                <p-button label="Применить" size="small" (onClick)="applyPromoCode.emit()" />
+              </div>
+              @if (tableCreatePromoError()) {
+                <small class="promo-error">{{ tableCreatePromoError() }}</small>
+              }
+              <p class="monthly-total" style="margin:0;">Скидка по промокоду: <strong>-{{ formatRub(tableCreatePromoDiscount()) }}</strong></p>
+              <p class="monthly-total" style="margin:0;">Итого к оплате в месяц: <strong>{{ formatRub(tableCreateFinalMonthlyTotal()) }}</strong></p>
             </div>
           </ng-template>
         </p-step-panel>
@@ -177,7 +195,12 @@
       @if (tableCreateStep() < 6) {
         <p-button label="Далее" icon="pi pi-angle-right" iconPos="right" (onClick)="nextStep.emit()" />
       } @else {
-        <p-button label="Создать (получить код)" icon="pi pi-envelope" [loading]="creatingTable()" (onClick)="submitCreate.emit()" />
+        <p-button
+          [label]="tableCreateFinalMonthlyTotal() > 0 ? 'Оплатить и создать' : 'Создать стол'"
+          [icon]="tableCreateFinalMonthlyTotal() > 0 ? 'pi pi-wallet' : 'pi pi-check'"
+          [loading]="creatingTable()"
+          (onClick)="submitStepSix()"
+        />
       }
     </div>
   } @else {

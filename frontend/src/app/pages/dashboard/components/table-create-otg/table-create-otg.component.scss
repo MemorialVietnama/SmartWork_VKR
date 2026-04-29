@@ -1,6 +1,10 @@
 .table-otg {
   display: grid;
   gap: 0.9rem;
+  border: 1px solid var(--dash-border, #dbe4f3);
+  border-radius: 0.95rem;
+  padding: 0.95rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.78));
 }
 
 .table-otg-head h4 {
@@ -18,20 +22,24 @@
   gap: 0.4rem;
 }
 
-.otp-preview span {
+.otp-slot-input {
   width: 2.2rem;
   height: 2.45rem;
   border-radius: 0.55rem;
-  display: grid;
-  place-items: center;
   border: 1px solid var(--p-content-border-color, #e2e8f0);
   background: rgba(99, 102, 241, 0.08);
   font-weight: 700;
+  text-align: center;
+  font-size: 1.05rem;
+  color: var(--dash-text, #0f172a);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.full {
-  display: grid;
-  gap: 0.35rem;
+.otp-slot-input:focus-visible {
+  outline: none;
+  border-color: var(--p-primary-500, #3b82f6);
+  box-shadow: 0 0 0 0.14rem rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
 }
 
 .dialog-actions {

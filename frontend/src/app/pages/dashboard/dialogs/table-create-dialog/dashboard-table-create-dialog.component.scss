@@ -1,3 +1,40 @@
 :host {
   display: contents;
 }
+
+.select-employee-card,
+.selectable-bonus-card {
+  position: relative;
+  border: 1px solid var(--p-content-border-color, #e2e8f0);
+  border-radius: 0.75rem;
+  padding: 0.6rem;
+  text-align: left;
+  background: #fff;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.select-employee-card {
+  cursor: pointer;
+}
+
+.select-employee-card.selected,
+.selectable-bonus-card.selected {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.35);
+}
+
+.selected-check {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  background: #22c55e;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+}

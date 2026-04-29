@@ -37,6 +37,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dashboard/dashboard.page').then((m) => m.DashboardPageComponent),
   },
   {
+    path: 'dashboard/table-create-payment',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/dashboard/table-create-payment.page').then((m) => m.TableCreatePaymentPageComponent),
+  },
+  {
     path: 'workspace/table/:tableId',
     canActivate: [authGuard],
     loadComponent: () =>

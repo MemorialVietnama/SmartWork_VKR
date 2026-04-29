@@ -13,18 +13,31 @@
     </p-card>
   } @else {
     <div class="analytics-focus-layout">
+      <div class="analytics-categories">
+        @for (section of [
+          { key: 'overview', label: 'Обзор' },
+          { key: 'employees', label: 'Сотрудники' },
+          { key: 'workload', label: 'Заказы' },
+          { key: 'tasks', label: 'Задачи' }
+        ]; track section.key) {
+          <button type="button" class="analytics-chip" [class.active]="$any(ctx())?.analyticsSelectedKpi === section.key" (click)="$any(ctx())?.selectAnalyticsKpi(section.key)">
+            {{ section.label }}
+          </button>
+        }
+      </div>
       <div class="analytics-filter-row">
         <label class="analytics-control">
           <span>Стол</span>
-          <select
+          <p-select
+            styleClass="analytics-select"
+            [options]="$any(ctx())?.analyticsAccessibleTables() ?? []"
+            optionLabel="tableName"
+            optionValue="tableId"
             [ngModel]="$any(ctx())?.selectedAnalyticsTable()?.tableId"
             (ngModelChange)="$any(ctx())?.selectAnalyticsTable($event)"
-            aria-label="Выбор стола для аналитики"
-          >
-            @for (table of $any(ctx())?.analyticsAccessibleTables() ?? []; track table.tableId) {
-              <option [value]="table.tableId">{{ table.tableName }}</option>
-            }
-          </select>
+            [filter]="true"
+            placeholder="Выбор стола для аналитики"
+          />
         </label>
         <div class="analytics-period-switch" role="tablist" aria-label="Период аналитики">
           @for (period of $any(ctx())?.analyticsPeriods ?? []; track period.id) {
@@ -47,7 +60,23 @@
         </label>
       </div>
 
-      @if ($any(ctx())?.selectedAnalyticsTable(); as table) {
+      @if ($any(ctx())?.analyticsLoading) {
+        <div class="analytics-skeleton-grid">
+          @for (s of [1,2,3]; track s) {
+            <div class="sk-card">
+              <div class="sk-bars">
+                <span class="bar" style="height: 32%"></span><span class="bar" style="height: 55%"></span><span class="bar" style="height: 46%"></span><span class="bar" style="height: 69%"></span><span class="bar" style="height: 42%"></span><span class="bar" style="height: 61%"></span>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        @if ($any(ctx())?.selectedAnalyticsTable(); as table) {
+        <div class="analytics-export-row">
+          <p-button label="Excel" icon="pi pi-file-excel" styleClass="p-button-outlined p-button-sm" (onClick)="$any(ctx())?.exportAnalytics('excel')" />
+          <p-button label="Word" icon="pi pi-file-word" styleClass="p-button-outlined p-button-sm" (onClick)="$any(ctx())?.exportAnalytics('word')" />
+          <p-button label="PDF" icon="pi pi-file-pdf" styleClass="p-button-outlined p-button-sm" (onClick)="$any(ctx())?.exportAnalytics('pdf')" />
+        </div>
         <div class="analytics-kpi-grid">
           @for (kpi of $any(ctx())?.analyticsKpis(table) ?? []; track kpi.key) {
             <button
@@ -139,13 +168,14 @@
             </div>
           </div>
         }
-      } @else {
-        <div class="analytics-locked">
-          <div class="locked-title">
-            <h3>Нет столов с активной аналитикой</h3>
-            <small>Подключите доступ к аналитике для выбранного стола.</small>
+        } @else {
+          <div class="analytics-locked">
+            <div class="locked-title">
+              <h3>Нет столов с активной аналитикой</h3>
+              <small>Подключите доступ к аналитике для выбранного стола.</small>
+            </div>
           </div>
-        </div>
+        }
       }
     </div>
 

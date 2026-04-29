@@ -1,6 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
+import { ButtonModule } from 'primeng/button';
 
 interface TableMemberEmployeeView {
   id: number;
@@ -11,7 +12,7 @@ interface TableMemberEmployeeView {
 @Component({
   selector: 'app-dashboard-table-members-dialog',
   standalone: true,
-  imports: [DialogModule, MessageModule],
+  imports: [DialogModule, MessageModule, ButtonModule],
   templateUrl: './dashboard-table-members-dialog.component.html',
   styleUrl: './dashboard-table-members-dialog.component.scss',
 })
