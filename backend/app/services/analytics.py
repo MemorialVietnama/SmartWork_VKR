@@ -8,16 +8,21 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.table_calendar_slot import TableCalendarSlot
+from app.models.table_directory import TableDirectoryItem
 from app.models.table_member import TableMember
 from app.models.table_order import TableOrder
 from app.models.table_task import TableTask
+from app.models.user import User
 from app.schemas.table import (
     AnalyticsAnomalyDto,
+    AnalyticsAppliedFiltersDto,
     AnalyticsBreakdownRowDto,
+    AnalyticsEmployeeBreakdownRowDto,
     AnalyticsKpiDto,
     AnalyticsMiniChartDto,
     AnalyticsPeriodPointDto,
     AnalyticsSegmentDto,
+    AnalyticsServiceBreakdownRowDto,
     TableAnalyticsDto,
 )
 
@@ -80,8 +85,10 @@ async def build_table_analytics(
     table_id: int,
     table_name: str,
     participants: int,
-    active_employees: int,
     rng: AnalyticsRange,
+    status_filter: str | None = None,
+    assignee_user_id: int | None = None,
+    service_item_id: int | None = None,
 ) -> TableAnalyticsDto:
     points = _bucket_points(rng)
     created_orders = _series_template(points)
@@ -92,29 +99,36 @@ async def build_table_analytics(
     tasks_done_series = _series_template(points)
     calendar_hours_series = _series_template(points)
 
-    orders_res = await db.execute(
-        select(
-            TableOrder.created_at,
-            TableOrder.completed_at,
-            TableOrder.status,
-            TableOrder.price_total,
-            TableOrder.parent_order_id,
-            TableOrder.assignee_user_id,
-        ).where(
-            TableOrder.table_id == table_id,
-            TableOrder.created_at >= rng.start,
-            TableOrder.created_at <= rng.end,
-        ),
+    orders_query = select(
+        TableOrder.created_at,
+        TableOrder.completed_at,
+        TableOrder.status,
+        TableOrder.price_total,
+        TableOrder.parent_order_id,
+        TableOrder.assignee_user_id,
+        TableOrder.service_item_ids,
+    ).where(
+        TableOrder.table_id == table_id,
+        TableOrder.created_at >= rng.start,
+        TableOrder.created_at <= rng.end,
     )
+    if status_filter:
+        orders_query = orders_query.where(TableOrder.status == status_filter)
+    if assignee_user_id is not None:
+        orders_query = orders_query.where(TableOrder.assignee_user_id == assignee_user_id)
+    orders_res = await db.execute(orders_query)
     orders = orders_res.all()
+    if service_item_id is not None:
+        orders = [row for row in orders if service_item_id in (row[6] or [])]
 
-    tasks_res = await db.execute(
-        select(TableTask.created_at, TableTask.status).where(
-            TableTask.table_id == table_id,
-            TableTask.created_at >= rng.start,
-            TableTask.created_at <= rng.end,
-        ),
+    tasks_query = select(TableTask.created_at, TableTask.status).where(
+        TableTask.table_id == table_id,
+        TableTask.created_at >= rng.start,
+        TableTask.created_at <= rng.end,
     )
+    if assignee_user_id is not None:
+        tasks_query = tasks_query.where(TableTask.assignee_user_id == assignee_user_id)
+    tasks_res = await db.execute(tasks_query)
     tasks = tasks_res.all()
 
     slots_res = await db.execute(
@@ -125,6 +139,7 @@ async def build_table_analytics(
         ),
     )
     slots = slots_res.scalars().all()
+    active_slot_employee_keys: set[str] = set()
 
     queued_current_res = await db.execute(
         select(func.count())
@@ -132,6 +147,16 @@ async def build_table_analytics(
         .where(TableOrder.table_id == table_id, TableOrder.status == "queued"),
     )
     queued_current = int(queued_current_res.scalar() or 0)
+    new_orders_24h_res = await db.execute(
+        select(func.count())
+        .select_from(TableOrder)
+        .where(
+            TableOrder.table_id == table_id,
+            TableOrder.created_at >= datetime.now(UTC) - timedelta(hours=24),
+            TableOrder.created_at <= datetime.now(UTC),
+        ),
+    )
+    new_orders_24h = int(new_orders_24h_res.scalar() or 0)
 
     task_status_res = await db.execute(
         select(TableTask.status, func.count())
@@ -140,8 +165,11 @@ async def build_table_analytics(
     )
     task_status_counts = {status: int(count) for status, count in task_status_res.all()}
     tasks_new_current = task_status_counts.get("new", 0)
-    tasks_waiting_current = task_status_counts.get("waiting", 0)
+    tasks_waiting_only_current = task_status_counts.get("waiting", 0)
     tasks_done_current = task_status_counts.get("done", 0)
+    tasks_waiting_current = tasks_new_current + tasks_waiting_only_current
+    tasks_created_total = tasks_done_current + tasks_waiting_current
+    task_progress_percent = round((tasks_done_current / tasks_created_total) * 100.0, 2) if tasks_created_total > 0 else 0.0
 
     assignee_res = await db.execute(
         select(TableTask.assignee_user_id, func.count())
@@ -160,7 +188,9 @@ async def build_table_analytics(
     child_total = 0
     revenue_total = 0.0
     assignee_load: dict[int, int] = {}
-    for created_at, completed_at, status, price_total, parent_order_id, assignee_user_id in orders:
+    service_stats: dict[int, dict[str, float]] = {}
+    employee_stats: dict[int, dict[str, float]] = {}
+    for created_at, completed_at, status, price_total, parent_order_id, assignee_user_id, service_item_ids in orders:
         key = _floor_bucket(created_at, rng.bucket)
         if key in created_orders:
             created_orders[key] += 1
@@ -174,11 +204,27 @@ async def build_table_analytics(
             child_total += 1
             repeat_total += 1
         revenue_total += float(price_total or 0.0)
+        order_revenue = float(price_total or 0.0)
+        for sid in list(service_item_ids or []):
+            metric = service_stats.setdefault(int(sid), {"orders": 0.0, "revenue": 0.0})
+            metric["orders"] += 1.0
+            metric["revenue"] += order_revenue
         if assignee_user_id is not None:
-            assignee_load[int(assignee_user_id)] = assignee_load.get(int(assignee_user_id), 0) + 1
+            uid = int(assignee_user_id)
+            assignee_load[uid] = assignee_load.get(uid, 0) + 1
+            est = employee_stats.setdefault(
+                uid,
+                {"orders": 0.0, "completed": 0.0, "cancelled": 0.0, "revenue": 0.0},
+            )
+            est["orders"] += 1.0
+            est["revenue"] += order_revenue
+            if status == "completed":
+                est["completed"] += 1.0
+            if status == "cancelled":
+                est["cancelled"] += 1.0
 
     cycle_minutes: list[float] = []
-    for created_at, completed_at, _status, _price_total, _parent_order_id, _assignee_user_id in orders:
+    for created_at, completed_at, _status, _price_total, _parent_order_id, _assignee_user_id, _service_item_ids in orders:
         if completed_at:
             delta = completed_at - created_at
             cycle_minutes.append(max(delta.total_seconds() / 60.0, 0.0))
@@ -202,6 +248,10 @@ async def build_table_analytics(
         if key in calendar_hours_series:
             hours = max((slot.ends_at - slot.starts_at).total_seconds() / 3600.0, 0.0)
             calendar_hours_series[key] += int(round(hours))
+        title_key = (slot.title or "").strip().lower()
+        if title_key:
+            active_slot_employee_keys.add(title_key)
+    active_employees = len(active_slot_employee_keys)
 
     created_values = list(created_orders.values())
     completed_values = list(completed_orders.values())
@@ -225,8 +275,8 @@ async def build_table_analytics(
     ]
 
     segments = [
-        AnalyticsSegmentDto(key="tasks_new", label="Новые задачи", value=float(tasks_new_current)),
-        AnalyticsSegmentDto(key="tasks_waiting", label="Ожидают", value=float(tasks_waiting_current)),
+        AnalyticsSegmentDto(key="tasks_new", label="Новые заказы (24ч)", value=float(new_orders_24h)),
+        AnalyticsSegmentDto(key="tasks_waiting", label="В ожидании", value=float(tasks_waiting_current)),
         AnalyticsSegmentDto(key="tasks_done", label="Выполнены", value=float(tasks_done_current)),
     ]
     segments.extend(
@@ -271,6 +321,12 @@ async def build_table_analytics(
     average_check = round(revenue_total / orders_created_total, 2) if orders_created_total > 0 else 0.0
     assignee_peak = max(assignee_load.values()) if assignee_load else 0
     kpis = [
+        AnalyticsKpiDto(key="active_employees", title="Активные сотрудники", value=float(active_employees), unit="чел", delta_percent=None),
+        AnalyticsKpiDto(key="queued_orders", title="Очередь сейчас", value=float(queued_current), unit="шт"),
+        AnalyticsKpiDto(key="task_progress_percent", title="Прогресс задач", value=task_progress_percent, unit="%", delta_percent=None),
+        AnalyticsKpiDto(key="tasks_done", title="Выполненные задачи", value=float(tasks_done_current), unit="шт"),
+        AnalyticsKpiDto(key="tasks_waiting", title="В ожидании", value=float(tasks_waiting_current), unit="шт"),
+        AnalyticsKpiDto(key="new_orders_24h", title="Новые за 24 часа", value=float(new_orders_24h), unit="шт"),
         AnalyticsKpiDto(
             key="orders_created",
             title="Создано заказов",
@@ -286,10 +342,6 @@ async def build_table_analytics(
             delta_percent=delta_pct(float(orders_completed_total), float(prev_completed)),
         ),
         AnalyticsKpiDto(key="completion_rate", title="Доля завершения", value=round(completion_rate, 2), unit="%", delta_percent=None),
-        AnalyticsKpiDto(key="queued_orders", title="Очередь сейчас", value=float(queued_current), unit="шт"),
-        AnalyticsKpiDto(key="tasks_new", title="Новые задачи", value=float(tasks_new_current), unit="шт"),
-        AnalyticsKpiDto(key="tasks_waiting", title="Ожидающие задачи", value=float(tasks_waiting_current), unit="шт"),
-        AnalyticsKpiDto(key="tasks_done", title="Выполненные задачи", value=float(tasks_done_current), unit="шт"),
         AnalyticsKpiDto(key="avg_cycle_time_minutes", title="Средний цикл заказа", value=avg_cycle, unit="мин", delta_percent=None),
         AnalyticsKpiDto(key="p90_cycle_time_minutes", title="P90 цикла заказа", value=p90_cycle, unit="мин", delta_percent=None),
         AnalyticsKpiDto(
@@ -299,7 +351,6 @@ async def build_table_analytics(
             unit="ч",
             delta_percent=None,
         ),
-        AnalyticsKpiDto(key="active_employees", title="Активные сотрудники", value=float(active_employees), unit="чел", delta_percent=None),
         AnalyticsKpiDto(key="revenue_total", title="Выручка", value=round(revenue_total, 2), unit="₽", delta_percent=None),
         AnalyticsKpiDto(key="average_check", title="Средний чек", value=average_check, unit="₽", delta_percent=None),
         AnalyticsKpiDto(key="cancelled_total", title="Отмены", value=float(cancelled_total), unit="шт", delta_percent=None),
@@ -309,12 +360,62 @@ async def build_table_analytics(
         AnalyticsKpiDto(key="assignee_peak_load", title="Пик нагрузки сотрудника", value=float(assignee_peak), unit="шт", delta_percent=None),
     ]
 
+    service_labels: dict[int, str] = {}
+    if service_stats:
+        service_ids = list(service_stats.keys())
+        service_rows_res = await db.execute(select(TableDirectoryItem.id, TableDirectoryItem.label).where(TableDirectoryItem.id.in_(service_ids)))
+        service_labels = {int(row[0]): str(row[1]) for row in service_rows_res.all()}
+    employee_labels: dict[int, str] = {}
+    if employee_stats:
+        employee_ids = list(employee_stats.keys())
+        employee_rows_res = await db.execute(select(User.id, User.last_name, User.first_name).where(User.id.in_(employee_ids)))
+        for uid, last_name, first_name in employee_rows_res.all():
+            ln = (last_name or "").strip()
+            fn = (first_name or "").strip()
+            employee_labels[int(uid)] = f"{ln} {fn}".strip() or f"Сотрудник #{uid}"
+
+    service_breakdown = sorted(
+        [
+            AnalyticsServiceBreakdownRowDto(
+                service_item_id=sid,
+                label=service_labels.get(sid, f"Услуга #{sid}"),
+                orders_total=int(vals["orders"]),
+                revenue_total=round(float(vals["revenue"]), 2),
+                average_check=round(float(vals["revenue"]) / float(vals["orders"]), 2) if vals["orders"] > 0 else 0.0,
+            )
+            for sid, vals in service_stats.items()
+        ],
+        key=lambda row: row.revenue_total,
+        reverse=True,
+    )
+    employee_breakdown = sorted(
+        [
+            AnalyticsEmployeeBreakdownRowDto(
+                assignee_user_id=uid,
+                label=employee_labels.get(uid, f"Сотрудник #{uid}"),
+                orders_total=int(vals["orders"]),
+                completed_total=int(vals["completed"]),
+                cancelled_total=int(vals["cancelled"]),
+                revenue_total=round(float(vals["revenue"]), 2),
+                load_total=int(assignee_load.get(uid, 0)),
+            )
+            for uid, vals in employee_stats.items()
+        ],
+        key=lambda row: row.orders_total,
+        reverse=True,
+    )
+
     breakdown = [
         AnalyticsBreakdownRowDto(label="Участников", value=float(participants)),
         AnalyticsBreakdownRowDto(label="Активные сотрудники", value=float(active_employees)),
         AnalyticsBreakdownRowDto(label="Заказов создано", value=float(orders_created_total)),
         AnalyticsBreakdownRowDto(label="Заказов завершено", value=float(orders_completed_total)),
         AnalyticsBreakdownRowDto(label="Очередь сейчас", value=float(queued_current)),
+        AnalyticsBreakdownRowDto(label="Прогресс задач", value=task_progress_percent),
+        AnalyticsBreakdownRowDto(label="Прогресс задач (выполнено/создано)", value=float(tasks_done_current)),
+        AnalyticsBreakdownRowDto(label="Задач создано", value=float(tasks_created_total)),
+        AnalyticsBreakdownRowDto(label="В ожидании", value=float(tasks_waiting_current)),
+        AnalyticsBreakdownRowDto(label="Новые за 24 часа", value=float(new_orders_24h)),
         AnalyticsBreakdownRowDto(label="Суммарные часы календаря", value=float(sum(calendar_values))),
         AnalyticsBreakdownRowDto(label="Выручка", value=round(revenue_total, 2)),
         AnalyticsBreakdownRowDto(label="Средний чек", value=average_check),
@@ -340,6 +441,17 @@ async def build_table_analytics(
         segments=segments,
         anomalies=anomalies,
         breakdown=breakdown,
+        service_breakdown=service_breakdown,
+        employee_breakdown=employee_breakdown,
+        applied_filters=AnalyticsAppliedFiltersDto(
+            status=status_filter,
+            assignee_user_id=assignee_user_id,
+            service_item_id=service_item_id,
+            bucket=rng.bucket,
+        ),
+        task_progress_done=tasks_done_current,
+        task_progress_total=tasks_created_total,
+        task_progress_percent=task_progress_percent,
     )
 
 

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { CdkDragDrop, DragDropModule, transferArrayItem } from '@angular/cdk/drag-drop';
 
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -18,7 +19,7 @@ import {
 import { ThemeService } from '../../../core/theme.service';
 import { TableWorkspaceState } from '../table-workspace.state';
 
-type WorkspaceSettingsSection = 'notifications' | 'appearance' | 'table' | 'staff' | 'bonuses';
+type WorkspaceSettingsSection = 'notifications' | 'appearance' | 'table' | 'staff';
 
 interface WorkspaceSettingsNavItem {
   id: WorkspaceSettingsSection;
@@ -34,20 +35,11 @@ interface TableDraft {
   workDayEnd: string;
 }
 
-interface BonusCatalogItem {
-  key: string;
-  title: string;
-  price: number;
-  kind: 'quantity' | 'toggle';
-  unitLabel?: string;
-  maxQty?: number;
-}
-
 @Component({
   selector: 'app-workspace-settings-tab',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, CardModule, ButtonModule, InputSwitchModule, InputTextModule, MessageModule],
+  imports: [FormsModule, CardModule, ButtonModule, InputSwitchModule, InputTextModule, MessageModule, DragDropModule],
   templateUrl: './workspace-settings.tab.html',
   styleUrl: './workspace-settings.tab.scss',
 })
@@ -72,7 +64,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     const ownerItems: WorkspaceSettingsNavItem[] = [
       { id: 'table', label: 'Настройки стола' },
       { id: 'staff', label: 'Управление сотрудниками' },
-      { id: 'bonuses', label: 'Управление бонусами' },
     ];
     return [...base, ...ownerItems];
   });
@@ -100,20 +91,9 @@ export class WorkspaceSettingsTabComponent implements OnInit {
   protected employees = signal<EmployeeDto[]>([]);
   protected employeesLoadError = signal<string | null>(null);
   protected staffActionError = signal<string | null>(null);
-  protected selectedEmployeeId = signal<number | null>(null);
-
-  protected readonly bonusCatalog: readonly BonusCatalogItem[] = [
-    { key: 'extra_employee_seat', title: 'Доп. места для сотрудников', price: 500, kind: 'quantity', unitLabel: 'чел', maxQty: 50 },
-    { key: 'extra_directories', title: 'Доп. справочники', price: 500, kind: 'quantity', unitLabel: 'шт', maxQty: 10 },
-    { key: 'unlock_tasks', title: 'Раздел «Задачи»', price: 2900, kind: 'toggle' },
-    { key: 'unlock_analytics', title: 'Раздел «Аналитика»', price: 4300, kind: 'toggle' },
-    { key: 'unlock_employee_accounts', title: 'Аккаунты для сотрудников', price: 1900, kind: 'toggle' },
-    { key: 'order_history_audit_12m', title: 'История заказов и аудит 12 мес.', price: 990, kind: 'toggle' },
-    { key: 'service_support', title: 'Поддержка от сервиса', price: 390, kind: 'toggle' },
-    { key: 'table_customization', title: 'Кастомизация стола', price: 290, kind: 'toggle' },
-  ];
-
-  protected bonusValues = signal<Record<string, number>>({});
+  protected connectedEmployees = signal<EmployeeDto[]>([]);
+  protected freeEmployees = signal<EmployeeDto[]>([]);
+  protected positionDrafts = signal<Record<number, string>>({});
 
   protected settingsLoading = signal(false);
   protected settingsError = signal<string | null>(null);
@@ -126,8 +106,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
   protected presetRepairLoading = signal(false);
   protected presetRepairError = signal<string | null>(null);
   protected presetRepairResult = signal<string | null>(null);
-
-  protected bonusLoadError = signal<string | null>(null);
 
   /** Кнопка восстановления: только владелец и шаблонные пресеты (в т.ч. старые опечатки в БД). */
   protected readonly canRepairPresetDirectories = computed(() => {
@@ -174,9 +152,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     if (id === 'staff') {
       this.loadEmployeesForStaff();
     }
-    if (id === 'bonuses') {
-      this.loadBonusValues();
-    }
   }
 
   protected setNotifSource(key: 'system' | 'tables' | 'employees', value: boolean): void {
@@ -202,18 +177,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     this.settingsSaved.set(false);
   }
 
-  protected setAppearanceDensity(ev: Event): void {
-    const v = (ev.target as HTMLSelectElement).value as AppearanceSettingsDto['density'];
-    this.appearance.update((a) => ({ ...a, density: v }));
-    this.settingsSaved.set(false);
-  }
-
-  protected setAppearanceCardSize(ev: Event): void {
-    const v = (ev.target as HTMLSelectElement).value as AppearanceSettingsDto['card_size'];
-    this.appearance.update((a) => ({ ...a, card_size: v }));
-    this.settingsSaved.set(false);
-  }
-
   protected updateTableDraft<K extends keyof TableDraft>(key: K, value: TableDraft[K]): void {
     this.tableDraft.update((d) => ({ ...d, [key]: value }));
     this.tableSaved.set(false);
@@ -229,8 +192,8 @@ export class WorkspaceSettingsTabComponent implements OnInit {
       .updateMySettings({
         appearance: {
           theme: appearance.theme,
-          density: appearance.density,
-          card_size: appearance.card_size,
+          density: 'comfortable',
+          card_size: 'medium',
         },
         notifications,
       })
@@ -283,47 +246,8 @@ export class WorkspaceSettingsTabComponent implements OnInit {
       });
   }
 
-  protected addSelectedEmployeeToTable(): void {
-    const tableId = this.state.tableId();
-    const empId = this.selectedEmployeeId();
-    if (!empId) {
-      this.staffActionError.set('Выберите сотрудника.');
-      return;
-    }
-    this.staffActionError.set(null);
-    this.auth.addTableMember(tableId, empId).subscribe({
-      next: () => {
-        this.selectedEmployeeId.set(null);
-        this.refreshMembersAndDetail();
-      },
-      error: (err) => {
-        this.staffActionError.set(err?.error?.detail ?? 'Не удалось добавить в стол.');
-      },
-    });
-  }
-
   protected openDashboardEmployees(): void {
     void this.router.navigate(['/dashboard'], { queryParams: { section: 'employees' } });
-  }
-
-  protected openDashboardSubscription(): void {
-    void this.router.navigate(['/dashboard'], { queryParams: { section: 'subscription' } });
-  }
-
-  protected bonusQty(key: string): number {
-    return this.bonusValues()[key] ?? 0;
-  }
-
-  protected setBonusToggle(key: string, enabled: boolean): void {
-    this.bonusValues.update((m) => ({ ...m, [key]: enabled ? 1 : 0 }));
-    this.persistBonuses();
-  }
-
-  protected changeBonusQty(key: string, delta: number, maxQty: number): void {
-    const cur = this.bonusQty(key);
-    const next = Math.min(Math.max(cur + delta, 0), maxQty);
-    this.bonusValues.update((m) => ({ ...m, [key]: next }));
-    this.persistBonuses();
   }
 
   protected repairPresetDirectories(): void {
@@ -362,15 +286,6 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     return base;
   }
 
-  protected formatRub(value: number): string {
-    return `${new Intl.NumberFormat('ru-RU').format(value)} ₽`;
-  }
-
-  protected onStaffSelect(ev: Event): void {
-    const v = (ev.target as HTMLSelectElement).value;
-    this.selectedEmployeeId.set(v ? Number(v) : null);
-  }
-
   protected employeeLabel(e: EmployeeDto): string {
     const ln = e.last_name?.trim() ?? '';
     const fn = e.first_name?.trim() ?? '';
@@ -378,9 +293,78 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     return t || `Учётная запись #${e.id}`;
   }
 
-  protected staffCandidates(): EmployeeDto[] {
-    const memberIds = new Set(this.state.members().map((m) => m.user_id));
-    return this.employees().filter((e) => !memberIds.has(e.id));
+  protected dropToConnected(event: CdkDragDrop<EmployeeDto[]>): void {
+    if (event.previousContainer === event.container) {
+      return;
+    }
+    const moved = event.previousContainer.data[event.previousIndex];
+    transferArrayItem(event.previousContainer.data, event.container.data, event.previousIndex, event.currentIndex);
+    this.staffActionError.set(null);
+    this.auth.addTableMember(this.state.tableId(), moved.id).subscribe({
+      next: () => this.refreshMembersAndDetail(),
+      error: (err) => {
+        this.staffActionError.set(err?.error?.detail ?? 'Не удалось добавить сотрудника в стол.');
+        this.refreshMembersAndDetail();
+      },
+    });
+  }
+
+  protected dropToFree(event: CdkDragDrop<EmployeeDto[]>): void {
+    if (event.previousContainer === event.container) {
+      return;
+    }
+    const moved = event.previousContainer.data[event.previousIndex];
+    transferArrayItem(event.previousContainer.data, event.container.data, event.previousIndex, event.currentIndex);
+    this.staffActionError.set(null);
+    this.auth.removeTableWorkspaceMember(this.state.tableId(), moved.id).subscribe({
+      next: () => this.refreshMembersAndDetail(),
+      error: (err) => {
+        this.staffActionError.set(err?.error?.detail ?? 'Не удалось удалить сотрудника из стола.');
+        this.refreshMembersAndDetail();
+      },
+    });
+  }
+
+  protected getPositionDraft(employee: EmployeeDto): string {
+    return this.positionDrafts()[employee.id] ?? employee.position ?? '';
+  }
+
+  protected setPositionDraft(employeeId: number, value: string): void {
+    this.positionDrafts.update((drafts) => ({ ...drafts, [employeeId]: value }));
+  }
+
+  protected saveEmployeePosition(employee: EmployeeDto): void {
+    if (!employee.last_name || !employee.first_name || !employee.birth_date || !employee.phone) {
+      this.staffActionError.set('Нельзя обновить должность: у сотрудника не заполнены обязательные поля профиля.');
+      return;
+    }
+    this.staffActionError.set(null);
+    this.auth
+      .updateEmployee(employee.id, {
+        last_name: employee.last_name,
+        first_name: employee.first_name,
+        middle_name: employee.middle_name ?? null,
+        birth_date: employee.birth_date,
+        phone: employee.phone,
+        position: this.getPositionDraft(employee).trim(),
+        note: employee.note ?? null,
+      })
+      .subscribe({
+        next: () => this.loadEmployeesForStaff(),
+        error: (err) => {
+          this.staffActionError.set(err?.error?.detail ?? 'Не удалось обновить должность сотрудника.');
+        },
+      });
+  }
+
+  protected ownerMemberLabel(): string {
+    const owner = this.state.members().find((m) => m.is_owner);
+    return owner?.short_name ?? 'Владелец';
+  }
+
+  protected ownerMemberPosition(): string {
+    const owner = this.state.members().find((m) => m.is_owner);
+    return owner?.position ?? '—';
   }
 
   private loadUserSettings(): void {
@@ -443,7 +427,10 @@ export class WorkspaceSettingsTabComponent implements OnInit {
   private loadEmployeesForStaff(): void {
     this.employeesLoadError.set(null);
     this.auth.myEmployees().subscribe({
-      next: (list) => this.employees.set(list),
+      next: (list) => {
+        this.employees.set(list);
+        this.rebuildStaffLists();
+      },
       error: () => this.employeesLoadError.set('Не удалось загрузить список сотрудников.'),
     });
   }
@@ -451,7 +438,10 @@ export class WorkspaceSettingsTabComponent implements OnInit {
   private refreshMembersAndDetail(): void {
     const tableId = this.state.tableId();
     this.auth.listTableWorkspaceMembers(tableId).subscribe({
-      next: (m) => this.state.members.set(m),
+      next: (m) => {
+        this.state.members.set(m);
+        this.rebuildStaffLists();
+      },
     });
     this.auth.getTableDetail(tableId).subscribe({
       next: (d) => {
@@ -465,45 +455,17 @@ export class WorkspaceSettingsTabComponent implements OnInit {
     });
   }
 
-  private loadBonusValues(): void {
-    const tableId = this.state.tableId();
-    this.bonusLoadError.set(null);
-    this.auth.myTableSubscriptions().subscribe({
-      next: (subs) => {
-        const row = subs.find((s) => s.table_id === tableId);
-        const values: Record<string, number> = {};
-        (row?.bonuses ?? []).forEach((b) => {
-          values[b.key] = b.qty;
-        });
-        this.bonusValues.set(values);
-      },
-      error: () => this.bonusLoadError.set('Не удалось загрузить бонусы стола.'),
+  private rebuildStaffLists(): void {
+    const members = this.state.members();
+    const memberIds = new Set(members.map((m) => m.user_id));
+    const connected = this.employees().filter((e) => memberIds.has(e.id));
+    const free = this.employees().filter((e) => !memberIds.has(e.id));
+    this.connectedEmployees.set(connected);
+    this.freeEmployees.set(free);
+    const draft: Record<number, string> = {};
+    connected.forEach((employee) => {
+      draft[employee.id] = employee.position ?? '';
     });
-  }
-
-  private persistBonuses(): void {
-    const tableId = this.state.tableId();
-    const values = this.bonusValues();
-    const bonuses = Object.entries(values)
-      .filter(([, qty]) => qty > 0)
-      .map(([key, qty]) => ({ key, qty }));
-    this.auth.updateTableSubscription(tableId, { bonuses }).subscribe({
-      next: () => this.refreshDetailOnly(),
-      error: () => this.bonusLoadError.set('Не удалось сохранить бонусы.'),
-    });
-  }
-
-  private refreshDetailOnly(): void {
-    const tableId = this.state.tableId();
-    this.auth.getTableDetail(tableId).subscribe({
-      next: (d) => {
-        this.state.detail.set(d);
-        const map: Record<string, number> = {};
-        (d.bonuses ?? []).forEach((b) => {
-          map[b.key] = b.qty;
-        });
-        this.state.bonusMap.set(map);
-      },
-    });
+    this.positionDrafts.set(draft);
   }
 }

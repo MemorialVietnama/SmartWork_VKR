@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from datetime import time as dtime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -20,8 +20,11 @@ from app.models.user import User
 from app.routers.auth import get_current_user
 from app.routers.tables import _owner_short_name
 from app.schemas.table import TableAnalyticsDto, TableBonusDto, TableStatDto
-from app.config.directory_presets import empty_payload_for_kind, preset_has_directory_template
-from app.services.directory_bootstrap import repair_preset_directories as run_preset_directories_repair
+from app.config.directory_presets import PRESET_DIRECTORY_SEED, directories_for_preset, empty_payload_for_kind, preset_has_directory_template
+from app.services.directory_bootstrap import (
+    ensure_template_directory_enabled,
+    repair_preset_directories as run_preset_directories_repair,
+)
 from app.services.analytics import build_analytics_range, build_table_analytics, table_members_count
 from app.services.audit import create_user_notification
 from app.schemas.table_workspace import (
@@ -32,6 +35,9 @@ from app.schemas.table_workspace import (
     DirectoryItemDto,
     DirectoryItemPatchRequest,
     PresetDirectoriesRepairResultDto,
+    TemplateDirectoryStateDto,
+    TemplateDirectoryToggleRequest,
+    LegacyCustomDirectoriesCleanupDto,
     TableDetailDto,
     TablePatchRequest,
     TableDirectoryCreateRequest,
@@ -115,22 +121,43 @@ async def _require_table_access(
     raise HTTPException(status_code=403, detail="Нет доступа к столу")
 
 
-async def _compute_stats(db: AsyncSession, table_id: int, member_count: int) -> TableStatDto:
+async def _compute_stats(db: AsyncSession, table_id: int, _member_count: int) -> TableStatDto:
+    now = datetime.now(UTC)
     q_queued = await db.execute(
         select(func.count()).select_from(TableOrder).where(TableOrder.table_id == table_id, TableOrder.status == "queued"),
     )
     queued = int(q_queued.scalar() or 0)
+    q_new_orders_24h = await db.execute(
+        select(func.count())
+        .select_from(TableOrder)
+        .where(
+            TableOrder.table_id == table_id,
+            TableOrder.created_at >= now.replace(microsecond=0) - timedelta(hours=24),
+            TableOrder.created_at <= now,
+        ),
+    )
+    new_orders_24h = int(q_new_orders_24h.scalar() or 0)
+
+    active_employees_res = await db.execute(
+        select(func.count(func.distinct(TableCalendarSlot.title))).where(
+            TableCalendarSlot.table_id == table_id,
+            TableCalendarSlot.title.is_not(None),
+            TableCalendarSlot.title != "",
+        ),
+    )
+    active_employees = int(active_employees_res.scalar() or 0)
 
     td = await db.execute(select(func.count()).select_from(TableTask).where(TableTask.table_id == table_id, TableTask.status == "done"))
     tw = await db.execute(select(func.count()).select_from(TableTask).where(TableTask.table_id == table_id, TableTask.status == "waiting"))
     tn = await db.execute(select(func.count()).select_from(TableTask).where(TableTask.table_id == table_id, TableTask.status == "new"))
 
     return TableStatDto(
-        active_employees=max(0, member_count),
+        active_employees=max(0, active_employees),
         queued_orders=queued,
         tasks_done=int(td.scalar() or 0),
-        tasks_waiting=int(tw.scalar() or 0),
-        tasks_new=int(tn.scalar() or 0),
+        tasks_waiting=int((tw.scalar() or 0) + (tn.scalar() or 0)),
+        tasks_new=0,
+        new_orders_24h=new_orders_24h,
     )
 
 
@@ -222,7 +249,15 @@ async def list_table_members(
     owner_res = await db.execute(select(User).where(User.id == table.owner_id))
     owner = owner_res.scalar_one_or_none()
     if owner:
-        out.append(TableMemberBriefDto(user_id=owner.id, short_name=_member_name(owner), is_owner=True))
+        out.append(
+            TableMemberBriefDto(
+                user_id=owner.id,
+                short_name=_member_name(owner),
+                is_owner=True,
+                position=owner.position,
+                role=owner.role,
+            )
+        )
 
     members_res = await db.execute(
         select(TableMember, User)
@@ -232,7 +267,15 @@ async def list_table_members(
     for _tm, user in members_res.all():
         if user.id == table.owner_id:
             continue
-        out.append(TableMemberBriefDto(user_id=user.id, short_name=_member_name(user), is_owner=False))
+        out.append(
+            TableMemberBriefDto(
+                user_id=user.id,
+                short_name=_member_name(user),
+                is_owner=False,
+                position=user.position,
+                role=user.role,
+            )
+        )
 
     seen: set[int] = set()
     unique: list[TableMemberBriefDto] = []
@@ -243,6 +286,27 @@ async def list_table_members(
     return unique
 
 
+@router.delete("/{table_id}/workspace/members/{user_id}")
+async def remove_table_member(
+    table_id: int,
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    table, is_owner = await _require_table_access(db, current_user, table_id)
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="Только владелец может удалять участников стола")
+    if user_id == table.owner_id:
+        raise HTTPException(status_code=400, detail="Нельзя удалить владельца из стола")
+    member_res = await db.execute(select(TableMember).where(TableMember.table_id == table_id, TableMember.user_id == user_id))
+    member = member_res.scalar_one_or_none()
+    if not member:
+        raise HTTPException(status_code=404, detail="Участник не найден в этом столе")
+    await db.delete(member)
+    await db.commit()
+    return {"detail": "Участник удален из стола"}
+
+
 @router.get("/{table_id}/workspace/analytics", response_model=TableAnalyticsDto)
 async def get_table_workspace_analytics(
     table_id: int,
@@ -251,6 +315,9 @@ async def get_table_workspace_analytics(
     from_ts: datetime | None = Query(None, alias="from"),
     to_ts: datetime | None = Query(None, alias="to"),
     bucket: str = Query("day"),
+    status_filter: str | None = Query(None, alias="status"),
+    assignee_user_id: int | None = Query(None),
+    service_item_id: int | None = Query(None),
 ) -> TableAnalyticsDto:
     if await _bonus_qty(db, table_id, "unlock_analytics") <= 0:
         raise HTTPException(status_code=403, detail="Аналитика для стола не подключена")
@@ -263,8 +330,10 @@ async def get_table_workspace_analytics(
         table_id=table.id,
         table_name=table.title,
         participants=1 + members_count,
-        active_employees=members_count,
         rng=rng,
+        status_filter=status_filter,
+        assignee_user_id=assignee_user_id,
+        service_item_id=service_item_id,
     )
 
 
@@ -589,37 +658,125 @@ async def create_directory(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> TableDirectoryDto:
+    raise HTTPException(
+        status_code=403,
+        detail="Создание кастомных справочников отключено. Подключайте типовые шаблоны.",
+    )
+
+
+@router.get("/{table_id}/workspace/directories/templates", response_model=list[TemplateDirectoryStateDto])
+async def list_template_directories(
+    table_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[TemplateDirectoryStateDto]:
+    table, _ = await _require_table_access(db, current_user, table_id)
+    all_templates: dict[str, str] = {}
+    for entries in PRESET_DIRECTORY_SEED.values():
+        for kind, name in entries:
+            all_templates[kind] = name
+    connected_kinds = {kind for kind, _ in directories_for_preset(table.preset)}
+    dirs_res = await db.execute(
+        select(TableDirectory.kind).where(
+            TableDirectory.table_id == table_id,
+            TableDirectory.kind.is_not(None),
+        ),
+    )
+    enabled_kinds = {str(row[0]) for row in dirs_res.all() if row[0]}
+    return [
+        TemplateDirectoryStateDto(
+            kind=kind,
+            name=name,
+            enabled=kind in enabled_kinds,
+            connected=kind in connected_kinds,
+        )
+        for kind, name in sorted(all_templates.items(), key=lambda item: item[1])
+    ]
+
+
+@router.put("/{table_id}/workspace/directories/templates/{kind}", response_model=TemplateDirectoryStateDto)
+async def toggle_template_directory(
+    table_id: int,
+    kind: str,
+    req: TemplateDirectoryToggleRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TemplateDirectoryStateDto:
     table, is_owner = await _require_table_access(db, current_user, table_id)
     if not is_owner:
-        raise HTTPException(status_code=403, detail="Только владелец может создавать справочники")
-    max_n = await _directory_slot_limit(db, table_id)
-    count_res = await db.execute(
-        select(func.count()).select_from(TableDirectory).where(
+        raise HTTPException(status_code=403, detail="Только владелец может управлять шаблонами справочников")
+    all_templates: dict[str, str] = {}
+    for entries in PRESET_DIRECTORY_SEED.values():
+        for template_kind, name in entries:
+            all_templates[template_kind] = name
+    template_name = all_templates.get(kind)
+    if not template_name:
+        raise HTTPException(status_code=404, detail="Шаблон справочника не найден")
+    if req.enabled:
+        await ensure_template_directory_enabled(
+            db=db,
+            table_id=table_id,
+            kind=kind,
+            title=template_name,
+            preset=table.preset,
+        )
+    else:
+        dirs_res = await db.execute(
+            select(TableDirectory).where(
+                TableDirectory.table_id == table_id,
+                TableDirectory.kind == kind,
+            ),
+        )
+        directories = dirs_res.scalars().all()
+        for directory in directories:
+            await db.delete(directory)
+        await db.commit()
+    connected_kinds = {template_kind for template_kind, _ in directories_for_preset(table.preset)}
+    enabled_res = await db.execute(
+        select(TableDirectory.kind).where(
+            TableDirectory.table_id == table_id,
+            TableDirectory.kind == kind,
+        ),
+    )
+    enabled = any(row[0] for row in enabled_res.all())
+    return TemplateDirectoryStateDto(
+        kind=kind,
+        name=template_name,
+        enabled=enabled,
+        connected=kind in connected_kinds,
+    )
+
+
+@router.delete("/{table_id}/workspace/directories/legacy-custom", response_model=LegacyCustomDirectoriesCleanupDto)
+async def cleanup_legacy_custom_directories(
+    table_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LegacyCustomDirectoriesCleanupDto:
+    _, is_owner = await _require_table_access(db, current_user, table_id)
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="Только владелец может очищать кастомные справочники")
+    dirs_res = await db.execute(
+        select(TableDirectory).where(
             TableDirectory.table_id == table_id,
             TableDirectory.kind.is_(None),
         ),
     )
-    current_count = int(count_res.scalar() or 0)
-    if current_count >= max_n:
-        raise HTTPException(status_code=403, detail="Достигнут лимит справочников для стола")
-    schema_fields = req.schema_fields or []
-    d = TableDirectory(
-        table_id=table_id,
-        name=req.name.strip(),
-        description=req.description.strip() if req.description else None,
-        schema_fields=schema_fields,
-        kind=None,
-    )
-    db.add(d)
+    custom_dirs = dirs_res.scalars().all()
+    removed_dirs = 0
+    removed_items = 0
+    for directory in custom_dirs:
+        cnt_res = await db.execute(
+            select(func.count()).select_from(TableDirectoryItem).where(TableDirectoryItem.directory_id == directory.id),
+        )
+        removed_items += int(cnt_res.scalar() or 0)
+        await db.delete(directory)
+        removed_dirs += 1
     await db.commit()
-    await db.refresh(d)
-    return TableDirectoryDto(
-        id=d.id,
-        name=d.name,
-        description=d.description,
-        schema_fields=d.schema_fields or [],
-        kind=d.kind,
-        items=[],
+    return LegacyCustomDirectoriesCleanupDto(
+        detail="Кастомные справочники удалены",
+        removed_directories=removed_dirs,
+        removed_items=removed_items,
     )
 
 

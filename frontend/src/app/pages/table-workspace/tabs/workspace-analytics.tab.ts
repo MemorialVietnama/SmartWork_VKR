@@ -26,6 +26,10 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
   protected bucket: 'day' | 'week' = 'day';
   protected selectedChartTitle: string | null = null;
   protected selectedKpiKey = 'orders_created';
+  protected selectedCategory: 'orders' | 'services' | 'employees' = 'orders';
+  protected statusFilter = '';
+  protected assigneeFilter: number | null = null;
+  protected serviceFilter: number | null = null;
   protected readonly periods = [
     { id: '7d' as const, label: '7 дней' },
     { id: '30d' as const, label: '30 дней' },
@@ -67,6 +71,25 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
 
   protected selectChart(title: string): void {
     this.selectedChartTitle = this.selectedChartTitle === title ? null : title;
+  }
+
+  protected selectCategory(category: 'orders' | 'services' | 'employees'): void {
+    this.selectedCategory = category;
+  }
+
+  protected setStatusFilter(value: string): void {
+    this.statusFilter = value;
+    this.fetchAnalytics();
+  }
+
+  protected setAssigneeFilter(value: string): void {
+    this.assigneeFilter = value ? Number(value) : null;
+    this.fetchAnalytics();
+  }
+
+  protected setServiceFilter(value: string): void {
+    this.serviceFilter = value ? Number(value) : null;
+    this.fetchAnalytics();
   }
 
   protected trendData(): unknown {
@@ -126,6 +149,18 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
   }
 
   protected drilldownRows(): Array<{ label: string; value: number }> {
+    if (this.selectedCategory === 'services') {
+      return (this.data?.service_breakdown ?? []).map((row) => ({
+        label: `${row.label} (${row.orders_total} заказов)`,
+        value: row.revenue_total,
+      }));
+    }
+    if (this.selectedCategory === 'employees') {
+      return (this.data?.employee_breakdown ?? []).map((row) => ({
+        label: `${row.label} (${row.completed_total}/${row.orders_total})`,
+        value: row.revenue_total,
+      }));
+    }
     if (!this.selectedChartTitle) {
       return [];
     }
@@ -138,6 +173,18 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
 
   protected chartLabels(): Array<{ title: string; subtitle: string }> {
     return (this.data?.charts ?? []).map((chart) => ({ title: chart.title, subtitle: chart.subtitle }));
+  }
+
+  protected employeeFilterOptions(): Array<{ id: number; label: string }> {
+    return (this.data?.employee_breakdown ?? [])
+      .filter((row) => row.assignee_user_id != null)
+      .map((row) => ({ id: Number(row.assignee_user_id), label: row.label }));
+  }
+
+  protected serviceFilterOptions(): Array<{ id: number; label: string }> {
+    return (this.data?.service_breakdown ?? [])
+      .filter((row) => row.service_item_id != null)
+      .map((row) => ({ id: Number(row.service_item_id), label: row.label }));
   }
 
   protected chartMax(values: number[]): number {
@@ -158,6 +205,9 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
         from: range.from,
         to: range.to,
         bucket: this.bucket,
+        status: this.statusFilter || undefined,
+        assignee_user_id: this.assigneeFilter ?? undefined,
+        service_item_id: this.serviceFilter ?? undefined,
       })
       .subscribe({
         next: (d) => {

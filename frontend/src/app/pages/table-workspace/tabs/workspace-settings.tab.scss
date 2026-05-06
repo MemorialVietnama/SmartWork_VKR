@@ -178,6 +178,60 @@
   outline-offset: 2px;
 }
 
+.tw-member-dual-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.tw-member-column {
+  border: 1px solid var(--surface-border, #dee2e6);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: var(--surface-ground, #f8fafc);
+  display: grid;
+  gap: 0.55rem;
+  min-height: 16rem;
+}
+
+.tw-member-column h4 {
+  margin: 0;
+}
+
+.tw-member-owner-row {
+  border: 1px dashed var(--surface-border, #dee2e6);
+  border-radius: 6px;
+  padding: 0.45rem 0.55rem;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.tw-member-card {
+  border: 1px solid var(--surface-border, #dee2e6);
+  border-radius: 6px;
+  background: var(--surface-card, #fff);
+  padding: 0.5rem 0.55rem;
+  display: grid;
+  gap: 0.35rem;
+  cursor: move;
+}
+
+.tw-member-card-head {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.tw-member-position-edit {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.tw-member-position-edit input {
+  flex: 1;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

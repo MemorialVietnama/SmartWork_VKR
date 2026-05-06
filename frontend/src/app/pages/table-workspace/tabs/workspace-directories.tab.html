@@ -2,13 +2,10 @@
   <header class="tw-dir-head">
     <div>
       <h2>Справочники</h2>
-      <p class="tw-muted">Карточки справочников и детальная подстраница с таблицей, поиском и действиями.</p>
+      <p class="tw-muted">Работа только с типовыми справочниками: автоподключение по preset + ручное управление.</p>
     </div>
     <div class="tw-dir-head-actions">
       <p-button label="Обновить" icon="pi pi-refresh" styleClass="p-button-outlined" (onClick)="refresh()" />
-      @if (canEdit) {
-        <p-button label="Создать справочник" icon="pi pi-plus" (onClick)="addDirectory()" />
-      }
     </div>
   </header>
 
@@ -17,6 +14,30 @@
   }
 
   @if (!selectedDirectory()) {
+    @if (canEdit) {
+      <section class="tw-dir-toolbar">
+        <div class="tw-template-block">
+          <strong>Типовые шаблоны</strong>
+          @if (syncingTemplates()) {
+            <span class="tw-muted">Автосинхронизация по preset...</span>
+          }
+          <p-button
+            label="Добавить справочники"
+            icon="pi pi-plus"
+            styleClass="p-button-outlined"
+            (onClick)="openTemplatePicker()"
+          />
+        </div>
+        <p-button
+          label="Очистить legacy-кастомные"
+          icon="pi pi-trash"
+          severity="danger"
+          styleClass="p-button-outlined"
+          (onClick)="cleanupLegacyCustom()"
+        />
+      </section>
+    }
+
     <section class="tw-dir-toolbar">
       <input
         type="search"
@@ -54,13 +75,8 @@
             <span class="tw-badge">Записей: {{ d.items.length }}</span>
             @if (d.kind) {
               <span class="tw-badge tw-badge-accent">Шаблон</span>
-            } @else {
-              <span class="tw-badge">Произвольный</span>
             }
           </div>
-          @if (!d.kind && customDirectoryDescription(d.id)) {
-            <p class="tw-dir-card-desc">{{ customDirectoryDescription(d.id) }}</p>
-          }
         </article>
       }
     </div>
@@ -406,6 +422,36 @@
   }
 
   <p-dialog
+    [visible]="templatePickerOpen()"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '34rem', maxWidth: '96vw' }"
+    header="Выбор типовых справочников"
+    (visibleChange)="templatePickerOpen.set($event)"
+    (onHide)="closeTemplatePicker()"
+  >
+    <div class="tw-template-picker">
+      <p class="tw-muted">Выберите справочники, которые должны быть подключены к столу.</p>
+      <p-multiSelect
+        [options]="templateOptionItems()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="templateSelection()"
+        (ngModelChange)="templateSelection.set($event ?? [])"
+        defaultLabel="Выберите справочники"
+        [filter]="true"
+        appendTo="body"
+      />
+    </div>
+    <div class="tw-dir-actions">
+      <p-button label="Сохранить" icon="pi pi-check" (onClick)="saveTemplateSelection()" />
+      <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeTemplatePicker()" />
+    </div>
+  </p-dialog>
+
+  <p-dialog
     [visible]="customRowDialogOpen()"
     [modal]="true"
     [dismissableMask]="true"
@@ -497,153 +543,4 @@
     </div>
   </p-dialog>
 
-  <p-dialog
-    [visible]="createWizardOpen()"
-    [modal]="true"
-    [dismissableMask]="false"
-    [draggable]="false"
-    [resizable]="false"
-    [style]="{ width: '60rem', maxWidth: '96vw' }"
-    header="Создание справочника"
-    (visibleChange)="createWizardOpen.set($event)"
-    (onHide)="closeCreateWizard()"
-  >
-    <div class="tw-stepper">
-      <div class="tw-step" [class.active]="createWizardStep() === 1" [class.done]="createWizardStep() > 1">
-        <span class="tw-step-index">1</span>
-        <span class="tw-step-label">Основа</span>
-      </div>
-      <div class="tw-step" [class.active]="createWizardStep() === 2" [class.done]="createWizardStep() > 2">
-        <span class="tw-step-index">2</span>
-        <span class="tw-step-label">Поля</span>
-      </div>
-      <div class="tw-step" [class.active]="createWizardStep() === 3">
-        <span class="tw-step-index">3</span>
-        <span class="tw-step-label">Preview</span>
-      </div>
-    </div>
-
-    @if (createWizardStep() === 1) {
-      <div class="tw-dir-grid">
-        <label class="tw-dir-full">
-          <span>Название справочника</span>
-          <input type="text" pInputText [ngModel]="createDirName()" (ngModelChange)="createDirName.set($event)" />
-        </label>
-        <label class="tw-dir-full">
-          <span>Описание справочника</span>
-          <textarea
-            class="tw-dir-textarea"
-            rows="3"
-            [ngModel]="createDirDescription()"
-            (ngModelChange)="createDirDescription.set($event)"
-          ></textarea>
-        </label>
-      </div>
-      <div class="tw-wizard-note">
-        Кастомные справочники будут доступны глобально: в формах, фильтрах, календаре и отчетах.
-        Для полей типа «Связь» хранится пара <strong>id + label</strong>, чтобы сохранять корректные связи даже при изменениях в связанных таблицах.
-      </div>
-    }
-
-    @if (createWizardStep() === 2) {
-      <div class="tw-wizard-fields">
-        @for (field of createDirFields(); track field.id) {
-          <div class="tw-wizard-field-row">
-            <input
-              type="text"
-              pInputText
-              [ngModel]="field.label"
-              (ngModelChange)="updateCreateField(field.id, { label: $event })"
-              placeholder="Название поля"
-            />
-            <input
-              type="text"
-              pInputText
-              [ngModel]="field.key"
-              (ngModelChange)="updateCreateField(field.id, { key: $event })"
-              placeholder="Ключ (например phone)"
-            />
-            <select pInputText [ngModel]="field.type" (ngModelChange)="updateCreateField(field.id, { type: $event })">
-              @for (option of customFieldTypeOptions; track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
-              }
-            </select>
-            <button type="button" class="tw-link-danger" (click)="removeCreateField(field.id)">Удалить</button>
-          </div>
-          @if (field.type === 'relation') {
-            <div class="tw-wizard-relation-row">
-              <label>
-                <span>Связанный справочник</span>
-                <select
-                  pInputText
-                  [ngModel]="field.relation?.directoryId ?? ''"
-                  (ngModelChange)="setCreateFieldRelationDirectory(field.id, $event)"
-                >
-                  <option value="">Выберите справочник</option>
-                  @for (dir of relationDirectoryOptions(); track dir.id) {
-                    <option [value]="dir.id">{{ dir.name }}</option>
-                  }
-                </select>
-              </label>
-              <label>
-                <span>Поле отображения</span>
-                <select
-                  pInputText
-                  [ngModel]="field.relation?.displayFieldKey ?? 'label'"
-                  (ngModelChange)="setCreateFieldRelationDisplayField(field.id, $event)"
-                >
-                  @for (displayField of relationDisplayFieldOptions(field.relation?.directoryId ?? null); track displayField.key) {
-                    <option [value]="displayField.key">{{ displayField.label }}</option>
-                  }
-                </select>
-              </label>
-              <p-multiSelect
-                [options]="relationModeOptions"
-                optionLabel="label"
-                optionValue="value"
-                [ngModel]="relationModeSelection(field)"
-                (ngModelChange)="setCreateFieldRelationModes(field.id, $event)"
-                defaultLabel="Режим связи"
-                styleClass="tw-relation-mode-select"
-              />
-            </div>
-          }
-        }
-        <p-button label="Добавить поле" icon="pi pi-plus" styleClass="p-button-outlined" (onClick)="addCreateField()" />
-      </div>
-    }
-
-    @if (createWizardStep() === 3) {
-      <div class="tw-custom-table-wrap">
-        <table class="tw-custom-table">
-          <thead>
-            <tr>
-              @for (field of customPreviewColumns(); track field.id) {
-                <th>{{ field.label }}</th>
-              }
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              @for (field of customPreviewColumns(); track field.id) {
-                <td>{{ previewCellValue(field) }}</td>
-              }
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    }
-
-    <div class="tw-dir-actions">
-      @if (createWizardStep() > 1) {
-        <p-button label="Назад" styleClass="p-button-text" (onClick)="prevCreateWizardStep()" />
-      }
-      @if (createWizardStep() < 3) {
-        <p-button label="Далее" icon="pi pi-arrow-right" iconPos="right" (onClick)="nextCreateWizardStep()" />
-      } @else {
-        <p-button label="Создать справочник" icon="pi pi-check" (onClick)="completeCreateWizard()" />
-      }
-      <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeCreateWizard()" />
-    </div>
-  </p-dialog>
 </div>

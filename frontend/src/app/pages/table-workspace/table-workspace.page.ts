@@ -119,6 +119,62 @@ export class TableWorkspacePageComponent implements OnInit {
     return 'unknown';
   }
 
+  protected presetLabel(value: string | null | undefined, customPresetName: string | null | undefined): string {
+    if (customPresetName?.trim()) {
+      return customPresetName.trim();
+    }
+    const normalized = (value ?? '').toLowerCase();
+    if (normalized === 'barbershop') return 'Барбершоп';
+    if (normalized === 'grooming') return 'Груминг';
+    if (normalized === 'custom') return 'Индивидуальная';
+    return value ?? '—';
+  }
+
+  protected timeFormatLabel(value: string | null | undefined): string {
+    const normalized = (value ?? '').toLowerCase();
+    if (normalized === 'us') return '12 часов (AM/PM)';
+    if (normalized === 'eu') return '24 часа';
+    return value ?? '—';
+  }
+
+  protected weekStartDayLabel(value: string | null | undefined): string {
+    const normalized = (value ?? '').toLowerCase();
+    if (normalized === 'monday') return 'Понедельник';
+    if (normalized === 'tuesday') return 'Вторник';
+    if (normalized === 'wednesday') return 'Среда';
+    if (normalized === 'thursday') return 'Четверг';
+    if (normalized === 'friday') return 'Пятница';
+    if (normalized === 'saturday') return 'Суббота';
+    if (normalized === 'sunday') return 'Воскресенье';
+    return value ?? '—';
+  }
+
+  protected workHoursLabel(value: string | null | undefined): string {
+    if (!value?.trim()) {
+      return '—';
+    }
+    return value.trim().replace('-', ' - ');
+  }
+
+  protected activeBonusLabels(): string[] {
+    const bonuses = this.state.detail()?.bonuses ?? [];
+    return bonuses
+      .filter((bonus) => bonus.qty > 0)
+      .map((bonus) => this.bonusLabel(bonus.key, bonus.qty));
+  }
+
+  private bonusLabel(key: string, qty: number): string {
+    if (key === 'extra_employee_seat') return `Доп. места для сотрудников: ${qty}`;
+    if (key === 'extra_directories') return `Доп. справочники: ${qty}`;
+    if (key === 'unlock_tasks') return 'Открытие раздела «Задачи»';
+    if (key === 'unlock_analytics') return 'Открытие раздела «Аналитика»';
+    if (key === 'unlock_employee_accounts') return 'Открытие раздела «Аккаунты сотрудников»';
+    if (key === 'order_history_audit_12m') return 'История заказов и аудит (12 мес)';
+    if (key === 'service_support') return 'Поддержка от сервиса';
+    if (key === 'table_customization') return 'Кастомизация стола';
+    return `${key}: ${qty}`;
+  }
+
   protected formatOrderDateTime(value: string | null | undefined): string {
     if (!value) return '—';
     const dt = new Date(value);

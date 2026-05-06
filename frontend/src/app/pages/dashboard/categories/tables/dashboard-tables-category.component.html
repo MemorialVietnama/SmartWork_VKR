@@ -17,7 +17,7 @@
       <strong>{{ $any(ctx())?.totalQueuedOrders() }}</strong>
     </div>
     <div class="hero-kpi-card">
-      <small>Новых задач</small>
+      <small>Новых за 24 часа</small>
       <strong>{{ $any(ctx())?.totalNewTasks() }}</strong>
     </div>
   </div>
@@ -111,11 +111,10 @@
                 <div class="bars">
                   <div class="bar done" [style.flex]="table.stats.tasksDone"></div>
                   <div class="bar waiting" [style.flex]="table.stats.tasksWaiting"></div>
-                  <div class="bar new" [style.flex]="table.stats.tasksNew"></div>
                 </div>
                 <small>
-                  Сделано: {{ table.stats.tasksDone }} | В ожидании: {{ table.stats.tasksWaiting }} | Новые:
-                  {{ table.stats.tasksNew }}
+                  Сделано: {{ table.stats.tasksDone }} | В ожидании: {{ table.stats.tasksWaiting }} | Новых за 24 часа:
+                  {{ table.stats.newOrders24h }}
                 </small>
               </div>
             </div>

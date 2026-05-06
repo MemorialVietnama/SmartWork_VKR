@@ -242,6 +242,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     SMART5: 5,
     TABLE10: 10,
     BONUS15: 15,
+    NEW2026: 15,
   };
   protected tableSubscriptions: TableSubscription[] = [];
   protected subscriptionsLoading = false;
@@ -520,7 +521,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   }
 
   protected totalNewTasks(): number {
-    return this.ownerTables.reduce((sum, table) => sum + table.stats.tasksNew, 0);
+    return this.ownerTables.reduce((sum, table) => sum + table.stats.newOrders24h, 0);
   }
 
   protected openCreateEmployeeDialog(): void {
@@ -1364,12 +1365,36 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       return [];
     }
     if (table.kpis.length > 0) {
-      return table.kpis.slice(0, 4).map((kpi, idx) => ({
-        key: (['overview', 'employees', 'workload', 'tasks'][idx] ?? 'overview') as AnalyticsKpiKey,
-        title: kpi.title,
-        value: `${this.formatMetric(kpi.value)}${kpi.unit ? ` ${kpi.unit}` : ''}`,
-        delta: this.formatSignedPercent(kpi.deltaPercent ?? 0),
-      }));
+      const kpiByKey = new Map(table.kpis.map((kpi) => [kpi.key, kpi] as const));
+      const orderedKeys = ['active_employees', 'queued_orders', 'task_progress_percent', 'tasks_done'] as const;
+      const fallback = table.kpis.slice(0, 4);
+      return orderedKeys.map((key, idx) => {
+        const kpi = kpiByKey.get(key) ?? fallback[idx];
+        if (!kpi) {
+          return {
+            key: (['overview', 'employees', 'workload', 'tasks'][idx] ?? 'overview') as AnalyticsKpiKey,
+            title: 'Нет данных',
+            value: '0',
+            delta: '0%',
+          };
+        }
+        if (key === 'task_progress_percent') {
+          const done = table.taskProgressDone ?? 0;
+          const total = table.taskProgressTotal ?? 0;
+          return {
+            key: 'tasks',
+            title: 'Прогресс задач',
+            value: `${done}/${total} (${this.formatMetric(kpi.value)}%)`,
+            delta: this.formatSignedPercent(kpi.deltaPercent ?? 0),
+          };
+        }
+        return {
+          key: (['overview', 'employees', 'workload', 'tasks'][idx] ?? 'overview') as AnalyticsKpiKey,
+          title: kpi.title,
+          value: `${this.formatMetric(kpi.value)}${kpi.unit ? ` ${kpi.unit}` : ''}`,
+          delta: this.formatSignedPercent(kpi.deltaPercent ?? 0),
+        };
+      });
     }
     const summary = this.analyticsSummary(table);
     return [
@@ -2177,6 +2202,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
         tasksDone: table.stats.tasks_done,
         tasksWaiting: table.stats.tasks_waiting,
         tasksNew: table.stats.tasks_new,
+        newOrders24h: table.stats.new_orders_24h ?? 0,
       },
     };
   }
@@ -2205,6 +2231,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       forecast: table.forecast ?? null,
       anomalies: table.anomalies ?? [],
       breakdown: table.breakdown ?? [],
+      taskProgressDone: table.task_progress_done ?? 0,
+      taskProgressTotal: table.task_progress_total ?? 0,
+      taskProgressPercent: table.task_progress_percent ?? 0,
     };
   }
 
@@ -2511,6 +2540,7 @@ interface WorkspaceTableCard {
     tasksDone: number;
     tasksWaiting: number;
     tasksNew: number;
+    newOrders24h: number;
   };
 }
 
@@ -2599,6 +2629,9 @@ interface TableAnalytics {
   forecast: AnalyticsForecast | null;
   anomalies: AnalyticsAnomaly[];
   breakdown: AnalyticsBreakdownRow[];
+  taskProgressDone: number;
+  taskProgressTotal: number;
+  taskProgressPercent: number;
 }
 
 type AnalyticsPeriod = '7d' | '30d' | '90d' | '365d';

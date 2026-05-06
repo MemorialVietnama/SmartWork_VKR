@@ -27,6 +27,7 @@ class TableStatDto(BaseModel):
     tasks_done: int = 0
     tasks_waiting: int = 0
     tasks_new: int = 0
+    new_orders_24h: int = 0
 
 
 class TableDto(BaseModel):
@@ -80,6 +81,31 @@ class AnalyticsBreakdownRowDto(BaseModel):
     value: float
 
 
+class AnalyticsServiceBreakdownRowDto(BaseModel):
+    service_item_id: int | None = None
+    label: str
+    orders_total: int = 0
+    revenue_total: float = 0.0
+    average_check: float = 0.0
+
+
+class AnalyticsEmployeeBreakdownRowDto(BaseModel):
+    assignee_user_id: int | None = None
+    label: str
+    orders_total: int = 0
+    completed_total: int = 0
+    cancelled_total: int = 0
+    revenue_total: float = 0.0
+    load_total: int = 0
+
+
+class AnalyticsAppliedFiltersDto(BaseModel):
+    status: str | None = None
+    assignee_user_id: int | None = None
+    service_item_id: int | None = None
+    bucket: str | None = None
+
+
 class TableAnalyticsDto(BaseModel):
     table_id: int
     table_name: str
@@ -93,6 +119,12 @@ class TableAnalyticsDto(BaseModel):
     forecast: AnalyticsForecastDto | None = None
     anomalies: list[AnalyticsAnomalyDto] = Field(default_factory=list)
     breakdown: list[AnalyticsBreakdownRowDto] = Field(default_factory=list)
+    service_breakdown: list[AnalyticsServiceBreakdownRowDto] = Field(default_factory=list)
+    employee_breakdown: list[AnalyticsEmployeeBreakdownRowDto] = Field(default_factory=list)
+    applied_filters: AnalyticsAppliedFiltersDto | None = None
+    task_progress_done: int = 0
+    task_progress_total: int = 0
+    task_progress_percent: float = 0
 
 
 class TableBonusDto(BaseModel):

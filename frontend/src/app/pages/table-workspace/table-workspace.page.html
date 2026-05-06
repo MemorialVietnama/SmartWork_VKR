@@ -87,10 +87,22 @@
           <h2>Данные стола</h2>
           @if (state.detail(); as d) {
             <dl class="tw-meta">
-              <div><dt>Предустановка</dt><dd>{{ d.preset ?? '—' }}</dd></div>
-              <div><dt>Время</dt><dd>{{ d.time_format ?? '—' }}</dd></div>
-              <div><dt>Неделя с</dt><dd>{{ d.week_start_day ?? '—' }}</dd></div>
-              <div><dt>Часы</dt><dd>{{ d.work_hours ?? '—' }}</dd></div>
+              <div><dt>Название стола</dt><dd>{{ d.title }}</dd></div>
+              <div><dt>Описание</dt><dd>{{ d.description ?? '—' }}</dd></div>
+              <div><dt>Предустановка</dt><dd>{{ presetLabel(d.preset, d.custom_preset_name ?? null) }}</dd></div>
+              <div><dt>Формат времени</dt><dd>{{ timeFormatLabel(d.time_format) }}</dd></div>
+              <div><dt>Начало недели</dt><dd>{{ weekStartDayLabel(d.week_start_day) }}</dd></div>
+              <div><dt>Рабочие часы</dt><dd>{{ workHoursLabel(d.work_hours) }}</dd></div>
+              <div>
+                <dt>Активированные бонусы</dt>
+                <dd>
+                  @if (activeBonusLabels().length === 0) {
+                    —
+                  } @else {
+                    {{ activeBonusLabels().join(', ') }}
+                  }
+                </dd>
+              </div>
             </dl>
           }
         </section>

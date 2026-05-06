@@ -24,6 +24,7 @@ export interface TableStatsDto {
   tasks_done: number;
   tasks_waiting: number;
   tasks_new: number;
+  new_orders_24h?: number;
 }
 
 export interface TableDto {
@@ -78,12 +79,39 @@ export interface TableAnalyticsDto {
     label: string;
     value: number;
   }>;
+  service_breakdown?: Array<{
+    service_item_id?: number | null;
+    label: string;
+    orders_total: number;
+    revenue_total: number;
+    average_check: number;
+  }>;
+  employee_breakdown?: Array<{
+    assignee_user_id?: number | null;
+    label: string;
+    orders_total: number;
+    completed_total: number;
+    cancelled_total: number;
+    revenue_total: number;
+    load_total: number;
+  }>;
+  applied_filters?: {
+    status?: string | null;
+    assignee_user_id?: number | null;
+    service_item_id?: number | null;
+    bucket?: 'day' | 'week' | string | null;
+  } | null;
+  task_progress_done?: number;
+  task_progress_total?: number;
+  task_progress_percent?: number;
 }
 
 export interface TableMemberBriefDto {
   user_id: number;
   short_name: string;
   is_owner: boolean;
+  position?: string | null;
+  role?: string | null;
 }
 
 export interface CalendarSlotDto {
@@ -127,6 +155,19 @@ export interface PresetDirectoriesRepairResultDto {
   directories_created: number;
   example_items_added: number;
   skipped_nonempty_directories: number;
+}
+
+export interface TemplateDirectoryStateDto {
+  kind: string;
+  name: string;
+  enabled: boolean;
+  connected: boolean;
+}
+
+export interface LegacyCustomDirectoriesCleanupDto {
+  detail: string;
+  removed_directories: number;
+  removed_items: number;
 }
 
 export interface WorkspaceOrderDto {
@@ -599,14 +640,31 @@ export class AuthService {
     );
   }
 
+  removeTableWorkspaceMember(tableId: number, userId: number): Observable<{ detail: string }> {
+    return this.http.delete<{ detail: string }>(
+      this.url(`/api/v1/tables/${tableId}/workspace/members/${userId}`),
+      { headers: this.authHeaders() },
+    );
+  }
+
   getTableWorkspaceAnalytics(
     tableId: number,
-    opts?: { from?: string; to?: string; bucket?: 'day' | 'week' },
+    opts?: {
+      from?: string;
+      to?: string;
+      bucket?: 'day' | 'week';
+      status?: string;
+      assignee_user_id?: number;
+      service_item_id?: number;
+    },
   ): Observable<TableAnalyticsDto> {
     let params = new HttpParams();
     if (opts?.from) params = params.set('from', opts.from);
     if (opts?.to) params = params.set('to', opts.to);
     if (opts?.bucket) params = params.set('bucket', opts.bucket);
+    if (opts?.status) params = params.set('status', opts.status);
+    if (opts?.assignee_user_id != null) params = params.set('assignee_user_id', String(opts.assignee_user_id));
+    if (opts?.service_item_id != null) params = params.set('service_item_id', String(opts.service_item_id));
     return this.http.get<TableAnalyticsDto>(this.url(`/api/v1/tables/${tableId}/workspace/analytics`), {
       headers: this.authHeaders(),
       params,
@@ -725,6 +783,31 @@ export class AuthService {
     return this.http.post<WorkspaceDirectoryDto>(
       this.url(`/api/v1/tables/${tableId}/workspace/directories`),
       payload,
+      { headers: this.authHeaders() },
+    );
+  }
+
+  listTemplateWorkspaceDirectories(tableId: number): Observable<TemplateDirectoryStateDto[]> {
+    return this.http.get<TemplateDirectoryStateDto[]>(this.url(`/api/v1/tables/${tableId}/workspace/directories/templates`), {
+      headers: this.authHeaders(),
+    });
+  }
+
+  toggleTemplateWorkspaceDirectory(
+    tableId: number,
+    kind: string,
+    enabled: boolean,
+  ): Observable<TemplateDirectoryStateDto> {
+    return this.http.put<TemplateDirectoryStateDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/directories/templates/${encodeURIComponent(kind)}`),
+      { enabled },
+      { headers: this.authHeaders() },
+    );
+  }
+
+  cleanupLegacyCustomWorkspaceDirectories(tableId: number): Observable<LegacyCustomDirectoriesCleanupDto> {
+    return this.http.delete<LegacyCustomDirectoriesCleanupDto>(
+      this.url(`/api/v1/tables/${tableId}/workspace/directories/legacy-custom`),
       { headers: this.authHeaders() },
     );
   }

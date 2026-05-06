@@ -230,13 +230,31 @@
   flex-wrap: wrap;
 }
 
-.tw-task-tags span {
+.tw-task-tags .tag-pill {
   border: 1px solid var(--p-content-border-color, #cbd5e1);
   border-radius: 999px;
   padding: 0.06rem 0.42rem;
   font-size: 0.72rem;
   color: #0f172a;
   background: #f8fafc;
+}
+
+.tw-task-tags .tag-pill.tag-urgent {
+  border-color: #fca5a5;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.tw-task-tags .tag-pill.tag-problem {
+  border-color: #fdba74;
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.tw-task-tags .tag-pill.tag-default {
+  border-color: var(--p-content-border-color, #cbd5e1);
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .tw-task-checklist {
@@ -299,24 +317,6 @@
   font-size: 0.74rem;
   cursor: pointer;
   background: #e2e8f0;
-}
-
-.tw-action-btn.new {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #1d4ed8;
-}
-
-.tw-action-btn.wait {
-  background: #fef3c7;
-  border-color: #fcd34d;
-  color: #92400e;
-}
-
-.tw-action-btn.done {
-  background: #dcfce7;
-  border-color: #86efac;
-  color: #166534;
 }
 
 .tw-action-btn.open {
@@ -414,7 +414,7 @@ html[data-theme='dark'] .tw-task-themed {
 :host-context(.sw-dark) .tw-kanban-filters input,
 :host-context(.sw-dark) .tw-kanban-filters select,
 :host-context(.sw-dark) .tw-filter-btn,
-:host-context(.sw-dark) .tw-task-tags span,
+:host-context(.sw-dark) .tw-task-tags .tag-pill,
 :host-context(.sw-dark) .tw-assignee-chip,
 :host-context(.sw-dark) .tw-task-form input,
 :host-context(.sw-dark) .tw-task-form textarea,
@@ -425,7 +425,7 @@ html[data-theme='dark'] .tw-task-themed {
 :host-context(html[data-theme='dark']) .tw-kanban-filters input,
 :host-context(html[data-theme='dark']) .tw-kanban-filters select,
 :host-context(html[data-theme='dark']) .tw-filter-btn,
-:host-context(html[data-theme='dark']) .tw-task-tags span,
+:host-context(html[data-theme='dark']) .tw-task-tags .tag-pill,
 :host-context(html[data-theme='dark']) .tw-assignee-chip,
 :host-context(html[data-theme='dark']) .tw-task-form input,
 :host-context(html[data-theme='dark']) .tw-task-form textarea,
@@ -436,7 +436,7 @@ html[data-theme='dark'] .tw-task-themed {
 .sw-dark .tw-kanban-filters input,
 .sw-dark .tw-kanban-filters select,
 .sw-dark .tw-filter-btn,
-.sw-dark .tw-task-tags span,
+.sw-dark .tw-task-tags .tag-pill,
 .sw-dark .tw-assignee-chip,
 .sw-dark .tw-task-form input,
 .sw-dark .tw-task-form textarea,
@@ -447,7 +447,7 @@ html[data-theme='dark'] .tw-task-card,
 html[data-theme='dark'] .tw-kanban-filters input,
 html[data-theme='dark'] .tw-kanban-filters select,
 html[data-theme='dark'] .tw-filter-btn,
-html[data-theme='dark'] .tw-task-tags span,
+html[data-theme='dark'] .tw-task-tags .tag-pill,
 html[data-theme='dark'] .tw-assignee-chip,
 html[data-theme='dark'] .tw-task-form input,
 html[data-theme='dark'] .tw-task-form textarea,
@@ -455,6 +455,24 @@ html[data-theme='dark'] .tw-task-form select {
   background: #0f172a;
   border-color: #334155;
   color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-task-tags .tag-pill.tag-urgent,
+:host-context(html[data-theme='dark']) .tw-task-tags .tag-pill.tag-urgent,
+.sw-dark .tw-task-tags .tag-pill.tag-urgent,
+html[data-theme='dark'] .tw-task-tags .tag-pill.tag-urgent {
+  border-color: #ef4444;
+  background: rgb(127 29 29 / 0.45);
+  color: #fecaca;
+}
+
+:host-context(.sw-dark) .tw-task-tags .tag-pill.tag-problem,
+:host-context(html[data-theme='dark']) .tw-task-tags .tag-pill.tag-problem,
+.sw-dark .tw-task-tags .tag-pill.tag-problem,
+html[data-theme='dark'] .tw-task-tags .tag-pill.tag-problem {
+  border-color: #f97316;
+  background: rgb(124 45 18 / 0.45);
+  color: #fed7aa;
 }
 
 :host-context(.sw-dark) .tw-kanban-column header span,

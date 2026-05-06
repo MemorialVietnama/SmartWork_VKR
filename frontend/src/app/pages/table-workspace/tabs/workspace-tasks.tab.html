@@ -1,7 +1,7 @@
 <div class="tw-tab tw-task-themed">
   <div class="tw-kanban-header">
     <div>
-      <h2>Kanban задачи</h2>
+      <h2>Задачи вашей организации</h2>
       <p class="tw-muted">Колонки, ответственные, приоритеты, сроки и drag-and-drop.</p>
     </div>
     <div class="tw-kanban-actions">
@@ -122,7 +122,7 @@
                     @if (task.tags.length > 0) {
                       <div class="tw-task-tags">
                         @for (tag of task.tags; track tag) {
-                          <span>{{ tag }}</span>
+                          <span [class]="'tag-pill ' + tagClass(tag)">{{ tag }}</span>
                         }
                       </div>
                     }
@@ -140,9 +140,6 @@
                     <footer>
                       <span class="tw-assignee-chip">{{ assigneeName(task.assignee_user_id) }}</span>
                       <div class="tw-task-actions">
-                        <button type="button" class="tw-action-btn new" (click)="moveToStatus(task, 'new')">New</button>
-                        <button type="button" class="tw-action-btn wait" (click)="moveToStatus(task, 'waiting')">Wait</button>
-                        <button type="button" class="tw-action-btn done" (click)="moveToStatus(task, 'done')">Done</button>
                         <button type="button" class="tw-action-btn open" (click)="openEditDialog(task)">Открыть</button>
                         <button
                           type="button"

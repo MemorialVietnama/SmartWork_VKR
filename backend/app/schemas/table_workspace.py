@@ -10,6 +10,8 @@ class TableMemberBriefDto(BaseModel):
     user_id: int
     short_name: str
     is_owner: bool
+    position: str | None = None
+    role: str | None = None
 
 
 class TablePatchRequest(BaseModel):
@@ -149,6 +151,23 @@ class PresetDirectoriesRepairResultDto(BaseModel):
     directories_created: int
     example_items_added: int
     skipped_nonempty_directories: int
+
+
+class TemplateDirectoryStateDto(BaseModel):
+    kind: str
+    name: str
+    enabled: bool
+    connected: bool
+
+
+class TemplateDirectoryToggleRequest(BaseModel):
+    enabled: bool
+
+
+class LegacyCustomDirectoriesCleanupDto(BaseModel):
+    detail: str
+    removed_directories: int
+    removed_items: int
 
 
 class TableOrderDto(BaseModel):

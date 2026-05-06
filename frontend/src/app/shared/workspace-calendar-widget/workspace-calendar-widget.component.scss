@@ -582,9 +582,9 @@
 }
 
 .tw-cal-widget--promo .tw-cal-slot--order-completed {
-  background: color-mix(in srgb, var(--p-green-500) 14%, var(--p-content-background));
-  border-color: color-mix(in srgb, var(--p-green-500) 30%, transparent);
-  border-left: 4px solid var(--p-green-500);
+  background: color-mix(in srgb, var(--p-violet-500, #8b5cf6) 14%, var(--p-content-background));
+  border-color: color-mix(in srgb, var(--p-violet-500, #8b5cf6) 30%, transparent);
+  border-left: 4px solid var(--p-violet-500, #8b5cf6);
   color: var(--p-text-color);
 }
 
@@ -741,7 +741,7 @@ html[data-theme='dark'] .tw-cal-slot--neutral {
 :host-context(html[data-theme='dark']) .tw-cal-slot--order-completed,
 .sw-dark .tw-cal-slot--order-completed,
 html[data-theme='dark'] .tw-cal-slot--order-completed {
-  background: rgb(20 83 45 / 0.3);
-  border-color: #22c55e;
-  color: #dcfce7;
+  background: rgb(76 29 149 / 0.35);
+  border-color: #a78bfa;
+  color: #ede9fe;
 }

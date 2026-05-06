@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -9,7 +10,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TableModule } from 'primeng/table';
 
-import { AuthService, WorkspaceDirectoryDto, WorkspaceDirectoryItemDto } from '../../../core/auth/auth.service';
+import {
+  AuthService,
+  TemplateDirectoryStateDto,
+  WorkspaceDirectoryDto,
+  WorkspaceDirectoryItemDto,
+} from '../../../core/auth/auth.service';
 import { TableWorkspaceState } from '../table-workspace.state';
 import {
   asClientPayload,
@@ -65,6 +71,10 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   protected readonly customRowEditingItemId = signal<number | null>(null);
   protected readonly customRowValues = signal<Record<string, string>>({});
   protected readonly customRowRelationMultiValues = signal<Record<string, number[]>>({});
+  protected readonly templateDirectories = signal<TemplateDirectoryStateDto[]>([]);
+  protected readonly syncingTemplates = signal(false);
+  protected readonly templatePickerOpen = signal(false);
+  protected readonly templateSelection = signal<string[]>([]);
 
   protected readonly petAnimalTypes = PET_ANIMAL_TYPES;
   protected editor: { kind: TemplateKind; dirId: number; itemId: number | null } | null = null;
@@ -223,18 +233,39 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
 
   protected refresh(): void {
     this.err.set(null);
-    this.auth.listWorkspaceDirectories(this.state.tableId()).subscribe({
-      next: (d) => {
-        this.dirs.set(d);
-        if (this.selectedDirectoryId() && !d.some((dir) => dir.id === this.selectedDirectoryId())) {
-          this.selectedDirectoryId.set(null);
-        }
-        if (this.selectedItemId() && !this.selectedDirectoryFilteredItems().some((it) => it.id === this.selectedItemId())) {
-          this.selectedItemId.set(null);
-        }
-      },
-      error: () => this.err.set('Не удалось загрузить справочники.'),
-    });
+    const tableId = this.state.tableId();
+    const loadDirectories = () =>
+      forkJoin({
+        dirs: this.auth.listWorkspaceDirectories(tableId),
+        templates: this.auth.listTemplateWorkspaceDirectories(tableId),
+      }).subscribe({
+        next: ({ dirs, templates }) => {
+          this.dirs.set(dirs);
+          this.templateDirectories.set(templates);
+          if (this.selectedDirectoryId() && !dirs.some((dir) => dir.id === this.selectedDirectoryId())) {
+            this.selectedDirectoryId.set(null);
+          }
+          if (this.selectedItemId() && !this.selectedDirectoryFilteredItems().some((it) => it.id === this.selectedItemId())) {
+            this.selectedItemId.set(null);
+          }
+        },
+        error: () => this.err.set('Не удалось загрузить справочники.'),
+      });
+    if (this.canEdit) {
+      this.syncingTemplates.set(true);
+      this.auth.repairPresetWorkspaceDirectories(tableId).subscribe({
+        next: () => {
+          this.syncingTemplates.set(false);
+          loadDirectories();
+        },
+        error: () => {
+          this.syncingTemplates.set(false);
+          loadDirectories();
+        },
+      });
+      return;
+    }
+    loadDirectories();
   }
 
   protected closeEditor(): void {
@@ -742,7 +773,65 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   }
 
   protected addDirectory(): void {
-    this.openCreateWizard();
+    this.err.set('Создание кастомных справочников отключено. Подключайте типовые шаблоны.');
+  }
+
+  protected toggleTemplate(kind: string, enabled: boolean): void {
+    this.err.set(null);
+    this.auth.toggleTemplateWorkspaceDirectory(this.state.tableId(), kind, enabled).subscribe({
+      next: () => this.refresh(),
+      error: (e) => this.err.set(e?.error?.detail ?? 'Не удалось обновить шаблон справочника'),
+    });
+  }
+
+  protected openTemplatePicker(): void {
+    const selected = this.templateDirectories()
+      .filter((tpl) => tpl.enabled)
+      .map((tpl) => tpl.kind);
+    this.templateSelection.set(selected);
+    this.templatePickerOpen.set(true);
+  }
+
+  protected closeTemplatePicker(): void {
+    this.templatePickerOpen.set(false);
+  }
+
+  protected templateOptionItems(): Array<{ label: string; value: string }> {
+    return this.templateDirectories().map((tpl) => ({
+      value: tpl.kind,
+      label: tpl.connected ? `${tpl.name} (preset)` : tpl.name,
+    }));
+  }
+
+  protected saveTemplateSelection(): void {
+    const selected = new Set(this.templateSelection());
+    const updates = this.templateDirectories()
+      .filter((tpl) => (tpl.enabled && !selected.has(tpl.kind)) || (!tpl.enabled && selected.has(tpl.kind)))
+      .map((tpl) => this.auth.toggleTemplateWorkspaceDirectory(this.state.tableId(), tpl.kind, selected.has(tpl.kind)));
+    if (updates.length === 0) {
+      this.closeTemplatePicker();
+      return;
+    }
+    this.err.set(null);
+    forkJoin(updates).subscribe({
+      next: () => {
+        this.closeTemplatePicker();
+        this.refresh();
+      },
+      error: (e) => this.err.set(e?.error?.detail ?? 'Не удалось применить изменения по справочникам'),
+    });
+  }
+
+  protected cleanupLegacyCustom(): void {
+    this.err.set(null);
+    this.auth.cleanupLegacyCustomWorkspaceDirectories(this.state.tableId()).subscribe({
+      next: (resp) => {
+        this.err.set(`${resp.detail}: удалено ${resp.removed_directories} справочников и ${resp.removed_items} записей.`);
+        this.backToDirectoryCards();
+        this.refresh();
+      },
+      error: (e) => this.err.set(e?.error?.detail ?? 'Не удалось удалить legacy-кастомные справочники'),
+    });
   }
 
   protected removeDir(dirId: number): void {

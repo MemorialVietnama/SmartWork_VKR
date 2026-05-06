@@ -296,6 +296,17 @@ export class WorkspaceTasksTabComponent implements OnInit {
     return `${done}/${task.checklist.length}`;
   }
 
+  protected tagClass(tag: string): string {
+    const normalized = tag.trim().toLowerCase();
+    if (normalized === 'срочно' || normalized === 'urgent') {
+      return 'tag-urgent';
+    }
+    if (normalized === 'проблема' || normalized === 'bug') {
+      return 'tag-problem';
+    }
+    return 'tag-default';
+  }
+
   protected toggleChecklistItem(task: WorkspaceTaskView, itemId: string): void {
     const updatedChecklist = task.checklist.map((item) =>
       item.id === itemId ? { ...item, done: !item.done } : item,

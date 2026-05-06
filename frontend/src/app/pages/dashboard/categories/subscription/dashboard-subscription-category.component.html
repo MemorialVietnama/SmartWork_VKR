@@ -113,12 +113,15 @@
             />
             <p-button label="Применить" size="small" (onClick)="$any(ctx())?.applyPromo(table.id)" />
           </div>
+          <small class="promo-hint">
+            Примените промокод <strong>NEW2026</strong> и получите скидку 15% на заказ.
+          </small>
           @if ($any(ctx())?.getTableSubscription(table.id)?.promoError) {
             <small class="promo-error">{{ $any(ctx())?.getTableSubscription(table.id)?.promoError }}</small>
           }
 
           <div class="sub-totals">
-            <p>Подытог: <strong>{{ $any(ctx())?.formatRub($any(ctx())?.tableSubtotal(table.id) ?? 0) }}</strong></p>
+            <p>Промежуточный итог: <strong>{{ $any(ctx())?.formatRub($any(ctx())?.tableSubtotal(table.id) ?? 0) }}</strong></p>
             <p>
               Скидка за 3+ пункта:
               <strong>-{{ $any(ctx())?.formatRub($any(ctx())?.tableAutoDiscount(table.id) ?? 0) }}</strong>

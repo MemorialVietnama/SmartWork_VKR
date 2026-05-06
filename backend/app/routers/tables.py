@@ -1,9 +1,9 @@
 import secrets
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,6 +50,44 @@ def _owner_short_name(user: User) -> str:
 
 
 TABLE_DELETE_CODE_TTL_SECONDS = 10 * 60
+
+
+async def _compute_table_stats(db: AsyncSession, table_id: int) -> TableStatDto:
+    now = datetime.now(UTC)
+    q_queued = await db.execute(
+        select(func.count()).select_from(TableOrder).where(TableOrder.table_id == table_id, TableOrder.status == "queued"),
+    )
+    queued = int(q_queued.scalar() or 0)
+    q_new_orders_24h = await db.execute(
+        select(func.count())
+        .select_from(TableOrder)
+        .where(
+            TableOrder.table_id == table_id,
+            TableOrder.created_at >= now - timedelta(hours=24),
+            TableOrder.created_at <= now,
+        ),
+    )
+    new_orders_24h = int(q_new_orders_24h.scalar() or 0)
+    active_employees_res = await db.execute(
+        select(func.count(func.distinct(TableCalendarSlot.title))).where(
+            TableCalendarSlot.table_id == table_id,
+            TableCalendarSlot.title.is_not(None),
+            TableCalendarSlot.title != "",
+        ),
+    )
+    active_employees = int(active_employees_res.scalar() or 0)
+    td = await db.execute(select(func.count()).select_from(TableTask).where(TableTask.table_id == table_id, TableTask.status == "done"))
+    tw = await db.execute(select(func.count()).select_from(TableTask).where(TableTask.table_id == table_id, TableTask.status == "waiting"))
+    tn = await db.execute(select(func.count()).select_from(TableTask).where(TableTask.table_id == table_id, TableTask.status == "new"))
+    waiting_total = int((tw.scalar() or 0) + (tn.scalar() or 0))
+    return TableStatDto(
+        active_employees=max(0, active_employees),
+        queued_orders=queued,
+        tasks_done=int(td.scalar() or 0),
+        tasks_waiting=waiting_total,
+        tasks_new=0,
+        new_orders_24h=new_orders_24h,
+    )
 
 
 @router.post("/create/request-code")
@@ -343,18 +381,20 @@ async def my_tables(
         owners = owners_res.scalars().all()
         owners_map = {owner.id: owner for owner in owners}
 
-    return [
-        TableDto(
-            id=table.id,
-            title=table.title,
-            description=table.description,
-            color=table.color,
-            total_participants=1 + members_count.get(table.id, 0),
-            owner_short_name=_owner_short_name(owners_map.get(table.owner_id, current_user)),
-            stats=TableStatDto(),
+    out: list[TableDto] = []
+    for table in tables:
+        out.append(
+            TableDto(
+                id=table.id,
+                title=table.title,
+                description=table.description,
+                color=table.color,
+                total_participants=1 + members_count.get(table.id, 0),
+                owner_short_name=_owner_short_name(owners_map.get(table.owner_id, current_user)),
+                stats=await _compute_table_stats(db, table.id),
+            )
         )
-        for table in tables
-    ]
+    return out
 
 
 @router.get("/analytics/my", response_model=list[TableAnalyticsDto])
@@ -386,7 +426,6 @@ async def my_tables_analytics(
                 table_id=table.id,
                 table_name=table.title,
                 participants=1 + members_count,
-                active_employees=members_count,
                 rng=rng,
             ),
         )

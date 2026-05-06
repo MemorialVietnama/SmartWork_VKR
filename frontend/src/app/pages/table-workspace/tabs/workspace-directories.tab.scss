@@ -29,6 +29,23 @@
   margin-bottom: 0.7rem;
 }
 
+.tw-template-block {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+}
+
+.tw-template-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tw-template-picker {
+  display: grid;
+  gap: 0.6rem;
+}
+
 .tw-dir-toolbar input,
 .tw-dir-toolbar select,
 .tw-custom-row-editor input,
