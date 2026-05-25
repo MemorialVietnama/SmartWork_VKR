@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { distinctUntilChanged, forkJoin } from 'rxjs';
 
 import { ButtonModule } from 'primeng/button';
@@ -25,15 +25,10 @@ export class TableWorkspacePageComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   ngOnInit(): void {
+    this.applyTableIdFromRoute(this.route.snapshot.paramMap);
+
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((pm) => {
-      const raw = pm.get('tableId');
-      const id = raw ? Number(raw) : NaN;
-      if (!Number.isFinite(id) || id < 1) {
-        void this.router.navigate(['/dashboard']);
-        return;
-      }
-      this.state.tableId.set(id);
-      this.reloadContext(id);
+      this.applyTableIdFromRoute(pm);
     });
 
     toObservable(this.state.contextReloadTick)
@@ -78,6 +73,20 @@ export class TableWorkspacePageComponent implements OnInit {
         }
       },
     });
+  }
+
+  private applyTableIdFromRoute(pm: ParamMap): void {
+    const raw = pm.get('tableId');
+    const id = raw ? Number(raw) : NaN;
+    if (!Number.isFinite(id) || id < 1) {
+      void this.router.navigate(['/dashboard']);
+      return;
+    }
+    const changed = this.state.tableId() !== id;
+    this.state.tableId.set(id);
+    if (changed) {
+      this.reloadContext(id);
+    }
   }
 
   protected backToTables(): void {

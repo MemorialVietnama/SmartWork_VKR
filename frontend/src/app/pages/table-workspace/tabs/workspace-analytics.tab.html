@@ -1,30 +1,31 @@
 <div class="tw-tab">
   <h2>Аналитика</h2>
-  @if (!unlocked) {
+  @if (!unlocked()) {
     <p-card>
       <p>Аналитика не подключена для этого стола.</p>
       <p class="tw-muted">Включите бонус в разделе «Подписка».</p>
     </p-card>
-  } @else if (loading) {
+  } @else if (loading()) {
     <p class="tw-muted">Загрузка аналитики…</p>
-  } @else if (err) {
-    <p class="tw-tab-error">{{ err }}</p>
-  } @else if (data) {
+  } @else if (err()) {
+    <p class="tw-tab-error">{{ err() }}</p>
+  } @else if (data()) {
+    @let analytics = data()!;
     <section class="wa-head">
       <div>
-        <h3>{{ data.table_name }}</h3>
-        <p class="tw-muted">Участников: {{ data.participants }}, активных сотрудников: {{ data.active_employees }}</p>
+        <h3>{{ analytics.table_name }}</h3>
+        <p class="tw-muted">Участников: {{ analytics.participants }}, активных сотрудников: {{ analytics.active_employees }}</p>
       </div>
       <div class="wa-period-switch">
         @for (p of periods; track p.id) {
-          <button type="button" [class.active]="period === p.id" (click)="selectPeriod(p.id)">{{ p.label }}</button>
+          <button type="button" [class.active]="period() === p.id" (click)="selectPeriod(p.id)">{{ p.label }}</button>
         }
       </div>
     </section>
     <section class="wa-filters">
       <label>
         <span>Статус заказа</span>
-        <select [value]="statusFilter" (change)="setStatusFilter($any($event.target).value)">
+        <select [value]="statusFilter()" (change)="setStatusFilter($any($event.target).value)">
           <option value="">Все</option>
           <option value="queued">В очереди</option>
           <option value="in_progress">В работе</option>
@@ -34,7 +35,7 @@
       </label>
       <label>
         <span>Сотрудник</span>
-        <select [value]="assigneeFilter ?? ''" (change)="setAssigneeFilter($any($event.target).value)">
+        <select [value]="assigneeFilter() ?? ''" (change)="setAssigneeFilter($any($event.target).value)">
           <option value="">Все</option>
           @for (emp of employeeFilterOptions(); track emp.id) {
             <option [value]="emp.id">{{ emp.label }}</option>
@@ -43,7 +44,7 @@
       </label>
       <label>
         <span>Услуга</span>
-        <select [value]="serviceFilter ?? ''" (change)="setServiceFilter($any($event.target).value)">
+        <select [value]="serviceFilter() ?? ''" (change)="setServiceFilter($any($event.target).value)">
           <option value="">Все</option>
           @for (service of serviceFilterOptions(); track service.id) {
             <option [value]="service.id">{{ service.label }}</option>
@@ -54,7 +55,7 @@
 
     <section class="wa-kpi-grid">
       @for (kpi of kpis(); track kpi.key) {
-        <button type="button" class="wa-kpi-card" [class.active]="selectedKpiKey === kpi.key" (click)="selectKpi(kpi.key)">
+        <button type="button" class="wa-kpi-card" [class.active]="selectedKpiKey() === kpi.key" (click)="selectKpi(kpi.key)">
           <small>{{ kpi.title }}</small>
           <strong>{{ kpi.value }}</strong>
           <span [class.positive]="kpi.delta.startsWith('+')" [class.negative]="kpi.delta.startsWith('-')">{{ kpi.delta }}</span>
@@ -89,7 +90,7 @@
         </div>
         <div class="wa-chip-list">
           @for (item of chartLabels(); track item.title) {
-            <button type="button" class="wa-chip" [class.active]="selectedChartTitle === item.title" (click)="selectChart(item.title)">
+            <button type="button" class="wa-chip" [class.active]="selectedChartTitle() === item.title" (click)="selectChart(item.title)">
               <span>{{ item.title }}</span>
               <small>{{ item.subtitle }}</small>
             </button>
@@ -109,15 +110,15 @@
     </section>
 
     <section class="wa-category-switch">
-      <button type="button" [class.active]="selectedCategory === 'orders'" (click)="selectCategory('orders')">Заказы</button>
-      <button type="button" [class.active]="selectedCategory === 'services'" (click)="selectCategory('services')">Услуги</button>
-      <button type="button" [class.active]="selectedCategory === 'employees'" (click)="selectCategory('employees')">Сотрудники</button>
+      <button type="button" [class.active]="selectedCategory() === 'orders'" (click)="selectCategory('orders')">Заказы</button>
+      <button type="button" [class.active]="selectedCategory() === 'services'" (click)="selectCategory('services')">Услуги</button>
+      <button type="button" [class.active]="selectedCategory() === 'employees'" (click)="selectCategory('employees')">Сотрудники</button>
     </section>
 
-    @if (selectedCategory !== 'orders' || selectedChartTitle) {
+    @if (selectedCategory() !== 'orders' || selectedChartTitle()) {
       <section class="wa-drilldown">
         <div class="wa-panel-head">
-          <h4>Детализация: {{ selectedCategory === 'orders' ? selectedChartTitle : (selectedCategory === 'services' ? 'Услуги' : 'Сотрудники') }}</h4>
+          <h4>Детализация: {{ selectedCategory() === 'orders' ? selectedChartTitle() : (selectedCategory() === 'services' ? 'Услуги' : 'Сотрудники') }}</h4>
         </div>
         <div class="wa-drill-grid">
           @for (row of drilldownRows(); track row.label) {

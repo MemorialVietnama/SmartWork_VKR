@@ -32,7 +32,7 @@ app-workspace-calendar-widget {
   font-size: 0.9rem;
 }
 
-.tw-form-grid label span {
+.tw-form-grid label > span:first-child {
   color: var(--p-text-muted-color, #64748b);
 }
 
@@ -166,12 +166,249 @@ app-workspace-calendar-widget {
   width: 100%;
 }
 
+:host ::ng-deep .tw-multi .p-multiselect-label-container {
+  min-height: 2.45rem;
+  display: flex;
+  align-items: center;
+}
+
+.tw-option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tw-option-service-row {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.tw-option-service-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.tw-service-cost {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #0f766e;
+  white-space: nowrap;
+}
+
+.tw-option-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.tw-option-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--p-content-border-color, #dbe4f1);
+  background: color-mix(in srgb, #6366f1 8%, #fff);
+  padding: 0.1rem 0.42rem;
+  font-size: 0.7rem;
+  color: var(--p-text-muted-color, #64748b);
+}
+
+.tw-option-avatar,
+.tw-option-avatar-fallback {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+}
+
+.tw-option-avatar {
+  object-fit: cover;
+  border: 1px solid var(--p-content-border-color, #dbe4f1);
+}
+
+.tw-option-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(140deg, #6366f1, #14b8a6);
+}
+
+.tw-option-title {
+  font-size: 0.88rem;
+  color: var(--p-text-color, #0f172a);
+}
+
+.tw-option-sub {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color, #64748b);
+}
+
+.tw-option-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #4338ca;
+  background: color-mix(in srgb, #6366f1 14%, #fff);
+}
+
+.tw-selected-placeholder {
+  color: var(--p-text-muted-color, #64748b);
+  font-size: 0.84rem;
+}
+
+.tw-selected-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.tw-selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--p-content-border-color, #dbe4f1);
+  border-radius: 999px;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.78rem;
+  background: color-mix(in srgb, var(--p-primary-100, #e0e7ff) 35%, #fff);
+}
+
+.tw-selected-chip-avatar,
+.tw-selected-chip-fallback {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+}
+
+.tw-selected-chip-avatar {
+  object-fit: cover;
+}
+
+.tw-selected-chip-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(145deg, #6366f1, #14b8a6);
+}
+
+.tw-selected-chip-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #4338ca;
+  background: color-mix(in srgb, #6366f1 15%, #fff);
+}
+
+.tw-readonly-wrap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tw-readonly-wrap i {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.tw-status-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.status-queued {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.status-progress {
+  background: #ecfeff;
+  border-color: #99f6e4;
+  color: #0f766e;
+}
+
+.status-completed {
+  background: #ecfdf5;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.status-cancelled {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.tw-confirm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.8rem;
+}
+
+.tw-confirm-block {
+  border: 1px solid var(--p-content-border-color, #e2e8f0);
+  border-radius: 0.7rem;
+  padding: 0.55rem;
+  display: grid;
+  gap: 0.5rem;
+  background: linear-gradient(165deg, #fff, #f8fafc);
+}
+
+.tw-confirm-block h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--p-text-color, #0f172a);
+}
+
+.tw-confirm-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--p-content-border-color, #e2e8f0);
+  border-radius: 0.65rem;
+  padding: 0.45rem 0.55rem;
+  background: linear-gradient(160deg, #fff, #f8fafc);
+}
+
+.tw-confirm-item i {
+  color: #6366f1;
+}
+
+.tw-confirm-grid .full {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 900px) {
   .tw-form-grid {
     grid-template-columns: 1fr;
   }
 
   .tw-step-head {
+    grid-template-columns: 1fr;
+  }
+
+  .tw-confirm-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -181,24 +418,50 @@ app-workspace-calendar-widget {
 :host-context(.sw-dark) .tw-slot-menu,
 :host-context(.sw-dark) .tw-step-head button,
 :host-context(.sw-dark) .tw-employee-pill,
+:host-context(.sw-dark) .tw-confirm-block,
+:host-context(.sw-dark) .tw-confirm-item,
 :host-context(html[data-theme='dark']) .tw-form-grid input,
 :host-context(html[data-theme='dark']) .tw-form-grid select,
 :host-context(html[data-theme='dark']) .tw-slot-menu,
 :host-context(html[data-theme='dark']) .tw-step-head button,
 :host-context(html[data-theme='dark']) .tw-employee-pill,
+:host-context(html[data-theme='dark']) .tw-confirm-block,
+:host-context(html[data-theme='dark']) .tw-confirm-item,
 .sw-dark .tw-form-grid input,
 .sw-dark .tw-form-grid select,
 .sw-dark .tw-slot-menu,
 .sw-dark .tw-step-head button,
 .sw-dark .tw-employee-pill,
+.sw-dark .tw-confirm-block,
+.sw-dark .tw-confirm-item,
 html[data-theme='dark'] .tw-form-grid input,
 html[data-theme='dark'] .tw-form-grid select,
 html[data-theme='dark'] .tw-slot-menu,
 html[data-theme='dark'] .tw-step-head button,
-html[data-theme='dark'] .tw-employee-pill {
+html[data-theme='dark'] .tw-employee-pill,
+html[data-theme='dark'] .tw-confirm-block,
+html[data-theme='dark'] .tw-confirm-item {
   background: #0f172a;
   border-color: #334155;
   color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-confirm-block h4,
+:host-context(html[data-theme='dark']) .tw-confirm-block h4,
+.sw-dark .tw-confirm-block h4,
+html[data-theme='dark'] .tw-confirm-block h4 {
+  color: #e2e8f0;
+}
+
+:host-context(.sw-dark) .tw-option-title,
+:host-context(.sw-dark) .tw-option-sub,
+:host-context(html[data-theme='dark']) .tw-option-title,
+:host-context(html[data-theme='dark']) .tw-option-sub,
+.sw-dark .tw-option-title,
+.sw-dark .tw-option-sub,
+html[data-theme='dark'] .tw-option-title,
+html[data-theme='dark'] .tw-option-sub {
+  color: #cbd5e1;
 }
 
 :host-context(.sw-dark) .tw-step-head button.active,
@@ -235,10 +498,10 @@ html[data-theme='dark'] .tw-rating-stars button.active {
   color: #fcd34d;
 }
 
-:host-context(.sw-dark) .tw-form-grid label span,
-:host-context(html[data-theme='dark']) .tw-form-grid label span,
-.sw-dark .tw-form-grid label span,
-html[data-theme='dark'] .tw-form-grid label span {
+:host-context(.sw-dark) .tw-form-grid label > span:first-child,
+:host-context(html[data-theme='dark']) .tw-form-grid label > span:first-child,
+.sw-dark .tw-form-grid label > span:first-child,
+html[data-theme='dark'] .tw-form-grid label > span:first-child {
   color: #94a3b8;
 }
 

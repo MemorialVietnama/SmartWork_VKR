@@ -136,33 +136,6 @@
               (ngModelChange)="$any(ctx()).appearanceSettings.theme = $event"
             />
           </label>
-          <label>
-            <span>Плотность интерфейса</span>
-            <p-select
-              [options]="[
-                { label: 'Компактная', value: 'compact' },
-                { label: 'Комфортная', value: 'comfortable' }
-              ]"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="$any(ctx())?.appearanceSettings?.density"
-              (ngModelChange)="$any(ctx()).appearanceSettings.density = $event"
-            />
-          </label>
-          <label>
-            <span>Размер карточек</span>
-            <p-select
-              [options]="[
-                { label: 'Маленькие', value: 'small' },
-                { label: 'Средние', value: 'medium' },
-                { label: 'Крупные', value: 'large' }
-              ]"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="$any(ctx())?.appearanceSettings?.cardSize"
-              (ngModelChange)="$any(ctx()).appearanceSettings.cardSize = $event"
-            />
-          </label>
         </div>
         @if ($any(ctx())?.settingsError) {
           <p-message severity="error" [text]="$any(ctx())?.settingsError ?? ''" [closable]="false" />

@@ -1,4 +1,5 @@
 <div class="tw-tab tw-cal">
+  <p-toast key="calendarOrder" position="top-right" />
   <h2>Календарь</h2>
   <p class="tw-muted">Слоты записей по этому столу. Режим и период выберите в виджете ниже.</p>
   <div class="tw-cal-actions">
@@ -42,9 +43,6 @@
     </div>
   }
 
-  @if (actionError) {
-    <p class="tw-tab-error">{{ actionError }}</p>
-  }
 </div>
 
 <p-dialog
@@ -132,13 +130,13 @@
   [header]="editOrderId ? 'Редактирование заказа' : 'Новый заказ'"
 >
   <div class="tw-step-head">
-    <button type="button" [class.active]="createOrderStep === 1">1. Время</button>
-    <button type="button" [class.active]="createOrderStep === 2">2. Клиент</button>
-    <button type="button" [class.active]="createOrderStep === 3">3. Услуги</button>
-    <button type="button" [class.active]="createOrderStep === 4">4. Справочники</button>
-    <button type="button" [class.active]="createOrderStep === 5">5. Сотрудник</button>
-    <button type="button" [class.active]="createOrderStep === 6">6. Цена</button>
-    <button type="button" [class.active]="createOrderStep === 7">7. Подтверждение</button>
+    <button type="button" [class.active]="createOrderStep === 1" (click)="goOrderStep(1)">1. Время</button>
+    <button type="button" [class.active]="createOrderStep === 2" (click)="goOrderStep(2)">2. Клиент</button>
+    <button type="button" [class.active]="createOrderStep === 3" (click)="goOrderStep(3)">3. Питомцы</button>
+    <button type="button" [class.active]="createOrderStep === 4" (click)="goOrderStep(4)">4. Услуги</button>
+    <button type="button" [class.active]="createOrderStep === 5" (click)="goOrderStep(5)">5. Сотрудник</button>
+    <button type="button" [class.active]="createOrderStep === 6" (click)="goOrderStep(6)">6. Цена</button>
+    <button type="button" [class.active]="createOrderStep === 7" (click)="goOrderStep(7)">7. Подтверждение</button>
   </div>
 
   @if (createOrderStep === 1) {
@@ -166,12 +164,52 @@
     <div class="tw-form-grid">
       <label class="full">
         <span>Клиент</span>
-        <select pInputText [(ngModel)]="orderClientId">
-          <option [ngValue]="null">Выберите клиента</option>
-          @for (opt of clientOptions(); track opt.value) {
-            <option [ngValue]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
+        <p-multiSelect
+          [options]="clientOptions()"
+          [ngModel]="orderClientSelection()"
+          (ngModelChange)="onOrderClientSelectionChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          [maxSelectedLabels]="clientSelectionLimit()"
+          [showClear]="true"
+          [filter]="true"
+          appendTo="body"
+          styleClass="w-full tw-multi"
+        >
+          <ng-template pTemplate="item" let-option>
+            <div class="tw-option-row">
+              @if (option.avatarUrl) {
+                <img class="tw-option-avatar" [src]="option.avatarUrl" alt="Аватар клиента" />
+              } @else {
+                <span class="tw-option-avatar-fallback">{{ option.label.slice(0, 1).toUpperCase() }}</span>
+              }
+              <div>
+                <div class="tw-option-title">{{ option.label }}</div>
+                <div class="tw-option-sub">{{ option.subtitle }}</div>
+              </div>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="selecteditems" let-values>
+            @if (!values || values.length === 0) {
+              <span class="tw-selected-placeholder">Выберите клиента</span>
+            } @else {
+              <div class="tw-selected-row">
+                @for (selectedValue of values; track selectedValue) {
+                  @if (selectedClientFromUnknown(selectedValue); as selectedClientOption) {
+                    <span class="tw-selected-chip">
+                      @if (selectedClientOption.avatarUrl) {
+                        <img class="tw-selected-chip-avatar" [src]="selectedClientOption.avatarUrl" alt="Аватар клиента" />
+                      } @else {
+                        <span class="tw-selected-chip-fallback">{{ selectedClientOption.label.slice(0, 1).toUpperCase() }}</span>
+                      }
+                      {{ selectedClientOption.label }}
+                    </span>
+                  }
+                }
+              </div>
+            }
+          </ng-template>
+        </p-multiSelect>
       </label>
       <div class="full">
         <p-button label="Создать клиента" icon="pi pi-user-plus" styleClass="p-button-outlined" (onClick)="openQuickClientDialog()" />
@@ -182,17 +220,108 @@
   @if (createOrderStep === 3) {
     <div class="tw-form-grid">
       <label class="full">
+        <span>Питомцы клиента</span>
+        <p-multiSelect
+          [options]="petOptions()"
+          [ngModel]="orderPetIds()"
+          (ngModelChange)="onOrderPetSelectionChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          [maxSelectedLabels]="3"
+          [showClear]="true"
+          [filter]="true"
+          appendTo="body"
+          styleClass="w-full tw-multi"
+        >
+          <ng-template pTemplate="item" let-option>
+            <div class="tw-option-row">
+              @if (option.avatarUrl) {
+                <img class="tw-option-avatar" [src]="option.avatarUrl" alt="Фото питомца" />
+              } @else {
+                <span class="tw-option-avatar-fallback">{{ option.label.slice(0, 1).toUpperCase() }}</span>
+              }
+              <div class="tw-option-title">{{ option.label }}</div>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="selecteditems" let-values>
+            @if (!values || values.length === 0) {
+              <span class="tw-selected-placeholder">Выберите питомцев</span>
+            } @else {
+              <div class="tw-selected-row">
+                @for (selectedValue of values; track selectedValue) {
+                  @if (selectedPetFromUnknown(selectedValue); as selectedPetOption) {
+                    <span class="tw-selected-chip">
+                      @if (selectedPetOption.avatarUrl) {
+                        <img class="tw-selected-chip-avatar" [src]="selectedPetOption.avatarUrl" alt="Фото питомца" />
+                      } @else {
+                        <span class="tw-selected-chip-fallback">{{ selectedPetOption.label.slice(0, 1).toUpperCase() }}</span>
+                      }
+                      {{ selectedPetOption.label }}
+                    </span>
+                  }
+                }
+              </div>
+            }
+          </ng-template>
+        </p-multiSelect>
+      </label>
+      @if (!groomingSelected()) {
+        <p class="full tw-muted">Подсказка: для сценария груминга можно выбрать до 2 клиентов и питомцев, привязанных к ним.</p>
+      }
+    </div>
+  }
+
+  @if (createOrderStep === 4) {
+    <div class="tw-form-grid">
+      <label class="full">
         <span>Услуги</span>
         <p-multiSelect
           [options]="serviceOptions()"
           optionLabel="label"
           optionValue="value"
-          [ngModel]="orderServiceIds"
-          (ngModelChange)="orderServiceIds = $event ?? []"
+          [ngModel]="orderServiceIds()"
+          (ngModelChange)="onOrderServicesChange($event)"
           appendTo="body"
-          defaultLabel="Выберите услуги"
+          [maxSelectedLabels]="3"
+          [showClear]="true"
           [filter]="true"
-        />
+          styleClass="w-full tw-multi"
+        >
+          <ng-template pTemplate="item" let-option>
+            <div class="tw-option-service-row">
+              <div class="tw-option-service-head">
+                <div class="tw-option-row">
+                  <span class="tw-option-icon"><i [class]="option.icon"></i></span>
+                  <div class="tw-option-title">{{ option.label }}</div>
+                </div>
+                <span class="tw-service-cost">{{ option.cost }} ₽</span>
+              </div>
+              @if (option.subservices.length > 0) {
+                <div class="tw-option-badges">
+                  @for (sub of option.subservices; track sub) {
+                    <span class="tw-option-badge">{{ sub }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </ng-template>
+          <ng-template pTemplate="selecteditems" let-values>
+            @if (!values || values.length === 0) {
+              <span class="tw-selected-placeholder">Выберите услуги</span>
+            } @else {
+              <div class="tw-selected-row">
+                @for (selectedValue of values; track selectedValue) {
+                  @if (selectedServiceFromUnknown(selectedValue); as selectedServiceOption) {
+                    <span class="tw-selected-chip">
+                      <span class="tw-selected-chip-icon"><i [class]="selectedServiceOption.icon"></i></span>
+                      {{ selectedServiceOption.label }}
+                    </span>
+                  }
+                }
+              </div>
+            }
+          </ng-template>
+        </p-multiSelect>
       </label>
       <div class="full">
         <p-button label="Создать услугу" icon="pi pi-plus" styleClass="p-button-outlined" (onClick)="openQuickServiceDialog()" />
@@ -200,39 +329,48 @@
     </div>
   }
 
-  @if (createOrderStep === 4) {
-    <div class="tw-form-grid">
-      @for (dir of orderCustomDirectories(); track dir.id) {
-        <label class="full">
-          <span>{{ dir.name }}</span>
-          <p-multiSelect
-            [options]="customDirectoryOptions(dir)"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="customSelectionFor(dir.id)"
-            (ngModelChange)="setCustomSelection(dir.id, $event ?? [])"
-            appendTo="body"
-            defaultLabel="Выберите записи"
-            [filter]="true"
-          />
-        </label>
-      }
-      @if (orderCustomDirectories().length === 0) {
-        <p class="tw-muted full">Для заказов не подключены кастомные справочники в настройках стола.</p>
-      }
-    </div>
-  }
-
   @if (createOrderStep === 5) {
     <div class="tw-form-grid">
       <label class="full">
         <span>Сотрудник</span>
-        <select pInputText [(ngModel)]="orderAssigneeId">
-          <option [ngValue]="null">Без назначения</option>
-          @for (member of state.members(); track member.user_id) {
-            <option [ngValue]="member.user_id">{{ member.short_name }}</option>
-          }
-        </select>
+        <p-multiSelect
+          [options]="employeeOptions()"
+          [ngModel]="orderAssigneeSelection()"
+          (ngModelChange)="onOrderAssigneeSelectionChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          [maxSelectedLabels]="1"
+          [showClear]="true"
+          [filter]="true"
+          appendTo="body"
+          styleClass="w-full tw-multi"
+        >
+          <ng-template pTemplate="item" let-option>
+            <div class="tw-option-row">
+              <span class="tw-option-avatar-fallback">{{ option.initials }}</span>
+              <div>
+                <div class="tw-option-title">{{ option.label }}</div>
+                <div class="tw-option-sub">{{ option.role }}</div>
+              </div>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="selecteditems" let-values>
+            @if (!values || values.length === 0) {
+              <span class="tw-selected-placeholder">Выберите сотрудника</span>
+            } @else {
+              <div class="tw-selected-row">
+                @for (selectedValue of values; track selectedValue) {
+                  @if (selectedEmployeeFromUnknown(selectedValue); as selectedEmployeeOption) {
+                    <span class="tw-selected-chip">
+                      <span class="tw-selected-chip-fallback">{{ selectedEmployeeOption.initials }}</span>
+                      {{ selectedEmployeeOption.label }}
+                    </span>
+                  }
+                }
+              </div>
+            }
+          </ng-template>
+        </p-multiSelect>
       </label>
       @if (orderWarnings.length > 0) {
         <ul class="full tw-tab-error">
@@ -248,34 +386,79 @@
     <div class="tw-form-grid">
       <label>
         <span>База из услуг</span>
-        <input type="number" pInputText [ngModel]="selectedServiceCost()" readonly />
+        <div class="tw-readonly-wrap"><i class="pi pi-lock"></i><input type="number" pInputText [ngModel]="selectedServiceCost()" readonly /></div>
       </label>
       <label>
         <span>Корректировка</span>
-        <input type="number" pInputText [(ngModel)]="orderPriceAdjustment" />
+        <input type="number" pInputText [ngModel]="orderPriceAdjustment()" (ngModelChange)="onOrderPriceAdjustmentChange($event)" />
       </label>
       <label>
         <span>Итог</span>
-        <input type="number" pInputText [ngModel]="orderPriceTotal()" readonly />
+        <div class="tw-readonly-wrap"><i class="pi pi-lock"></i><input type="number" pInputText [ngModel]="orderPriceTotal()" readonly /></div>
       </label>
       <label>
         <span>Статус</span>
-        <select pInputText [(ngModel)]="orderStatus">
-          <option value="queued">В очереди</option>
-          <option value="in_progress">В работе</option>
-          <option value="completed">Завершен</option>
-          <option value="cancelled">Отменен</option>
-        </select>
+        <p-multiSelect
+          [options]="statusOptions"
+          [ngModel]="orderStatusSelection()"
+          (ngModelChange)="onOrderStatusSelectionChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          [maxSelectedLabels]="1"
+          [showClear]="false"
+          appendTo="body"
+          styleClass="w-full tw-multi"
+        >
+          <ng-template pTemplate="item" let-option>
+            <div class="tw-status-row" [class]="option.tone">
+              <i [class]="option.icon"></i>
+              <span>{{ option.label }}</span>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="selecteditems" let-values>
+            @if (!values || values.length === 0) {
+              <span class="tw-selected-placeholder">Выберите статус</span>
+            } @else {
+              @if (selectedStatusFromUnknown(values[0]); as selectedStatus) {
+                <span class="tw-selected-chip">
+                  <span class="tw-selected-chip-icon"><i [class]="selectedStatus.icon"></i></span>
+                  {{ selectedStatus.label }}
+                </span>
+              }
+            }
+          </ng-template>
+        </p-multiSelect>
       </label>
     </div>
   }
 
   @if (createOrderStep === 7) {
-    <div class="tw-form-grid">
+    <div class="tw-confirm-grid">
       <p class="full tw-muted">Проверьте данные и нажмите сохранить.</p>
-      <p class="full"><strong>Клиент:</strong> {{ selectedClientLabel() }}</p>
-      <p class="full"><strong>Услуг:</strong> {{ orderServiceIds.length }}</p>
-      <p class="full"><strong>Итог:</strong> {{ orderPriceTotal() }}</p>
+      <div class="tw-confirm-block">
+        <h4><i class="pi pi-calendar"></i> Дата и время</h4>
+        <div class="tw-confirm-item"><span><strong>Дата:</strong> {{ orderDate || '—' }}</span></div>
+        <div class="tw-confirm-item"><span><strong>Время:</strong> {{ orderTimeFrom || '—' }}</span></div>
+        <div class="tw-confirm-item"><span><strong>Длительность:</strong> {{ orderDurationMinutes }} мин.</span></div>
+      </div>
+      <div class="tw-confirm-block">
+        <h4><i class="pi pi-user"></i> Клиент и питомец</h4>
+        <div class="tw-confirm-item"><span><strong>Клиент:</strong> {{ selectedClientLabel() }}</span></div>
+        <div class="tw-confirm-item"><span><strong>Питомцы:</strong> {{ selectedPetLabels().length > 0 ? selectedPetLabels().join(', ') : '—' }}</span></div>
+      </div>
+      <div class="tw-confirm-block">
+        <h4><i class="pi pi-users"></i> Сотрудник и услуги</h4>
+        <div class="tw-confirm-item"><span><strong>Сотрудник:</strong> {{ selectedAssigneeLabel() }}</span></div>
+        <div class="tw-confirm-item"><span><strong>Услуги:</strong> {{ selectedServiceLabels() || '—' }}</span></div>
+      </div>
+      <div class="tw-confirm-block">
+        <h4><i class="pi pi-wallet"></i> Стоимость</h4>
+        <div class="tw-confirm-item"><span><strong>База:</strong> {{ selectedServiceCost() }}</span></div>
+        <div class="tw-confirm-item"><span><strong>Корректировка:</strong> {{ orderPriceAdjustment() }}</span></div>
+        <div class="tw-confirm-item"><span><strong>Итог:</strong> {{ orderPriceTotal() }}</span></div>
+      </div>
+      <div class="tw-confirm-item full"><i class="pi pi-file-edit"></i><span><strong>Обозначение:</strong> {{ orderTitle || 'Заказ' }}</span></div>
+      <div class="tw-confirm-item full"><i [class]="selectedStatusOption().icon"></i><span><strong>Статус:</strong> {{ selectedStatusOption().label }}</span></div>
     </div>
   }
 

@@ -940,11 +940,44 @@ async def _resolve_service_total(db: AsyncSession, service_item_ids: list[int]) 
     total = 0.0
     for row in rows:
         payload = row.payload or {}
-        cost = payload.get("cost")
-        try:
-            total += float(cost or 0.0)
-        except (TypeError, ValueError):
-            continue
+        direct_candidates = [
+            payload.get("cost"),
+            payload.get("price"),
+            (payload.get("inner") or {}).get("cost"),
+            (payload.get("detail") or {}).get("cost"),
+            row.value,
+        ]
+        direct_total = 0.0
+        for candidate in direct_candidates:
+            try:
+                parsed = float(candidate or 0.0)
+            except (TypeError, ValueError):
+                parsed = 0.0
+            if parsed > 0:
+                direct_total = parsed
+                break
+
+        subservices_total = 0.0
+        subservices_sources = [
+            (payload.get("inner") or {}).get("subservices"),
+            payload.get("subservices"),
+            (payload.get("detail") or {}).get("subservices"),
+        ]
+        for source in subservices_sources:
+            if not isinstance(source, list):
+                continue
+            for entry in source:
+                if not isinstance(entry, dict):
+                    continue
+                for key in ("cost", "price"):
+                    try:
+                        sub_value = float(entry.get(key) or 0.0)
+                    except (TypeError, ValueError):
+                        sub_value = 0.0
+                    if sub_value > 0:
+                        subservices_total += sub_value
+
+        total += subservices_total if subservices_total > 0 else direct_total
     return total
 
 

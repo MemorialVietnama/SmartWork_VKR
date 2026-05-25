@@ -1,8 +1,8 @@
-.tw-employees h2 {
+.table-workspace-page .tw-employees h2 {
   margin: 0;
 }
 
-.tw-employees {
+.table-workspace-page .tw-employees {
   padding: 0.9rem;
   border-radius: 1rem;
   background:
@@ -12,16 +12,16 @@
     var(--p-surface-50, #f8fafc);
 }
 
-.tw-employees > .tw-muted {
+.table-workspace-page .tw-employees > .tw-muted {
   margin: 0.4rem 0 1rem;
 }
 
-.tw-employee-accordion {
+.table-workspace-page .tw-employees .tw-employee-accordion {
   display: grid;
   gap: 0.7rem;
 }
 
-.tw-employee-item {
+.table-workspace-page .tw-employees .tw-employee-item {
   border: 1px solid var(--p-content-border-color, #e2e8f0);
   border-radius: 0.85rem;
   background: rgba(255, 255, 255, 0.88);
@@ -29,7 +29,7 @@
   overflow: hidden;
 }
 
-.tw-employee-item summary {
+.table-workspace-page .tw-employees .tw-employee-item summary {
   cursor: pointer;
   list-style: none;
   padding: 0.75rem 0.9rem;
@@ -39,22 +39,22 @@
   gap: 0.7rem;
 }
 
-.tw-employee-item summary::-webkit-details-marker {
+.table-workspace-page .tw-employees .tw-employee-item summary::-webkit-details-marker {
   display: none;
 }
 
-.tw-employee-item summary span {
+.table-workspace-page .tw-employees .tw-employee-item summary span {
   font-weight: 600;
 }
 
-.tw-employee-summary-main {
+.table-workspace-page .tw-employees .tw-employee-summary-main {
   display: flex;
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
 }
 
-.tw-employee-avatar {
+.table-workspace-page .tw-employees .tw-employee-avatar {
   width: 2.3rem;
   height: 2.3rem;
   border-radius: 999px;
@@ -67,13 +67,13 @@
   box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.85);
 }
 
-.tw-employee-meta {
+.table-workspace-page .tw-employees .tw-employee-meta {
   display: grid;
   gap: 0.1rem;
   min-width: 0;
 }
 
-.tw-employee-meta small {
+.table-workspace-page .tw-employees .tw-employee-meta small {
   color: var(--p-text-muted-color, #64748b);
   white-space: nowrap;
   overflow: hidden;
@@ -81,45 +81,45 @@
   max-width: 32rem;
 }
 
-.tw-employee-item summary small {
+.table-workspace-page .tw-employees .tw-employee-item summary small {
   color: var(--p-text-muted-color, #64748b);
 }
 
-.tw-employee-content {
+.table-workspace-page .tw-employees .tw-employee-content {
   border-top: 1px solid var(--p-content-border-color, #e2e8f0);
   padding: 0.85rem;
 }
 
-.tw-form-grid {
+.table-workspace-page .tw-employees .tw-form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
 
-.tw-form-grid label {
+.table-workspace-page .tw-employees .tw-form-grid label {
   display: grid;
   gap: 0.35rem;
 }
 
-.tw-form-full {
+.table-workspace-page .tw-employees .tw-form-full {
   grid-column: 1 / -1;
 }
 
-.tw-form-grid input {
+.table-workspace-page .tw-employees .tw-form-grid input {
   width: 100%;
   border: 1px solid var(--p-content-border-color, #e2e8f0);
   border-radius: 0.6rem;
   padding: 0.5rem 0.6rem;
 }
 
-.tw-days {
+.table-workspace-page .tw-employees .tw-days {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
 }
 
-.tw-day-pill {
+.table-workspace-page .tw-employees .tw-day-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -129,83 +129,81 @@
   background: color-mix(in srgb, var(--p-primary-50, #eef2ff) 50%, #fff);
 }
 
-.tw-employee-item.c1 .tw-employee-avatar {
+.table-workspace-page .tw-employees .tw-employee-item.c1 .tw-employee-avatar {
   background: linear-gradient(145deg, #6366f1, #3b82f6);
 }
 
-.tw-employee-item.c2 .tw-employee-avatar {
+.table-workspace-page .tw-employees .tw-employee-item.c2 .tw-employee-avatar {
   background: linear-gradient(145deg, #10b981, #22c55e);
 }
 
-.tw-employee-item.c3 .tw-employee-avatar {
+.table-workspace-page .tw-employees .tw-employee-item.c3 .tw-employee-avatar {
   background: linear-gradient(145deg, #f59e0b, #f97316);
 }
 
-.tw-employee-item.c4 .tw-employee-avatar {
+.table-workspace-page .tw-employees .tw-employee-item.c4 .tw-employee-avatar {
   background: linear-gradient(145deg, #ec4899, #f43f5e);
 }
 
-.tw-employee-item.c5 .tw-employee-avatar {
+.table-workspace-page .tw-employees .tw-employee-item.c5 .tw-employee-avatar {
   background: linear-gradient(145deg, #14b8a6, #06b6d4);
 }
 
-.tw-employee-item.c6 .tw-employee-avatar {
+.table-workspace-page .tw-employees .tw-employee-item.c6 .tw-employee-avatar {
   background: linear-gradient(145deg, #8b5cf6, #6366f1);
 }
 
-.tw-employee-item.c1 summary {
+.table-workspace-page .tw-employees .tw-employee-item.c1 summary {
   background: linear-gradient(180deg, rgba(99, 102, 241, 0.12), rgba(255, 255, 255, 0));
 }
 
-.tw-employee-item.c2 summary {
+.table-workspace-page .tw-employees .tw-employee-item.c2 summary {
   background: linear-gradient(180deg, rgba(16, 185, 129, 0.12), rgba(255, 255, 255, 0));
 }
 
-.tw-employee-item.c3 summary {
+.table-workspace-page .tw-employees .tw-employee-item.c3 summary {
   background: linear-gradient(180deg, rgba(245, 158, 11, 0.15), rgba(255, 255, 255, 0));
 }
 
-.tw-employee-item.c4 summary {
+.table-workspace-page .tw-employees .tw-employee-item.c4 summary {
   background: linear-gradient(180deg, rgba(236, 72, 153, 0.12), rgba(255, 255, 255, 0));
 }
 
-.tw-employee-item.c5 summary {
+.table-workspace-page .tw-employees .tw-employee-item.c5 summary {
   background: linear-gradient(180deg, rgba(20, 184, 166, 0.12), rgba(255, 255, 255, 0));
 }
 
-.tw-employee-item.c6 summary {
+.table-workspace-page .tw-employees .tw-employee-item.c6 summary {
   background: linear-gradient(180deg, rgba(139, 92, 246, 0.12), rgba(255, 255, 255, 0));
 }
 
-.tw-tab-error {
+.table-workspace-page .tw-employees .tw-tab-error {
   margin: 0 0 0.6rem;
   color: var(--p-red-600, #dc2626);
 }
 
-.tw-success {
+.table-workspace-page .tw-employees .tw-success {
   margin: 0 0 0.6rem;
   color: var(--p-green-700, #15803d);
 }
 
 @media (max-width: 900px) {
-  .tw-form-grid {
+  .table-workspace-page .tw-employees .tw-form-grid {
     grid-template-columns: 1fr;
   }
 
-  .tw-employee-item summary {
+  .table-workspace-page .tw-employees .tw-employee-item summary {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .tw-employee-meta small {
+  .table-workspace-page .tw-employees .tw-employee-meta small {
     white-space: normal;
   }
 }
 
-:host-context(.sw-dark) .tw-employees,
-:host-context(html[data-theme='dark']) .tw-employees,
-.sw-dark .tw-employees,
-html[data-theme='dark'] .tw-employees {
+.sw-dark .table-workspace-page .tw-employees,
+html[data-theme='dark'] .table-workspace-page .tw-employees {
   background:
     radial-gradient(circle at top left, rgba(59, 130, 246, 0.2), transparent 38%),
     radial-gradient(circle at top right, rgba(34, 197, 94, 0.18), transparent 34%),
@@ -213,26 +211,18 @@ html[data-theme='dark'] .tw-employees {
     #020617;
 }
 
-:host-context(.sw-dark) .tw-employee-item,
-:host-context(.sw-dark) .tw-form-grid input,
-:host-context(.sw-dark) .tw-day-pill,
-:host-context(html[data-theme='dark']) .tw-employee-item,
-:host-context(html[data-theme='dark']) .tw-form-grid input,
-:host-context(html[data-theme='dark']) .tw-day-pill,
-.sw-dark .tw-employee-item,
-.sw-dark .tw-form-grid input,
-.sw-dark .tw-day-pill,
-html[data-theme='dark'] .tw-employee-item,
-html[data-theme='dark'] .tw-form-grid input,
-html[data-theme='dark'] .tw-day-pill {
+.sw-dark .table-workspace-page .tw-employees .tw-employee-item,
+.sw-dark .table-workspace-page .tw-employees .tw-form-grid input,
+.sw-dark .table-workspace-page .tw-employees .tw-day-pill,
+html[data-theme='dark'] .table-workspace-page .tw-employees .tw-employee-item,
+html[data-theme='dark'] .table-workspace-page .tw-employees .tw-form-grid input,
+html[data-theme='dark'] .table-workspace-page .tw-employees .tw-day-pill {
   background: #0f172a;
   border-color: #334155;
   color: #e2e8f0;
 }
 
-:host-context(.sw-dark) .tw-employee-content,
-:host-context(html[data-theme='dark']) .tw-employee-content,
-.sw-dark .tw-employee-content,
-html[data-theme='dark'] .tw-employee-content {
+.sw-dark .table-workspace-page .tw-employees .tw-employee-content,
+html[data-theme='dark'] .table-workspace-page .tw-employees .tw-employee-content {
   border-color: #334155;
 }

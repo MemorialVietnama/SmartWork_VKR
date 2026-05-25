@@ -30,6 +30,7 @@ export interface ServicePayload {
 export interface ClientHistoryEntry {
   date: string;
   serviceTitle: string;
+  rating?: number;
 }
 
 export interface ClientPayload {
@@ -37,6 +38,7 @@ export interface ClientPayload {
   firstName: string;
   petCount: number;
   phone: string;
+  avatarUrl?: string;
   detail: {
     lastName: string;
     firstName: string;
@@ -70,6 +72,7 @@ export interface PetPayload {
     behavior: string;
     notes: string;
     ownerInfo: string;
+    ownerClientItemId?: number | null;
     visitHistory: PetVisitEntry[];
   };
 }
@@ -89,6 +92,7 @@ export function emptyClientPayload(): ClientPayload {
     firstName: '',
     petCount: 0,
     phone: '',
+    avatarUrl: '',
     detail: {
       lastName: '',
       firstName: '',
@@ -119,6 +123,7 @@ export function emptyPetPayload(): PetPayload {
       behavior: '',
       notes: '',
       ownerInfo: '',
+      ownerClientItemId: null,
       visitHistory: [],
     },
   };
@@ -167,6 +172,7 @@ export function asClientPayload(raw: unknown): ClientPayload {
     ? (histRaw as ClientHistoryEntry[]).map((x) => ({
         date: String(x?.['date'] ?? ''),
         serviceTitle: String(x?.['serviceTitle'] ?? ''),
+        rating: Number(x?.['rating']) || 0,
       }))
     : [];
   return {
@@ -174,6 +180,7 @@ export function asClientPayload(raw: unknown): ClientPayload {
     firstName: String(o['firstName'] ?? ''),
     petCount: Number(o['petCount']) || 0,
     phone: String(o['phone'] ?? ''),
+    avatarUrl: String(o['avatarUrl'] ?? ''),
     detail: {
       lastName: String(d['lastName'] ?? ''),
       firstName: String(d['firstName'] ?? ''),
@@ -215,6 +222,7 @@ export function asPetPayload(raw: unknown): PetPayload {
       behavior: String(d['behavior'] ?? ''),
       notes: String(d['notes'] ?? ''),
       ownerInfo: String(d['ownerInfo'] ?? ''),
+      ownerClientItemId: Number(d['ownerClientItemId']) || null,
       visitHistory: vh,
     },
   };

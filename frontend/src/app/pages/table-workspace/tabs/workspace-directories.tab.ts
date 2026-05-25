@@ -31,14 +31,25 @@ import {
   type PetPayload,
   type ServicePayload,
 } from './directory-payload.models';
+import {
+  CUSTOM_FIELD_TYPE_OPTIONS,
+  RELATION_MODE_OPTIONS,
+  SUPPORTED_CUSTOM_FIELD_TYPES,
+  type CustomField,
+  type CustomFieldType,
+  type RelationConfig,
+  type RelationModeValue,
+} from './workspace-directory-fields.config';
+import {
+  DIRECTORY_EDITOR_KIND_LABELS,
+  DIRECTORY_FILTER_OPTIONS,
+  DIRECTORY_KIND_ICONS,
+  DIRECTORY_KIND_LABELS,
+  type SelectedDirectoryFilter,
+  type TemplateKind,
+} from './workspace-directory-naming.config';
 
-type TemplateKind = 'services' | 'clients' | 'pets';
-type SelectedDirectoryFilter = 'all' | 'services' | 'clients' | 'pets' | 'custom';
-type CustomFieldType = 'text' | 'number' | 'photo' | 'boolean' | 'date' | 'datetime' | 'email' | 'phone' | 'url' | 'json' | 'relation';
-type RelationConfig = { directoryId: number | null; displayFieldKey: string; multiple: boolean };
-type CustomField = { id: string; key: string; label: string; type: CustomFieldType; relation: RelationConfig | null };
 type RelationPayloadValue = { valueId: number | null; valueLabel: string };
-type RelationModeValue = 'multiple';
 
 @Component({
   selector: 'app-workspace-directories-tab',
@@ -56,7 +67,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   protected readonly err = signal<string | null>(null);
   protected readonly search = signal('');
   protected readonly selectedFilter = signal<SelectedDirectoryFilter>('all');
-  protected readonly drawerOpen = signal(false);
+  protected readonly editorDialogOpen = signal(false);
   protected readonly selectedDirectoryId = signal<number | null>(null);
   protected readonly selectedItemId = signal<number | null>(null);
   protected readonly columnFilters = signal<Record<string, string>>({});
@@ -64,9 +75,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   protected readonly createWizardStep = signal(1);
   protected readonly createDirName = signal('');
   protected readonly createDirDescription = signal('');
-  protected readonly createDirFields = signal<CustomField[]>([
-    { id: this.uid(), key: 'title', label: 'Название', type: 'text', relation: null },
-  ]);
+  protected readonly createDirFields = signal<CustomField[]>([{ id: this.uid(), key: 'title', label: 'Название', type: 'text', relation: null }]);
   protected readonly customRowDialogOpen = signal(false);
   protected readonly customRowEditingItemId = signal<number | null>(null);
   protected readonly customRowValues = signal<Record<string, string>>({});
@@ -75,6 +84,27 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   protected readonly syncingTemplates = signal(false);
   protected readonly templatePickerOpen = signal(false);
   protected readonly templateSelection = signal<string[]>([]);
+  protected readonly clientPetBindingDialogOpen = signal(false);
+  protected readonly petOwnerDialogOpen = signal(false);
+  protected readonly clientPetDraftIds = signal<number[]>([]);
+  protected readonly petOwnerDraftClientItemId = signal<number | null>(null);
+  protected readonly dragPetId = signal<number | null>(null);
+  protected readonly dragClientItemId = signal<number | null>(null);
+  protected readonly serviceIconLibrary = [
+    'pi pi-star',
+    'pi pi-heart',
+    'pi pi-sparkles',
+    'pi pi-briefcase',
+    'pi pi-sun',
+    'pi pi-bolt',
+    'pi pi-check-circle',
+    'pi pi-palette',
+    'pi pi-thumbs-up',
+    'pi pi-crown',
+    'pi pi-gift',
+    'pi pi-compass',
+  ];
+  private clientPetOriginalIds: number[] = [];
 
   protected readonly petAnimalTypes = PET_ANIMAL_TYPES;
   protected editor: { kind: TemplateKind; dirId: number; itemId: number | null } | null = null;
@@ -82,30 +112,9 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   protected editClient: ClientPayload = emptyClientPayload();
   protected editPet: PetPayload = emptyPetPayload();
 
-  protected readonly directoryKinds = [
-    { key: 'all', label: 'Все' },
-    { key: 'services', label: 'Услуги' },
-    { key: 'clients', label: 'Клиенты' },
-    { key: 'pets', label: 'Питомцы' },
-    { key: 'custom', label: 'Свои' },
-  ] as const;
-
-  protected readonly customFieldTypeOptions: Array<{ value: CustomFieldType; label: string }> = [
-    { value: 'text', label: 'Текст' },
-    { value: 'number', label: 'Число' },
-    { value: 'boolean', label: 'Да/Нет' },
-    { value: 'date', label: 'Дата' },
-    { value: 'datetime', label: 'Дата и время' },
-    { value: 'email', label: 'Email' },
-    { value: 'phone', label: 'Телефон' },
-    { value: 'url', label: 'Ссылка URL' },
-    { value: 'json', label: 'JSON' },
-    { value: 'photo', label: 'Фото URL' },
-    { value: 'relation', label: 'Связь со справочником' },
-  ];
-  protected readonly relationModeOptions: Array<{ label: string; value: RelationModeValue }> = [
-    { label: 'Множественный выбор', value: 'multiple' },
-  ];
+  protected readonly directoryKinds = DIRECTORY_FILTER_OPTIONS;
+  protected readonly customFieldTypeOptions = CUSTOM_FIELD_TYPE_OPTIONS;
+  protected readonly relationModeOptions = RELATION_MODE_OPTIONS;
 
   protected readonly stats = computed(() => {
     const list = this.dirs();
@@ -217,17 +226,17 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   protected openCreateFromList(dir: WorkspaceDirectoryDto): void {
     this.selectedDirectoryId.set(dir.id);
     this.openCreate(dir);
-    this.drawerOpen.set(true);
+    this.editorDialogOpen.set(true);
   }
 
   protected openEditFromList(dir: WorkspaceDirectoryDto, it: WorkspaceDirectoryItemDto): void {
     this.selectedDirectoryId.set(dir.id);
     this.openEdit(dir, it);
-    this.drawerOpen.set(true);
+    this.editorDialogOpen.set(true);
   }
 
-  protected closeDrawer(): void {
-    this.drawerOpen.set(false);
+  protected closeEditorDialog(): void {
+    this.editorDialogOpen.set(false);
     this.closeEditor();
   }
 
@@ -273,6 +282,13 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     this.editService = emptyServicePayload();
     this.editClient = emptyClientPayload();
     this.editPet = emptyPetPayload();
+    this.clientPetBindingDialogOpen.set(false);
+    this.petOwnerDialogOpen.set(false);
+    this.clientPetDraftIds.set([]);
+    this.petOwnerDraftClientItemId.set(null);
+    this.dragPetId.set(null);
+    this.dragClientItemId.set(null);
+    this.clientPetOriginalIds = [];
   }
 
   protected openCreate(dir: WorkspaceDirectoryDto): void {
@@ -285,6 +301,8 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     } else if (dir.kind === 'clients') {
       this.editor = { kind: 'clients', dirId: dir.id, itemId: null };
       this.editClient = emptyClientPayload();
+      this.clientPetDraftIds.set([]);
+      this.clientPetOriginalIds = [];
     } else if (dir.kind === 'pets') {
       this.editor = { kind: 'pets', dirId: dir.id, itemId: null };
       this.editPet = emptyPetPayload();
@@ -301,6 +319,9 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     } else if (dir.kind === 'clients') {
       this.editor = { kind: 'clients', dirId: dir.id, itemId: it.id };
       this.editClient = asClientPayload(it.payload);
+      const ownedIds = this.clientOwnedPetIds();
+      this.clientPetOriginalIds = [...ownedIds];
+      this.clientPetDraftIds.set([...ownedIds]);
     } else if (dir.kind === 'pets') {
       this.editor = { kind: 'pets', dirId: dir.id, itemId: it.id };
       this.editPet = asPetPayload(it.payload);
@@ -326,7 +347,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     this.selectedItemId.set(null);
     this.columnFilters.set({});
     this.search.set('');
-    this.closeDrawer();
+    this.closeEditorDialog();
   }
 
   protected setColumnFilter(key: string, value: string): void {
@@ -451,7 +472,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
         this.auth.addWorkspaceDirectoryItem(tid, e.dirId, { label, payload }).subscribe({
           next: () => {
             this.refresh();
-            this.closeDrawer();
+            this.closeEditorDialog();
           },
           error: (err) => this.err.set(err?.error?.detail ?? 'Ошибка сохранения'),
         });
@@ -459,7 +480,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
         this.auth.patchWorkspaceDirectoryItem(tid, e.dirId, e.itemId, { label, payload }).subscribe({
           next: () => {
             this.refresh();
-            this.closeDrawer();
+            this.closeEditorDialog();
           },
           error: (err) => this.err.set(err?.error?.detail ?? 'Ошибка сохранения'),
         });
@@ -468,21 +489,24 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     }
     if (e.kind === 'clients') {
       const data = { ...this.editClient };
+      const draftPetIds = this.clientPetDraftIds();
+      data.detail.petItemIds = [...draftPetIds];
+      data.petCount = data.detail.petItemIds.length;
+      data.detail.rating = this.computeClientRating(data);
       const label = cardLabelForKind('clients', data, 'Клиент');
       const payload = { ...data } as Record<string, unknown>;
       if (e.itemId == null) {
         this.auth.addWorkspaceDirectoryItem(tid, e.dirId, { label, payload }).subscribe({
-          next: () => {
-            this.refresh();
-            this.closeDrawer();
+          next: (createdItem) => {
+            this.syncClientPetOwnership(createdItem.id, [], data.detail.petItemIds, data);
           },
           error: (err) => this.err.set(err?.error?.detail ?? 'Ошибка сохранения'),
         });
       } else {
-        this.auth.patchWorkspaceDirectoryItem(tid, e.dirId, e.itemId, { label, payload }).subscribe({
+        const itemId = e.itemId;
+        this.auth.patchWorkspaceDirectoryItem(tid, e.dirId, itemId, { label, payload }).subscribe({
           next: () => {
-            this.refresh();
-            this.closeDrawer();
+            this.syncClientPetOwnership(itemId, this.clientPetOriginalIds, data.detail.petItemIds, data);
           },
           error: (err) => this.err.set(err?.error?.detail ?? 'Ошибка сохранения'),
         });
@@ -491,13 +515,24 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     }
     if (e.kind === 'pets') {
       const data = { ...this.editPet };
+      const owner = this.clientItemById(this.petOwnerDraftClientItemId());
+      if (owner) {
+        const ownerPayload = asClientPayload(owner.payload);
+        const ownerName = `${ownerPayload.lastName} ${ownerPayload.firstName}`.trim() || owner.label;
+        data.ownerName = ownerName;
+        data.ownerPhone = ownerPayload.phone;
+        data.detail.ownerInfo = ownerName;
+        data.detail.ownerClientItemId = owner.id;
+      } else {
+        data.detail.ownerClientItemId = null;
+      }
       const label = cardLabelForKind('pets', data, 'Питомец');
       const payload = { ...data } as Record<string, unknown>;
       if (e.itemId == null) {
         this.auth.addWorkspaceDirectoryItem(tid, e.dirId, { label, payload }).subscribe({
           next: () => {
             this.refresh();
-            this.closeDrawer();
+            this.closeEditorDialog();
           },
           error: (err) => this.err.set(err?.error?.detail ?? 'Ошибка сохранения'),
         });
@@ -505,7 +540,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
         this.auth.patchWorkspaceDirectoryItem(tid, e.dirId, e.itemId, { label, payload }).subscribe({
           next: () => {
             this.refresh();
-            this.closeDrawer();
+            this.closeEditorDialog();
           },
           error: (err) => this.err.set(err?.error?.detail ?? 'Ошибка сохранения'),
         });
@@ -677,7 +712,7 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   }
 
   protected addClientHistory(): void {
-    this.editClient.detail.serviceHistory.push({ date: '', serviceTitle: '' });
+    this.editClient.detail.serviceHistory.push({ date: '', serviceTitle: '', rating: 0 });
   }
 
   protected removeClientHistory(i: number): void {
@@ -703,6 +738,240 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
 
   protected isPetSelectedForClient(petId: number): boolean {
     return this.editClient.detail.petItemIds.includes(petId);
+  }
+
+  protected iconActionLabel(action: 'open' | 'delete'): string {
+    return action === 'open' ? 'Открыть' : 'Удалить';
+  }
+
+  protected ratingToStars(value: number): boolean[] {
+    const safe = Math.max(0, Math.min(5, Math.round(value)));
+    return Array.from({ length: 5 }, (_, index) => index < safe);
+  }
+
+  protected clientAvatarUrl(item: WorkspaceDirectoryItemDto): string {
+    const payload = asClientPayload(item.payload);
+    return payload.avatarUrl?.trim() ?? '';
+  }
+
+  protected clientInitials(item: WorkspaceDirectoryItemDto): string {
+    const payload = asClientPayload(item.payload);
+    const source = `${payload.firstName} ${payload.lastName}`.trim() || item.label;
+    return source
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('');
+  }
+
+  protected petAvatarUrl(item: WorkspaceDirectoryItemDto): string {
+    const payload = asPetPayload(item.payload);
+    return payload.iconUrl?.trim() || payload.detail.avatarUrl?.trim() || '';
+  }
+
+  protected petDisplayLabel(item: WorkspaceDirectoryItemDto): string {
+    return cardLabelForKind('pets', item.payload, item.label);
+  }
+
+  protected petDisplayType(item: WorkspaceDirectoryItemDto): string {
+    const payload = asPetPayload(item.payload);
+    return payload.detail.animalType || '—';
+  }
+
+  protected clientDisplayLabel(item: WorkspaceDirectoryItemDto): string {
+    return cardLabelForKind('clients', item.payload, item.label);
+  }
+
+  protected clientPhone(item: WorkspaceDirectoryItemDto): string {
+    const payload = asClientPayload(item.payload);
+    return payload.phone || '—';
+  }
+
+  protected ownerDisplayNameByClientItemId(clientItemId: number | null): string {
+    if (!clientItemId) {
+      return 'Не назначен';
+    }
+    const item = this.clientItemById(clientItemId);
+    if (!item) {
+      return 'Не назначен';
+    }
+    const payload = asClientPayload(item.payload);
+    return `${payload.lastName} ${payload.firstName}`.trim() || item.label;
+  }
+
+  protected ownerAvatarByClientItemId(clientItemId: number | null): string {
+    if (!clientItemId) {
+      return '';
+    }
+    const item = this.clientItemById(clientItemId);
+    if (!item) {
+      return '';
+    }
+    const payload = asClientPayload(item.payload);
+    return payload.avatarUrl?.trim() ?? '';
+  }
+
+  protected petRows(items: WorkspaceDirectoryItemDto[]): Array<{
+    item: WorkspaceDirectoryItemDto;
+    nickname: string;
+    animalType: string;
+    ownerClientItemId: number | null;
+    ownerName: string;
+    visitsCount: number;
+  }> {
+    return items.map((item) => {
+      const payload = asPetPayload(item.payload);
+      const ownerClientItemId = this.petOwnerClientItemId(payload);
+      return {
+        item,
+        nickname: payload.detail.nickname || item.label,
+        animalType: payload.detail.animalType || '—',
+        ownerClientItemId,
+        ownerName: this.ownerDisplayNameByClientItemId(ownerClientItemId),
+        visitsCount: payload.detail.visitHistory.length,
+      };
+    });
+  }
+
+  protected serviceRows(items: WorkspaceDirectoryItemDto[]): Array<{
+    item: WorkspaceDirectoryItemDto;
+    title: string;
+    icon: string;
+    cost: number;
+    subservices: string[];
+  }> {
+    return items.map((item) => {
+      const payload = asServicePayload(item.payload);
+      return {
+        item,
+        title: payload.title || payload.inner.displayName || item.label,
+        icon: payload.inner.subservices[0]?.icon || 'pi pi-star',
+        cost: payload.cost,
+        subservices: payload.inner.subservices.map((entry) => entry.name).filter((entry) => entry.length > 0),
+      };
+    });
+  }
+
+  protected openClientPetBindingDialog(): void {
+    const sourceIds = this.clientPetDraftIds().length > 0 ? this.clientPetDraftIds() : this.clientOwnedPetIds();
+    this.clientPetDraftIds.set([...sourceIds]);
+    this.clientPetBindingDialogOpen.set(true);
+  }
+
+  protected closeClientPetBindingDialog(): void {
+    this.clientPetBindingDialogOpen.set(false);
+    this.dragPetId.set(null);
+  }
+
+  protected openPetOwnerDialog(): void {
+    this.petOwnerDraftClientItemId.set(this.petOwnerClientItemId(this.editPet));
+    this.petOwnerDialogOpen.set(true);
+  }
+
+  protected closePetOwnerDialog(): void {
+    this.petOwnerDialogOpen.set(false);
+    this.dragClientItemId.set(null);
+  }
+
+  protected clientPetsDraftRows(): WorkspaceDirectoryItemDto[] {
+    const selectedIds = new Set(this.clientPetDraftIds());
+    return this.petsDirectoryItems().filter((item) => selectedIds.has(item.id));
+  }
+
+  protected availablePetsRows(): WorkspaceDirectoryItemDto[] {
+    const selectedIds = new Set(this.clientPetDraftIds());
+    return this.petsDirectoryItems().filter((item) => !selectedIds.has(item.id));
+  }
+
+  protected dragClientPetStart(event: DragEvent, petId: number): void {
+    this.dragPetId.set(petId);
+    event.dataTransfer?.setData('text/plain', String(petId));
+  }
+
+  protected allowDrop(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  protected dropPetToClient(event: DragEvent): void {
+    event.preventDefault();
+    const id = this.resolveDragId(event, this.dragPetId());
+    if (!id) {
+      return;
+    }
+    this.clientPetDraftIds.update((current) => (current.includes(id) ? current : [...current, id]));
+    this.dragPetId.set(null);
+  }
+
+  protected dropPetToSalon(event: DragEvent): void {
+    event.preventDefault();
+    const id = this.resolveDragId(event, this.dragPetId());
+    if (!id) {
+      return;
+    }
+    this.clientPetDraftIds.update((current) => current.filter((entry) => entry !== id));
+    this.dragPetId.set(null);
+  }
+
+  protected addPetToClientDraft(petId: number): void {
+    this.clientPetDraftIds.update((current) => (current.includes(petId) ? current : [...current, petId]));
+  }
+
+  protected removePetFromClientDraft(petId: number): void {
+    this.clientPetDraftIds.update((current) => current.filter((entry) => entry !== petId));
+  }
+
+  protected applyClientPetBindingDraft(): void {
+    const next = [...this.clientPetDraftIds()];
+    this.editClient.detail.petItemIds = next;
+    this.editClient.petCount = next.length;
+    this.closeClientPetBindingDialog();
+  }
+
+  protected ownerDialogCurrentClient(): WorkspaceDirectoryItemDto | null {
+    const currentId = this.petOwnerDraftClientItemId();
+    return currentId ? this.clientItemById(currentId) : null;
+  }
+
+  protected ownerDialogOtherClients(): WorkspaceDirectoryItemDto[] {
+    const currentId = this.petOwnerDraftClientItemId();
+    return this.clientDirectoryItems().filter((item) => item.id !== currentId);
+  }
+
+  protected dragOwnerStart(event: DragEvent, clientItemId: number): void {
+    this.dragClientItemId.set(clientItemId);
+    event.dataTransfer?.setData('text/plain', String(clientItemId));
+  }
+
+  protected dropOwnerToPet(event: DragEvent): void {
+    event.preventDefault();
+    const id = this.resolveDragId(event, this.dragClientItemId());
+    if (!id) {
+      return;
+    }
+    this.petOwnerDraftClientItemId.set(id);
+    this.dragClientItemId.set(null);
+  }
+
+  protected clearPetOwnerDraft(): void {
+    this.petOwnerDraftClientItemId.set(null);
+  }
+
+  protected applyPetOwnerDraft(): void {
+    const selected = this.clientItemById(this.petOwnerDraftClientItemId());
+    if (selected) {
+      const payload = asClientPayload(selected.payload);
+      const ownerName = `${payload.lastName} ${payload.firstName}`.trim() || selected.label;
+      this.editPet.ownerName = ownerName;
+      this.editPet.ownerPhone = payload.phone;
+      this.editPet.detail.ownerInfo = ownerName;
+      this.editPet.detail.ownerClientItemId = selected.id;
+    } else {
+      this.editPet.ownerName = '';
+      this.editPet.ownerPhone = '';
+      this.editPet.detail.ownerInfo = '';
+      this.editPet.detail.ownerClientItemId = null;
+    }
+    this.closePetOwnerDialog();
   }
 
   protected itemSummary(dir: WorkspaceDirectoryDto, it: WorkspaceDirectoryItemDto): string {
@@ -752,16 +1021,10 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   }
 
   protected directoryKindLabel(dir: WorkspaceDirectoryDto): string {
-    if (dir.kind === 'services') {
-      return 'Услуги';
+    if (dir.kind === 'services' || dir.kind === 'clients' || dir.kind === 'pets') {
+      return DIRECTORY_KIND_LABELS[dir.kind];
     }
-    if (dir.kind === 'clients') {
-      return 'Клиенты';
-    }
-    if (dir.kind === 'pets') {
-      return 'Питомцы';
-    }
-    return 'Свой';
+    return DIRECTORY_KIND_LABELS.custom;
   }
 
   protected sumSubservices(s: ServicePayload): number {
@@ -899,16 +1162,27 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
   }
 
   protected directoryIcon(kind: string | null | undefined): string {
-    if (kind === 'services') {
-      return 'pi pi-briefcase';
+    if (kind === 'services' || kind === 'clients' || kind === 'pets') {
+      return DIRECTORY_KIND_ICONS[kind];
     }
-    if (kind === 'clients') {
-      return 'pi pi-users';
+    return DIRECTORY_KIND_ICONS.custom;
+  }
+
+  protected editorTitle(): string {
+    if (!this.editor) {
+      return 'Запись справочника';
     }
-    if (kind === 'pets') {
-      return 'pi pi-heart-fill';
+    return this.editor.itemId === null ? 'Создание записи' : 'Редактирование записи';
+  }
+
+  protected editorSubtitle(): string {
+    if (!this.editor) {
+      return this.currentDirectoryName();
     }
-    return 'pi pi-folder';
+    const kindLabel = DIRECTORY_EDITOR_KIND_LABELS[this.editor.kind];
+    const modeLabel = this.editor.itemId === null ? `Новая запись ${kindLabel}` : `Карточка ${kindLabel}`;
+    const directoryName = this.currentDirectoryName();
+    return directoryName ? `${modeLabel} · ${directoryName}` : modeLabel;
   }
 
   protected clientRows(items: WorkspaceDirectoryItemDto[]): Array<{
@@ -917,15 +1191,19 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     phone: string;
     rating: number;
     petCount: number;
+    avatarUrl: string;
   }> {
     return items.map((item) => {
       const payload = asClientPayload(item.payload);
+      const rating = this.computeClientRating(payload);
+      const petCount = payload.detail.petItemIds.length > 0 ? payload.detail.petItemIds.length : payload.petCount;
       return {
         item,
         fullName: `${payload.lastName} ${payload.firstName}`.trim() || item.label,
         phone: payload.phone || '—',
-        rating: payload.detail.rating,
-        petCount: payload.petCount,
+        rating,
+        petCount,
+        avatarUrl: payload.avatarUrl?.trim() ?? '',
       };
     });
   }
@@ -1103,27 +1381,159 @@ export class WorkspaceDirectoriesTabComponent implements OnInit {
     }));
   }
 
+  protected chooseServiceIcon(icon: string): void {
+    this.editService.inner.displayName = this.editService.inner.displayName.trim();
+    if (!this.editService.inner.subservices.length) {
+      this.addSubservice();
+    }
+    this.editService.inner.subservices[0].icon = icon;
+  }
+
+  protected isServiceMainIcon(icon: string): boolean {
+    return (this.editService.inner.subservices[0]?.icon ?? '') === icon;
+  }
+
+  protected chooseSubserviceIcon(index: number, icon: string): void {
+    if (!this.editService.inner.subservices[index]) {
+      return;
+    }
+    this.editService.inner.subservices[index].icon = icon;
+  }
+
+  protected petOwnerCardTitle(): string {
+    if (!this.editPet.detail.nickname && !this.editPet.breed) {
+      return 'Питомец';
+    }
+    return this.editPet.detail.nickname || this.editPet.breed;
+  }
+
+  protected clientHistoryAverageRating(): number {
+    return this.computeClientRating(this.editClient);
+  }
+
+  private resolveDragId(event: DragEvent, fallback: number | null): number | null {
+    const raw = event.dataTransfer?.getData('text/plain');
+    const parsed = Number(raw || fallback);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  private clientDirectoryItems(): WorkspaceDirectoryItemDto[] {
+    const dir = this.dirs().find((entry) => entry.kind === 'clients');
+    return dir?.items ?? [];
+  }
+
+  private clientItemById(itemId: number | null): WorkspaceDirectoryItemDto | null {
+    if (!itemId) {
+      return null;
+    }
+    return this.clientDirectoryItems().find((item) => item.id === itemId) ?? null;
+  }
+
+  private clientOwnedPetIds(): number[] {
+    const direct = this.editClient.detail.petItemIds ?? [];
+    const editorItemId = this.editor?.kind === 'clients' ? this.editor.itemId : null;
+    const relatedByOwner = editorItemId
+      ? this.petsDirectoryItems()
+          .filter((pet) => this.petOwnerClientItemId(asPetPayload(pet.payload)) === editorItemId)
+          .map((pet) => pet.id)
+      : [];
+    return [...new Set([...direct, ...relatedByOwner])];
+  }
+
+  private petOwnerClientItemId(payload: PetPayload): number | null {
+    const rawId = Number(payload.detail.ownerClientItemId);
+    if (Number.isFinite(rawId) && rawId > 0) {
+      return rawId;
+    }
+    const ownerName = payload.ownerName.trim();
+    if (!ownerName) {
+      return null;
+    }
+    const clientMatch = this.clientDirectoryItems().find((clientItem) => {
+      const clientPayload = asClientPayload(clientItem.payload);
+      const candidate = `${clientPayload.lastName} ${clientPayload.firstName}`.trim();
+      return candidate.toLowerCase() === ownerName.toLowerCase();
+    });
+    return clientMatch?.id ?? null;
+  }
+
+  private computeClientRating(client: ClientPayload): number {
+    const ratings = client.detail.serviceHistory
+      .map((entry) => Number(entry.rating))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    if (!ratings.length) {
+      return 0;
+    }
+    const average = ratings.reduce((sum, value) => sum + value, 0) / ratings.length;
+    return Number(average.toFixed(1));
+  }
+
+  private syncClientPetOwnership(
+    clientItemId: number,
+    previousPetIds: number[],
+    nextPetIds: number[],
+    clientPayload: ClientPayload,
+  ): void {
+    const petsDir = this.dirs().find((entry) => entry.kind === 'pets');
+    if (!petsDir) {
+      this.refresh();
+      this.closeEditorDialog();
+      return;
+    }
+    const previousSet = new Set(previousPetIds);
+    const nextSet = new Set(nextPetIds);
+    const added = [...nextSet].filter((id) => !previousSet.has(id));
+    const removed = [...previousSet].filter((id) => !nextSet.has(id));
+    const ownerName = `${clientPayload.lastName} ${clientPayload.firstName}`.trim();
+    const updates = [
+      ...added.map((petId) => this.patchPetOwnerByPetId(petsDir.id, petId, clientItemId, ownerName, clientPayload.phone)),
+      ...removed.map((petId) => this.patchPetOwnerByPetId(petsDir.id, petId, null, '', '')),
+    ].filter((entry): entry is ReturnType<AuthService['patchWorkspaceDirectoryItem']> => !!entry);
+    if (!updates.length) {
+      this.refresh();
+      this.closeEditorDialog();
+      return;
+    }
+    forkJoin(updates).subscribe({
+      next: () => {
+        this.refresh();
+        this.closeEditorDialog();
+      },
+      error: (err) => this.err.set(err?.error?.detail ?? 'Ошибка синхронизации владельцев питомцев'),
+    });
+  }
+
+  private patchPetOwnerByPetId(
+    petsDirectoryId: number,
+    petItemId: number,
+    ownerClientItemId: number | null,
+    ownerName: string,
+    ownerPhone: string,
+  ): ReturnType<AuthService['patchWorkspaceDirectoryItem']> | null {
+    const petItem = this.petsDirectoryItems().find((entry) => entry.id === petItemId);
+    if (!petItem) {
+      return null;
+    }
+    const payload = asPetPayload(petItem.payload);
+    payload.ownerName = ownerName;
+    payload.ownerPhone = ownerPhone;
+    payload.detail.ownerInfo = ownerName;
+    payload.detail.ownerClientItemId = ownerClientItemId;
+    const label = cardLabelForKind('pets', payload, petItem.label);
+    return this.auth.patchWorkspaceDirectoryItem(this.state.tableId(), petsDirectoryId, petItemId, {
+      label,
+      payload: { ...payload } as Record<string, unknown>,
+    });
+  }
+
   private normalizeFields(input: Array<Record<string, unknown>> | null | undefined): CustomField[] {
     if (!Array.isArray(input)) {
       return [];
     }
-    const supportedTypes = new Set<CustomFieldType>([
-      'text',
-      'number',
-      'photo',
-      'boolean',
-      'date',
-      'datetime',
-      'email',
-      'phone',
-      'url',
-      'json',
-      'relation',
-    ]);
     return input
       .map((field): CustomField => {
         const typeRaw = String(field['type'] ?? '').toLowerCase();
-        const type: CustomFieldType = supportedTypes.has(typeRaw as CustomFieldType) ? (typeRaw as CustomFieldType) : 'text';
+        const type: CustomFieldType = SUPPORTED_CUSTOM_FIELD_TYPES.has(typeRaw as CustomFieldType) ? (typeRaw as CustomFieldType) : 'text';
         const key = this.normalizeFieldKey(String(field['key'] ?? ''));
         const label = String(field['label'] ?? '').trim() || key;
         const relationRaw = (field['relation'] ?? null) as Record<string, unknown> | null;

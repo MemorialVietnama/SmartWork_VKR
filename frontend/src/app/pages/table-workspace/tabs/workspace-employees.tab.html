@@ -9,7 +9,7 @@
   } @else {
     <div class="tw-employee-accordion">
       @for (member of members(); track member.user_id) {
-        <details class="tw-employee-item" [class]="memberColorClass(member)">
+        <details [class]="'tw-employee-item ' + memberColorClass(member)">
           <summary>
             <div class="tw-employee-summary-main">
               <span class="tw-employee-avatar">{{ memberInitials(member) }}</span>

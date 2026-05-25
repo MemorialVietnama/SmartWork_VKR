@@ -2,7 +2,7 @@
   <header class="tw-dir-head">
     <div>
       <h2>Справочники</h2>
-      <p class="tw-muted">Работа только с типовыми справочниками: автоподключение по preset + ручное управление.</p>
+      <p class="tw-muted">Управляйте своими данными, удобно и быстро.</p>
     </div>
     <div class="tw-dir-head-actions">
       <p-button label="Обновить" icon="pi pi-refresh" styleClass="p-button-outlined" (onClick)="refresh()" />
@@ -28,13 +28,6 @@
             (onClick)="openTemplatePicker()"
           />
         </div>
-        <p-button
-          label="Очистить legacy-кастомные"
-          icon="pi pi-trash"
-          severity="danger"
-          styleClass="p-button-outlined"
-          (onClick)="cleanupLegacyCustom()"
-        />
       </section>
     }
 
@@ -135,14 +128,159 @@
           </ng-template>
           <ng-template pTemplate="body" let-row>
             <tr [class.tw-row-selected]="selectedItemId() === row.item.id" (click)="selectItem(row.item.id)">
-              <td>{{ row.fullName }}</td>
+              <td>
+                <div class="tw-client-cell">
+                  @if (row.avatarUrl) {
+                    <img class="tw-avatar-cell" [src]="row.avatarUrl" alt="Фото клиента" />
+                  } @else {
+                    <span class="tw-avatar-fallback">{{ clientInitials(row.item) }}</span>
+                  }
+                  <span>{{ row.fullName }}</span>
+                </div>
+              </td>
               <td>{{ row.phone }}</td>
-              <td>{{ row.rating }}</td>
+              <td>
+                <div class="tw-rating-stars" aria-label="Рейтинг клиента">
+                  @for (filled of ratingToStars(row.rating); track $index) {
+                    <i [class.pi-star-fill]="filled" [class.pi-star]="!filled" class="pi"></i>
+                  }
+                  <span class="tw-rating-value">{{ row.rating }}</span>
+                </div>
+              </td>
               <td>{{ row.petCount }}</td>
               <td class="tw-actions-col">
                 @if (canEdit) {
-                  <button type="button" class="tw-row-btn tw-row-btn-open" (click)="openEditFromList(currentDir, row.item); $event.stopPropagation()">Открыть</button>
-                  <button type="button" class="tw-row-btn tw-row-btn-delete" (click)="deleteItem(currentDir.id, row.item.id); $event.stopPropagation()">Удалить</button>
+                  <button
+                    type="button"
+                    class="tw-row-icon-btn tw-row-icon-btn-open"
+                    aria-label="Открыть"
+                    (click)="openEditFromList(currentDir, row.item); $event.stopPropagation()"
+                  >
+                    <i class="pi pi-eye"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="tw-row-icon-btn tw-row-icon-btn-delete"
+                    aria-label="Удалить"
+                    (click)="deleteItem(currentDir.id, row.item.id); $event.stopPropagation()"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                }
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else if (currentDir.kind === 'pets') {
+        <p-table
+          [value]="petRows(selectedDirectoryFilteredItems())"
+          styleClass="tw-data-table"
+          [tableStyle]="{ width: '100%' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Кличка</th>
+              <th>Вид</th>
+              <th>Владелец</th>
+              <th>Приёмов</th>
+              <th class="tw-actions-col">Действия</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr [class.tw-row-selected]="selectedItemId() === row.item.id" (click)="selectItem(row.item.id)">
+              <td>
+                <div class="tw-client-cell">
+                  @if (petAvatarUrl(row.item)) {
+                    <img class="tw-avatar-cell" [src]="petAvatarUrl(row.item)" alt="Фото питомца" />
+                  } @else {
+                    <span class="tw-avatar-fallback">{{ row.nickname.slice(0, 1).toUpperCase() }}</span>
+                  }
+                  <span>{{ row.nickname }}</span>
+                </div>
+              </td>
+              <td>{{ row.animalType }}</td>
+              <td>
+                <div class="tw-client-cell">
+                  @if (ownerAvatarByClientItemId(row.ownerClientItemId)) {
+                    <img class="tw-avatar-cell" [src]="ownerAvatarByClientItemId(row.ownerClientItemId)" alt="Фото владельца" />
+                  } @else {
+                    <span class="tw-avatar-fallback">{{ row.ownerName.slice(0, 1).toUpperCase() }}</span>
+                  }
+                  <span>{{ row.ownerName }}</span>
+                </div>
+              </td>
+              <td>{{ row.visitsCount }}</td>
+              <td class="tw-actions-col">
+                @if (canEdit) {
+                  <button
+                    type="button"
+                    class="tw-row-icon-btn tw-row-icon-btn-open"
+                    aria-label="Открыть"
+                    (click)="openEditFromList(currentDir, row.item); $event.stopPropagation()"
+                  >
+                    <i class="pi pi-eye"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="tw-row-icon-btn tw-row-icon-btn-delete"
+                    aria-label="Удалить"
+                    (click)="deleteItem(currentDir.id, row.item.id); $event.stopPropagation()"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                }
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else if (currentDir.kind === 'services') {
+        <p-table
+          [value]="serviceRows(selectedDirectoryFilteredItems())"
+          styleClass="tw-data-table"
+          [tableStyle]="{ width: '100%' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Наименование</th>
+              <th>Стоимость</th>
+              <th>Подуслуги</th>
+              <th class="tw-actions-col">Действия</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr [class.tw-row-selected]="selectedItemId() === row.item.id" (click)="selectItem(row.item.id)">
+              <td>
+                <div class="tw-service-name-cell">
+                  <span class="tw-service-icon-pill"><i [class]="row.icon"></i></span>
+                  <span>{{ row.title }}</span>
+                </div>
+              </td>
+              <td>{{ row.cost }} ₽</td>
+              <td>
+                <div class="tw-dir-row-badges">
+                  @for (sub of row.subservices; track sub + '-' + $index) {
+                    <span class="tw-badge tw-badge-soft">{{ sub }}</span>
+                  }
+                </div>
+              </td>
+              <td class="tw-actions-col">
+                @if (canEdit) {
+                  <button
+                    type="button"
+                    class="tw-row-icon-btn tw-row-icon-btn-open"
+                    aria-label="Открыть"
+                    (click)="openEditFromList(currentDir, row.item); $event.stopPropagation()"
+                  >
+                    <i class="pi pi-eye"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="tw-row-icon-btn tw-row-icon-btn-delete"
+                    aria-label="Удалить"
+                    (click)="deleteItem(currentDir.id, row.item.id); $event.stopPropagation()"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
                 }
               </td>
             </tr>
@@ -212,11 +350,11 @@
                     @if (canEdit) {
                       <td class="tw-actions-col">
                         @if (currentDir.kind) {
-                          <button type="button" class="tw-row-btn tw-row-btn-open" (click)="openEditFromList(currentDir, it); $event.stopPropagation()">Открыть</button>
+                          <button type="button" class="tw-row-icon-btn tw-row-icon-btn-open" aria-label="Открыть" (click)="openEditFromList(currentDir, it); $event.stopPropagation()"><i class="pi pi-eye"></i></button>
                         } @else {
-                          <button type="button" class="tw-row-btn tw-row-btn-open" (click)="openCustomRowEdit(it); $event.stopPropagation()">Открыть</button>
+                          <button type="button" class="tw-row-icon-btn tw-row-icon-btn-open" aria-label="Открыть" (click)="openCustomRowEdit(it); $event.stopPropagation()"><i class="pi pi-eye"></i></button>
                         }
-                        <button type="button" class="tw-row-btn tw-row-btn-delete" (click)="deleteItem(currentDir.id, it.id); $event.stopPropagation()">Удалить</button>
+                        <button type="button" class="tw-row-icon-btn tw-row-icon-btn-delete" aria-label="Удалить" (click)="deleteItem(currentDir.id, it.id); $event.stopPropagation()"><i class="pi pi-trash"></i></button>
                       </td>
                     }
                   </tr>
@@ -229,19 +367,27 @@
     </section>
   }
 
-  @if (drawerOpen() && editor) {
-    <div class="tw-drawer-backdrop" (click)="closeDrawer()"></div>
-    <aside class="tw-drawer" role="dialog" aria-modal="true" aria-label="Редактирование записи справочника">
-      <header class="tw-drawer-head">
-        <div>
-          <h3>{{ editor.itemId == null ? 'Новая запись' : 'Редактирование' }}</h3>
-          <p class="tw-muted">{{ currentDirectoryName() }}</p>
-        </div>
-        <button type="button" class="tw-dir-link" (click)="closeDrawer()">Закрыть</button>
-      </header>
+  <p-dialog
+    [visible]="editorDialogOpen() && !!editor"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '56rem', maxWidth: '96vw' }"
+    styleClass="tw-directory-editor-dialog"
+    [contentStyle]="{ overflowY: 'auto', overflowX: 'hidden' }"
+    [header]="editorTitle()"
+    (visibleChange)="editorDialogOpen.set($event)"
+    (onHide)="closeEditorDialog()"
+  >
+    <div class="tw-directory-editor-shell">
+      <div class="tw-directory-editor-intro">
+        <span class="tw-directory-editor-chip">Справочники</span>
+        <p class="tw-directory-editor-subtitle">{{ editorSubtitle() }}</p>
+      </div>
 
-      @if (editor.kind === 'services') {
-        <div class="tw-dir-editor">
+      @if (editor?.kind === 'services') {
+        <div class="tw-dir-editor tw-blog-shell">
           <div class="tw-dir-grid">
             <label>
               <span>Название</span>
@@ -260,34 +406,88 @@
               <input type="text" pInputText [(ngModel)]="editService.inner.displayName" name="svcInName" />
             </label>
           </div>
-          <p class="tw-muted">Сумма подуслуг: {{ sumSubservices(editService) }} ₽</p>
-          @for (sub of editService.inner.subservices; track $index) {
-            <div class="tw-dir-subcard">
-              <label>
-                <span>Подуслуга</span>
-                <input type="text" pInputText [(ngModel)]="sub.name" [name]="'subn' + $index" />
-              </label>
-              <label>
-                <span>Стоимость</span>
-                <input type="number" pInputText [(ngModel)]="sub.cost" [name]="'subc' + $index" />
-              </label>
-              <label>
-                <span>Время (мин)</span>
-                <input type="number" pInputText [(ngModel)]="sub.durationMinutes" [name]="'subd' + $index" />
-              </label>
-              <label>
-                <span>Иконка</span>
-                <input type="text" pInputText [(ngModel)]="sub.icon" [name]="'subi' + $index" />
-              </label>
-              <button type="button" class="tw-link-danger" (click)="removeSubservice($index)">Удалить</button>
+          <div class="tw-service-icons">
+            <strong>Иконка услуги</strong>
+            <div class="tw-icon-grid">
+              @for (icon of serviceIconLibrary; track icon) {
+                <button
+                  type="button"
+                  class="tw-icon-chip"
+                  [class.active]="isServiceMainIcon(icon)"
+                  (click)="chooseServiceIcon(icon)"
+                >
+                  <i [class]="icon"></i>
+                </button>
+              }
             </div>
-          }
+          </div>
+          <p class="tw-muted">Сумма подуслуг: {{ sumSubservices(editService) }} ₽</p>
+          <div class="tw-subservices-list">
+            @for (sub of editService.inner.subservices; track $index) {
+              <div class="tw-subservice-item">
+                <div class="tw-subservice-item-head">
+                  <span class="tw-subservice-index">#{{ $index + 1 }}</span>
+                  <button type="button" class="tw-link-danger" (click)="removeSubservice($index)">Удалить</button>
+                </div>
+                <div class="tw-dir-grid">
+                  <label>
+                    <span>Подуслуга</span>
+                    <input type="text" pInputText [(ngModel)]="sub.name" [name]="'subn' + $index" />
+                  </label>
+                  <label>
+                    <span>Стоимость</span>
+                    <input type="number" pInputText [(ngModel)]="sub.cost" [name]="'subc' + $index" />
+                  </label>
+                  <label>
+                    <span>Время (мин)</span>
+                    <input type="number" pInputText [(ngModel)]="sub.durationMinutes" [name]="'subd' + $index" />
+                  </label>
+                  <label>
+                    <span>Иконка</span>
+                    <div class="tw-icon-grid tw-icon-grid-compact">
+                      @for (icon of serviceIconLibrary; track icon) {
+                        <button
+                          type="button"
+                          class="tw-icon-chip"
+                          [class.active]="sub.icon === icon"
+                          (click)="chooseSubserviceIcon($index, icon)"
+                        >
+                          <i [class]="icon"></i>
+                        </button>
+                      }
+                    </div>
+                  </label>
+                </div>
+              </div>
+            }
+          </div>
           <p-button label="Добавить подуслугу" size="small" styleClass="p-button-outlined" (onClick)="addSubservice()" />
         </div>
       }
 
-      @if (editor.kind === 'clients') {
-        <div class="tw-dir-editor">
+      @if (editor?.kind === 'clients') {
+        <div class="tw-dir-editor tw-blog-shell">
+          <div class="tw-client-profile-header">
+            @if (editClient.avatarUrl) {
+              <img class="tw-blog-avatar" [src]="editClient.avatarUrl" alt="Фото клиента" />
+            } @else {
+              <span class="tw-blog-avatar tw-blog-avatar-fallback">
+                {{ (editClient.firstName || editClient.lastName || 'К').slice(0, 1).toUpperCase() }}
+              </span>
+            }
+            <div class="tw-client-profile-header-body">
+              <label>
+                <span>Фото (URL)</span>
+                <input type="text" pInputText [(ngModel)]="editClient.avatarUrl" name="clAvatar" />
+              </label>
+              <div class="tw-rating-stars tw-rating-stars-large">
+                @for (filled of ratingToStars(clientHistoryAverageRating()); track $index) {
+                  <i [class.pi-star-fill]="filled" [class.pi-star]="!filled" class="pi"></i>
+                }
+                <span class="tw-rating-value">{{ clientHistoryAverageRating() }}</span>
+              </div>
+            </div>
+          </div>
           <div class="tw-dir-grid">
             <label>
               <span>Фамилия</span>
@@ -298,10 +498,6 @@
               <input type="text" pInputText [(ngModel)]="editClient.firstName" name="clf" />
             </label>
             <label>
-              <span>Кол-во питомцев</span>
-              <input type="number" pInputText [(ngModel)]="editClient.petCount" name="clpc" />
-            </label>
-            <label>
               <span>Телефон</span>
               <input type="text" pInputText [(ngModel)]="editClient.phone" name="clph" />
             </label>
@@ -309,54 +505,97 @@
               <span>Адрес</span>
               <input type="text" pInputText [(ngModel)]="editClient.detail.address" name="clda" />
             </label>
-            <label>
-              <span>Рейтинг</span>
-              <input type="number" pInputText [(ngModel)]="editClient.detail.rating" name="clr" />
-            </label>
           </div>
-          @if (petsDirectoryItems().length > 0) {
-            <fieldset class="tw-dir-fieldset">
-              <legend>Питомцы владельца</legend>
-              @for (p of petsDirectoryItems(); track p.id) {
-                <label class="tw-dir-check">
-                  <input
-                    type="checkbox"
-                    [checked]="isPetSelectedForClient(p.id)"
-                    (change)="togglePetForClient(p.id, $any($event.target).checked)"
-                  />
-                  {{ petCheckboxLabel(p) }}
-                </label>
-              }
-            </fieldset>
-          }
-          <h5>История услуг</h5>
-          @for (h of editClient.detail.serviceHistory; track $index) {
-            <div class="tw-dir-subcard">
-              <label>
-                <span>Дата</span>
-                <input type="date" pInputText [(ngModel)]="h.date" [name]="'chd' + $index" />
-              </label>
-              <label class="tw-dir-full">
-                <span>Услуга</span>
-                <input type="text" pInputText [(ngModel)]="h.serviceTitle" [name]="'cht' + $index" />
-              </label>
-              <button type="button" class="tw-link-danger" (click)="removeClientHistory($index)">Удалить</button>
+          <section class="tw-form-card">
+            <div class="tw-form-card-head">
+              <h5>Питомцы владельца</h5>
+              <div class="tw-inline-actions">
+                <button type="button" class="tw-row-icon-btn tw-row-icon-btn-open" aria-label="Добавить питомца" (click)="openClientPetBindingDialog()"><i class="pi pi-plus"></i></button>
+              </div>
             </div>
-          }
-          <p-button label="Добавить запись в историю" size="small" styleClass="p-button-outlined" (onClick)="addClientHistory()" />
+            <table class="tw-mini-table">
+              <thead>
+                <tr>
+                  <th>Питомец</th>
+                  <th>Вид</th>
+                  <th class="tw-actions-col">Действие</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (petItem of clientPetsDraftRows(); track petItem.id) {
+                  <tr>
+                    <td>{{ petDisplayLabel(petItem) }}</td>
+                    <td>{{ petDisplayType(petItem) }}</td>
+                    <td class="tw-actions-col">
+                      <button type="button" class="tw-row-icon-btn tw-row-icon-btn-delete" aria-label="Убрать питомца" (click)="removePetFromClientDraft(petItem.id)"><i class="pi pi-minus"></i></button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="3">Питомцы пока не назначены</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+          <section class="tw-form-card">
+            <div class="tw-form-card-head">
+              <h5>История услуг</h5>
+              <div class="tw-inline-actions">
+                <button type="button" class="tw-row-icon-btn tw-row-icon-btn-open" aria-label="Добавить запись" (click)="addClientHistory()"><i class="pi pi-plus"></i></button>
+              </div>
+            </div>
+            <table class="tw-mini-table">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Услуга</th>
+                  <th>Оценка</th>
+                  <th class="tw-actions-col">Действие</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (h of editClient.detail.serviceHistory; track $index) {
+                  <tr>
+                    <td><input type="date" pInputText [(ngModel)]="h.date" [name]="'chd' + $index" /></td>
+                    <td><input type="text" pInputText [(ngModel)]="h.serviceTitle" [name]="'cht' + $index" /></td>
+                    <td><input type="number" min="0" max="5" step="1" pInputText [(ngModel)]="h.rating" [name]="'chr' + $index" /></td>
+                    <td class="tw-actions-col"><button type="button" class="tw-row-icon-btn tw-row-icon-btn-delete" aria-label="Удалить запись" (click)="removeClientHistory($index)"><i class="pi pi-trash"></i></button></td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4">История заказов пока пустая</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
         </div>
       }
 
-      @if (editor.kind === 'pets') {
-        <div class="tw-dir-editor">
+      @if (editor?.kind === 'pets') {
+        <div class="tw-dir-editor tw-blog-shell">
+          <div class="tw-client-profile-header">
+            @if (editPet.iconUrl) {
+              <img class="tw-blog-avatar" [src]="editPet.iconUrl" alt="Фото питомца" />
+            } @else {
+              <span class="tw-blog-avatar tw-blog-avatar-fallback">{{ petOwnerCardTitle().slice(0, 1).toUpperCase() }}</span>
+            }
+            <div class="tw-client-profile-header-body">
+              <label>
+                <span>Фото (URL)</span>
+                <input type="text" pInputText [(ngModel)]="editPet.iconUrl" name="ptic" />
+              </label>
+            </div>
+          </div>
           <div class="tw-dir-grid">
-            <label>
-              <span>Фото (URL)</span>
-              <input type="text" pInputText [(ngModel)]="editPet.iconUrl" name="ptic" />
-            </label>
             <label>
               <span>Возраст</span>
               <input type="text" pInputText [(ngModel)]="editPet.age" name="pta" />
+            </label>
+            <label>
+              <span>Кличка</span>
+              <input type="text" pInputText [(ngModel)]="editPet.detail.nickname" name="ptnick" />
             </label>
             <label>
               <span>Порода</span>
@@ -365,14 +604,6 @@
             <label>
               <span>Подпорода</span>
               <input type="text" pInputText [(ngModel)]="editPet.subbreed" name="pts" />
-            </label>
-            <label>
-              <span>Владелец</span>
-              <input type="text" pInputText [(ngModel)]="editPet.ownerName" name="pton" />
-            </label>
-            <label>
-              <span>Номер владельца</span>
-              <input type="text" pInputText [(ngModel)]="editPet.ownerPhone" name="ptop" />
             </label>
             <label>
               <span>Тип животного</span>
@@ -396,30 +627,201 @@
               <textarea class="tw-dir-textarea" rows="2" [(ngModel)]="editPet.detail.notes" name="ptno"></textarea>
             </label>
           </div>
-          <h5>История приёма</h5>
-          @for (v of editPet.detail.visitHistory; track $index) {
-            <div class="tw-dir-subcard">
-              <label>
-                <span>Дата</span>
-                <input type="date" pInputText [(ngModel)]="v.date" [name]="'pvd' + $index" />
-              </label>
-              <label class="tw-dir-full">
-                <span>Заметка</span>
-                <input type="text" pInputText [(ngModel)]="v.note" [name]="'pvn' + $index" />
-              </label>
-              <button type="button" class="tw-link-danger" (click)="removePetVisit($index)">Удалить</button>
+          <section class="tw-form-card tw-owner-card" role="button" tabindex="0" (click)="openPetOwnerDialog()" (keyup.enter)="openPetOwnerDialog()">
+            <div class="tw-owner-card-avatar-wrap">
+              @if (ownerAvatarByClientItemId(editPet.detail.ownerClientItemId ?? null)) {
+                <img class="tw-blog-avatar tw-blog-avatar-sm" [src]="ownerAvatarByClientItemId(editPet.detail.ownerClientItemId ?? null)" alt="Фото владельца" />
+              } @else {
+                <span class="tw-blog-avatar tw-blog-avatar-sm tw-blog-avatar-fallback">{{ ownerDisplayNameByClientItemId(editPet.detail.ownerClientItemId ?? null).slice(0, 1).toUpperCase() }}</span>
+              }
             </div>
-          }
-          <p-button label="Добавить приём" size="small" styleClass="p-button-outlined" (onClick)="addPetVisit()" />
+            <div>
+              <strong>Владелец</strong>
+              <p>{{ ownerDisplayNameByClientItemId(editPet.detail.ownerClientItemId ?? null) }}</p>
+            </div>
+            <i class="pi pi-arrow-right"></i>
+          </section>
+          <section class="tw-form-card">
+            <div class="tw-form-card-head">
+              <h5>История заказов</h5>
+              <div class="tw-inline-actions">
+                <button type="button" class="tw-row-icon-btn tw-row-icon-btn-open" aria-label="Добавить запись" (click)="addPetVisit()"><i class="pi pi-plus"></i></button>
+              </div>
+            </div>
+            <table class="tw-mini-table">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Заметка</th>
+                  <th class="tw-actions-col">Действие</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (v of editPet.detail.visitHistory; track $index) {
+                  <tr>
+                    <td><input type="date" pInputText [(ngModel)]="v.date" [name]="'pvd' + $index" /></td>
+                    <td><input type="text" pInputText [(ngModel)]="v.note" [name]="'pvn' + $index" /></td>
+                    <td class="tw-actions-col"><button type="button" class="tw-row-icon-btn tw-row-icon-btn-delete" aria-label="Удалить запись" (click)="removePetVisit($index)"><i class="pi pi-trash"></i></button></td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="3">История заказов пока пустая</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
         </div>
       }
+    </div>
 
-      <footer class="tw-dir-actions">
-        <p-button label="Сохранить" icon="pi pi-check" (onClick)="saveEditor()" />
-        <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeDrawer()" />
-      </footer>
-    </aside>
-  }
+    <div class="tw-dir-actions">
+      <p-button label="Сохранить" icon="pi pi-check" (onClick)="saveEditor()" />
+      <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeEditorDialog()" />
+    </div>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="clientPetBindingDialogOpen()"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '72rem', maxWidth: '96vw' }"
+    styleClass="tw-owner-bind-dialog"
+    header="Привязка питомцев к клиенту"
+    (visibleChange)="clientPetBindingDialogOpen.set($event)"
+    (onHide)="closeClientPetBindingDialog()"
+  >
+    <div class="tw-owner-bind-grid">
+      <section class="tw-owner-bind-col" (dragover)="allowDrop($event)" (drop)="dropPetToClient($event)">
+        <header class="tw-owner-bind-head">
+          <h5>Питомцы клиента</h5>
+          <span class="tw-badge">{{ clientPetsDraftRows().length }}</span>
+        </header>
+        <table class="tw-mini-table">
+          <thead>
+            <tr>
+              <th>Питомец</th>
+              <th>Вид</th>
+              <th class="tw-actions-col">Убрать</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (petItem of clientPetsDraftRows(); track petItem.id) {
+              <tr draggable="true" (dragstart)="dragClientPetStart($event, petItem.id)">
+                <td>{{ petDisplayLabel(petItem) }}</td>
+                <td>{{ petDisplayType(petItem) }}</td>
+                <td class="tw-actions-col"><button type="button" class="tw-row-icon-btn tw-row-icon-btn-delete" aria-label="Убрать питомца" (click)="removePetFromClientDraft(petItem.id)"><i class="pi pi-minus"></i></button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3">Питомцы не выбраны</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+      <section class="tw-owner-bind-col" (dragover)="allowDrop($event)" (drop)="dropPetToSalon($event)">
+        <header class="tw-owner-bind-head">
+          <h5>Все питомцы салона</h5>
+          <span class="tw-badge">{{ availablePetsRows().length }}</span>
+        </header>
+        <table class="tw-mini-table">
+          <thead>
+            <tr>
+              <th>Питомец</th>
+              <th>Вид</th>
+              <th class="tw-actions-col">Добавить</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (petItem of availablePetsRows(); track petItem.id) {
+              <tr draggable="true" (dragstart)="dragClientPetStart($event, petItem.id)">
+                <td>{{ petDisplayLabel(petItem) }}</td>
+                <td>{{ petDisplayType(petItem) }}</td>
+                <td class="tw-actions-col"><button type="button" class="tw-row-icon-btn tw-row-icon-btn-open" aria-label="Добавить питомца" (click)="addPetToClientDraft(petItem.id)"><i class="pi pi-plus"></i></button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3">Свободных питомцев нет</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <div class="tw-dir-actions">
+      <p-button label="Применить" icon="pi pi-check" (onClick)="applyClientPetBindingDraft()" />
+      <p-button label="Отмена" styleClass="p-button-text" (onClick)="closeClientPetBindingDialog()" />
+    </div>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="petOwnerDialogOpen()"
+    [modal]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '72rem', maxWidth: '96vw' }"
+    styleClass="tw-owner-bind-dialog"
+    header="Выбор владельца питомца"
+    (visibleChange)="petOwnerDialogOpen.set($event)"
+    (onHide)="closePetOwnerDialog()"
+  >
+    <div class="tw-owner-bind-grid">
+      <section class="tw-owner-bind-col tw-owner-bind-target" (dragover)="allowDrop($event)" (drop)="dropOwnerToPet($event)">
+        <header class="tw-owner-bind-head">
+          <h5>Текущий владелец</h5>
+        </header>
+        <table class="tw-mini-table">
+          <thead>
+            <tr>
+              <th>Клиент</th>
+              <th>Телефон</th>
+              <th class="tw-actions-col">Сброс</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (ownerDialogCurrentClient(); as ownerClient) {
+              <tr draggable="true" (dragstart)="dragOwnerStart($event, ownerClient.id)">
+                <td>{{ clientDisplayLabel(ownerClient) }}</td>
+                <td>{{ clientPhone(ownerClient) }}</td>
+                <td class="tw-actions-col"><button type="button" class="tw-row-icon-btn tw-row-icon-btn-delete" aria-label="Сбросить владельца" (click)="clearPetOwnerDraft()"><i class="pi pi-times"></i></button></td>
+              </tr>
+            } @else {
+              <tr><td colspan="3">Владелец не выбран</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+      <section class="tw-owner-bind-col">
+        <header class="tw-owner-bind-head">
+          <h5>Все клиенты</h5>
+        </header>
+        <table class="tw-mini-table">
+          <thead>
+            <tr>
+              <th>Клиент</th>
+              <th>Телефон</th>
+              <th class="tw-actions-col">Выбрать</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (clientItem of ownerDialogOtherClients(); track clientItem.id) {
+              <tr draggable="true" (dragstart)="dragOwnerStart($event, clientItem.id)">
+                <td>{{ clientDisplayLabel(clientItem) }}</td>
+                <td>{{ clientPhone(clientItem) }}</td>
+                <td class="tw-actions-col"><button type="button" class="tw-row-icon-btn tw-row-icon-btn-open" aria-label="Выбрать владельца" (click)="petOwnerDraftClientItemId.set(clientItem.id)"><i class="pi pi-check"></i></button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3">Клиенты не найдены</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <div class="tw-dir-actions">
+      <p-button label="Применить" icon="pi pi-check" (onClick)="applyPetOwnerDraft()" />
+      <p-button label="Отмена" styleClass="p-button-text" (onClick)="closePetOwnerDialog()" />
+    </div>
+  </p-dialog>
 
   <p-dialog
     [visible]="templatePickerOpen()"
@@ -440,7 +842,10 @@
         optionValue="value"
         [ngModel]="templateSelection()"
         (ngModelChange)="templateSelection.set($event ?? [])"
-        defaultLabel="Выберите справочники"
+        placeholder="Выберите справочники"
+        [display]="'chip'"
+        [maxSelectedLabels]="2"
+        [showClear]="true"
         [filter]="true"
         appendTo="body"
       />
@@ -504,7 +909,10 @@
                 optionValue="id"
                 [ngModel]="customRowRelationMultiValues()[field.key]"
                 (ngModelChange)="setCustomRowRelationMultiValues(field.key, $event)"
-                defaultLabel="Выберите записи"
+                placeholder="Выберите записи"
+                [display]="'chip'"
+                [maxSelectedLabels]="2"
+                [showClear]="true"
                 [filter]="true"
                 appendTo="body"
                 styleClass="tw-relation-multiselect"

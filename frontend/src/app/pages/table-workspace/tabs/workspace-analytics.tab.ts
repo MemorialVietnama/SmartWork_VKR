@@ -1,5 +1,7 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { catchError, distinctUntilChanged, finalize, of, switchMap } from 'rxjs';
 
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -8,28 +10,41 @@ import { ChartModule } from 'primeng/chart';
 import { AuthService, TableAnalyticsDto } from '../../../core/auth/auth.service';
 import { TableWorkspaceState } from '../table-workspace.state';
 
+type AnalyticsPeriod = '7d' | '30d' | '90d' | '365d';
+
+interface AnalyticsFetchKey {
+  tableId: number;
+  unlocked: boolean;
+  period: AnalyticsPeriod;
+  bucket: 'day' | 'week';
+  statusFilter: string;
+  assigneeFilter: number | null;
+  serviceFilter: number | null;
+  contextTick: number;
+}
+
 @Component({
   selector: 'app-workspace-analytics-tab',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, CardModule, ButtonModule, ChartModule],
   templateUrl: './workspace-analytics.tab.html',
   styleUrl: './workspace-analytics.tab.scss',
 })
-export class WorkspaceAnalyticsTabComponent implements OnInit {
+export class WorkspaceAnalyticsTabComponent {
   private readonly auth = inject(AuthService);
   protected readonly state = inject(TableWorkspaceState);
 
-  protected data: TableAnalyticsDto | null = null;
-  protected err: string | null = null;
-  protected loading = false;
-  protected period: '7d' | '30d' | '90d' | '365d' = '30d';
-  protected bucket: 'day' | 'week' = 'day';
-  protected selectedChartTitle: string | null = null;
-  protected selectedKpiKey = 'orders_created';
-  protected selectedCategory: 'orders' | 'services' | 'employees' = 'orders';
-  protected statusFilter = '';
-  protected assigneeFilter: number | null = null;
-  protected serviceFilter: number | null = null;
+  protected readonly data = signal<TableAnalyticsDto | null>(null);
+  protected readonly err = signal<string | null>(null);
+  protected readonly loading = signal(false);
+  protected readonly period = signal<AnalyticsPeriod>('30d');
+  protected readonly selectedChartTitle = signal<string | null>(null);
+  protected readonly selectedKpiKey = signal('orders_created');
+  protected readonly selectedCategory = signal<'orders' | 'services' | 'employees'>('orders');
+  protected readonly statusFilter = signal('');
+  protected readonly assigneeFilter = signal<number | null>(null);
+  protected readonly serviceFilter = signal<number | null>(null);
   protected readonly periods = [
     { id: '7d' as const, label: '7 дней' },
     { id: '30d' as const, label: '30 дней' },
@@ -37,26 +52,66 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
     { id: '365d' as const, label: '365 дней' },
   ];
 
-  ngOnInit(): void {
-    if (this.state.bonusQty('unlock_analytics') <= 0) {
-      this.data = null;
-      return;
-    }
-    this.fetchAnalytics();
+  protected readonly unlocked = computed(() => this.state.bonusQty('unlock_analytics') > 0);
+
+  private readonly fetchKey = computed<AnalyticsFetchKey>(() => ({
+    tableId: this.state.tableId(),
+    unlocked: this.unlocked(),
+    period: this.period(),
+    bucket: this.period() === '365d' ? 'week' : 'day',
+    statusFilter: this.statusFilter(),
+    assigneeFilter: this.assigneeFilter(),
+    serviceFilter: this.serviceFilter(),
+    contextTick: this.state.contextReloadTick(),
+  }));
+
+  constructor() {
+    toObservable(this.fetchKey)
+      .pipe(
+        distinctUntilChanged((a, b) => this.sameFetchKey(a, b)),
+        switchMap((key) => {
+          if (!key.tableId || !key.unlocked) {
+            this.data.set(null);
+            this.err.set(null);
+            this.loading.set(false);
+            return of<TableAnalyticsDto | null>(null);
+          }
+          this.loading.set(true);
+          this.err.set(null);
+          const range = this.buildRangeByPeriod(key.period);
+          return this.auth
+            .getTableWorkspaceAnalytics(key.tableId, {
+              from: range.from,
+              to: range.to,
+              bucket: key.bucket,
+              status: key.statusFilter || undefined,
+              assignee_user_id: key.assigneeFilter ?? undefined,
+              service_item_id: key.serviceFilter ?? undefined,
+            })
+            .pipe(
+              catchError((e) => {
+                this.err.set(e?.error?.detail ?? 'Нет доступа к аналитике');
+                return of<TableAnalyticsDto | null>(null);
+              }),
+              finalize(() => this.loading.set(false)),
+            );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((d) => {
+        this.data.set(d);
+        if (d) {
+          this.selectedChartTitle.set(d.charts[0]?.title ?? null);
+        }
+      });
   }
 
-  protected get unlocked(): boolean {
-    return this.state.bonusQty('unlock_analytics') > 0;
-  }
-
-  protected selectPeriod(period: '7d' | '30d' | '90d' | '365d'): void {
-    this.period = period;
-    this.bucket = period === '365d' ? 'week' : 'day';
-    this.fetchAnalytics();
+  protected selectPeriod(period: AnalyticsPeriod): void {
+    this.period.set(period);
   }
 
   protected kpis(): Array<{ key: string; title: string; value: string; delta: string }> {
-    const source = this.data?.kpis ?? [];
+    const source = this.data()?.kpis ?? [];
     return source.slice(0, 8).map((item) => ({
       key: item.key,
       title: item.title,
@@ -66,35 +121,33 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
   }
 
   protected selectKpi(key: string): void {
-    this.selectedKpiKey = key;
+    this.selectedKpiKey.set(key);
   }
 
   protected selectChart(title: string): void {
-    this.selectedChartTitle = this.selectedChartTitle === title ? null : title;
+    this.selectedChartTitle.update((current) => (current === title ? null : title));
   }
 
   protected selectCategory(category: 'orders' | 'services' | 'employees'): void {
-    this.selectedCategory = category;
+    this.selectedCategory.set(category);
   }
 
   protected setStatusFilter(value: string): void {
-    this.statusFilter = value;
-    this.fetchAnalytics();
+    this.statusFilter.set(value);
   }
 
   protected setAssigneeFilter(value: string): void {
-    this.assigneeFilter = value ? Number(value) : null;
-    this.fetchAnalytics();
+    this.assigneeFilter.set(value ? Number(value) : null);
   }
 
   protected setServiceFilter(value: string): void {
-    this.serviceFilter = value ? Number(value) : null;
-    this.fetchAnalytics();
+    this.serviceFilter.set(value ? Number(value) : null);
   }
 
   protected trendData(): unknown {
-    const selected = this.data?.charts.find((chart) => chart.title === this.selectedChartTitle);
-    const chart = selected ?? this.data?.charts[0];
+    const analytics = this.data();
+    const selected = analytics?.charts.find((chart) => chart.title === this.selectedChartTitle());
+    const chart = selected ?? analytics?.charts[0];
     if (!chart) {
       return { labels: [], datasets: [] };
     }
@@ -114,7 +167,7 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
   }
 
   protected distributionData(): unknown {
-    const charts = this.data?.charts ?? [];
+    const charts = this.data()?.charts ?? [];
     return {
       labels: charts.map((chart) => chart.title),
       datasets: [
@@ -144,27 +197,29 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
   }
 
   protected insightRows(): Array<{ label: string; value: string }> {
-    const rows = this.data?.breakdown ?? [];
+    const rows = this.data()?.breakdown ?? [];
     return rows.map((row) => ({ label: row.label, value: this.formatMetric(row.value) }));
   }
 
   protected drilldownRows(): Array<{ label: string; value: number }> {
-    if (this.selectedCategory === 'services') {
-      return (this.data?.service_breakdown ?? []).map((row) => ({
+    const analytics = this.data();
+    if (this.selectedCategory() === 'services') {
+      return (analytics?.service_breakdown ?? []).map((row) => ({
         label: `${row.label} (${row.orders_total} заказов)`,
         value: row.revenue_total,
       }));
     }
-    if (this.selectedCategory === 'employees') {
-      return (this.data?.employee_breakdown ?? []).map((row) => ({
+    if (this.selectedCategory() === 'employees') {
+      return (analytics?.employee_breakdown ?? []).map((row) => ({
         label: `${row.label} (${row.completed_total}/${row.orders_total})`,
         value: row.revenue_total,
       }));
     }
-    if (!this.selectedChartTitle) {
+    const chartTitle = this.selectedChartTitle();
+    if (!chartTitle) {
       return [];
     }
-    const chart = this.data?.charts.find((item) => item.title === this.selectedChartTitle);
+    const chart = analytics?.charts.find((item) => item.title === chartTitle);
     if (!chart) {
       return [];
     }
@@ -172,17 +227,17 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
   }
 
   protected chartLabels(): Array<{ title: string; subtitle: string }> {
-    return (this.data?.charts ?? []).map((chart) => ({ title: chart.title, subtitle: chart.subtitle }));
+    return (this.data()?.charts ?? []).map((chart) => ({ title: chart.title, subtitle: chart.subtitle }));
   }
 
   protected employeeFilterOptions(): Array<{ id: number; label: string }> {
-    return (this.data?.employee_breakdown ?? [])
+    return (this.data()?.employee_breakdown ?? [])
       .filter((row) => row.assignee_user_id != null)
       .map((row) => ({ id: Number(row.assignee_user_id), label: row.label }));
   }
 
   protected serviceFilterOptions(): Array<{ id: number; label: string }> {
-    return (this.data?.service_breakdown ?? [])
+    return (this.data()?.service_breakdown ?? [])
       .filter((row) => row.service_item_id != null)
       .map((row) => ({ id: Number(row.service_item_id), label: row.label }));
   }
@@ -196,33 +251,20 @@ export class WorkspaceAnalyticsTabComponent implements OnInit {
     return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
   }
 
-  private fetchAnalytics(): void {
-    this.loading = true;
-    this.err = null;
-    const range = this.buildRangeByPeriod(this.period);
-    this.auth
-      .getTableWorkspaceAnalytics(this.state.tableId(), {
-        from: range.from,
-        to: range.to,
-        bucket: this.bucket,
-        status: this.statusFilter || undefined,
-        assignee_user_id: this.assigneeFilter ?? undefined,
-        service_item_id: this.serviceFilter ?? undefined,
-      })
-      .subscribe({
-        next: (d) => {
-          this.data = d;
-          this.loading = false;
-          this.selectedChartTitle = d.charts[0]?.title ?? null;
-        },
-        error: (e) => {
-          this.loading = false;
-          this.err = e?.error?.detail ?? 'Нет доступа к аналитике';
-        },
-      });
+  private sameFetchKey(a: AnalyticsFetchKey, b: AnalyticsFetchKey): boolean {
+    return (
+      a.tableId === b.tableId &&
+      a.unlocked === b.unlocked &&
+      a.period === b.period &&
+      a.bucket === b.bucket &&
+      a.statusFilter === b.statusFilter &&
+      a.assigneeFilter === b.assigneeFilter &&
+      a.serviceFilter === b.serviceFilter &&
+      a.contextTick === b.contextTick
+    );
   }
 
-  private buildRangeByPeriod(period: '7d' | '30d' | '90d' | '365d'): { from: string; to: string } {
+  private buildRangeByPeriod(period: AnalyticsPeriod): { from: string; to: string } {
     const now = new Date();
     const from = new Date(now);
     const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365;

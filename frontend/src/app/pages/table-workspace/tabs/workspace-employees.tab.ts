@@ -22,7 +22,6 @@ interface ShiftForm {
   standalone: true,
   imports: [CommonModule, FormsModule, CardModule, ButtonModule, InputTextModule],
   templateUrl: './workspace-employees.tab.html',
-  styleUrl: './workspace-employees.tab.scss',
 })
 export class WorkspaceEmployeesTabComponent implements OnInit {
   private readonly auth = inject(AuthService);

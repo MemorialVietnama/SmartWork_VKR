@@ -12,16 +12,19 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { catchError, distinctUntilChanged, finalize, of, switchMap, tap } from 'rxjs';
 
+import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { ToastModule } from 'primeng/toast';
 
 import { AuthService, CalendarSlotDto, WorkspaceDirectoryDto, WorkspaceDirectoryItemDto, WorkspaceOrderDto } from '../../../core/auth/auth.service';
 import { WorkspaceCalendarWidgetComponent } from '../../../shared/workspace-calendar-widget/workspace-calendar-widget.component';
 import { TableWorkspaceState } from '../table-workspace.state';
 import { CalendarViewMode, toIsoRange, visibleRangeForView, weekStartDayToJs } from './calendar-view.utils';
+import { asServicePayload, subservicesTotal } from './directory-payload.models';
 
 @Component({
   selector: 'app-workspace-calendar-tab',
@@ -35,14 +38,17 @@ import { CalendarViewMode, toIsoRange, visibleRangeForView, weekStartDayToJs } f
     DialogModule,
     InputTextModule,
     MultiSelectModule,
+    ToastModule,
     WorkspaceCalendarWidgetComponent,
   ],
+  providers: [MessageService],
   templateUrl: './workspace-calendar.tab.html',
   styleUrl: './workspace-calendar.tab.scss',
 })
 export class WorkspaceCalendarTabComponent {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly messageService = inject(MessageService);
   protected readonly state = inject(TableWorkspaceState);
 
   protected readonly viewMode = signal<CalendarViewMode>('month');
@@ -83,12 +89,13 @@ export class WorkspaceCalendarTabComponent {
   protected orderTimeFrom = '09:00';
   protected orderDurationMinutes = 60;
   protected orderTitle = '';
-  protected orderClientId: number | null = null;
-  protected orderServiceIds: number[] = [];
-  protected orderCustomSelections: Record<string, number[]> = {};
-  protected orderAssigneeId: number | null = null;
-  protected orderPriceAdjustment = 0;
-  protected orderStatus = 'queued';
+  protected readonly orderClientSelection = signal<number[]>([]);
+  protected readonly orderPetIds = signal<number[]>([]);
+  protected readonly orderServiceIds = signal<number[]>([]);
+  protected readonly orderAssigneeSelection = signal<number[]>([]);
+  protected readonly orderPriceAdjustment = signal(0);
+  protected readonly orderStatus = signal('queued');
+  protected readonly orderStatusSelection = signal<string[]>(['queued']);
   protected editOrderId: number | null = null;
   protected orderDeleteConfirmVisible = false;
   protected orderCompleteDialogVisible = false;
@@ -121,20 +128,124 @@ export class WorkspaceCalendarTabComponent {
   });
 
   protected readonly clientsDirectory = computed(() => this.directories().find((dir) => dir.kind === 'clients') ?? null);
+  protected readonly petsDirectory = computed(() => this.directories().find((dir) => dir.kind === 'pets') ?? null);
   protected readonly servicesDirectory = computed(() => this.directories().find((dir) => dir.kind === 'services') ?? null);
-  protected readonly orderCustomDirectories = computed(() => {
-    const enabled = new Set((this.state.detail()?.order_enabled_directory_ids ?? []).map((id) => Number(id)));
-    return this.directories().filter((dir) => !dir.kind && enabled.has(dir.id));
+  protected readonly clientOptions = computed(() =>
+    (this.clientsDirectory()?.items ?? []).map((it) => ({
+      label: this.itemLabel(it),
+      value: it.id,
+      avatarUrl: this.extractClientAvatar(it),
+      subtitle: this.extractClientPhone(it),
+    })),
+  );
+  protected readonly orderClientId = computed(() => this.orderClientSelection()[0] ?? null);
+  protected readonly selectedClient = computed(() => {
+    const clientId = this.orderClientId();
+    return clientId ? (this.clientOptions().find((entry) => entry.value === clientId) ?? null) : null;
   });
-  protected readonly serviceOptions = computed(() => (this.servicesDirectory()?.items ?? []).map((it) => ({ label: this.itemLabel(it), value: it.id })));
-  protected readonly clientOptions = computed(() => (this.clientsDirectory()?.items ?? []).map((it) => ({ label: this.itemLabel(it), value: it.id })));
-  protected readonly selectedServiceCost = computed(() => {
-    const services = this.servicesDirectory()?.items ?? [];
-    return services
-      .filter((it) => this.orderServiceIds.includes(it.id))
-      .reduce((sum, it) => sum + this.extractCost(it), 0);
+  protected readonly serviceOptions = computed(() =>
+    (this.servicesDirectory()?.items ?? []).map((it) => ({
+      label: this.itemLabel(it),
+      value: it.id,
+      icon: this.extractServiceIcon(it),
+      cost: this.extractCost(it),
+      subservices: this.extractServiceSubservices(it),
+    })),
+  );
+  protected readonly selectedServiceOptions = computed(() => {
+    const selected = new Set(this.orderServiceIds());
+    return this.serviceOptions().filter((entry) => selected.has(entry.value));
   });
-  protected readonly orderPriceTotal = computed(() => this.selectedServiceCost() + Number(this.orderPriceAdjustment || 0));
+  protected readonly clientSelectionLimit = computed(() => (this.groomingSelected() ? 2 : 1));
+  protected readonly groomingSelected = computed(() =>
+    this.selectedServiceOptions().some((entry) => entry.label.toLowerCase().includes('грум')),
+  );
+  protected readonly petOptions = computed(() => {
+    const selectedIds = new Set(this.orderClientSelection());
+    if (selectedIds.size === 0) {
+      return [];
+    }
+    const clientItems = (this.clientsDirectory()?.items ?? []).filter((entry) => selectedIds.has(entry.id));
+    const allowedSet = new Set<number>();
+    const selectedClientNames = new Set<string>();
+    for (const clientItem of clientItems) {
+      const payload = this.payloadRecord(clientItem.payload);
+      const detail = this.payloadRecord(payload['detail']);
+      const allowedPetIdsRaw = detail['petItemIds'];
+      const allowedPetIds = Array.isArray(allowedPetIdsRaw)
+        ? allowedPetIdsRaw.map((entry) => Number(entry)).filter((entry) => Number.isFinite(entry))
+        : [];
+      for (const petId of allowedPetIds) {
+        allowedSet.add(petId);
+      }
+      const firstName = String(payload['firstName'] ?? detail['firstName'] ?? '').trim();
+      const lastName = String(payload['lastName'] ?? detail['lastName'] ?? '').trim();
+      const fullName = `${lastName} ${firstName}`.trim().toLowerCase();
+      if (fullName) {
+        selectedClientNames.add(fullName);
+      }
+    }
+    if (selectedClientNames.size > 0) {
+      for (const petItem of this.petsDirectory()?.items ?? []) {
+        const payload = this.payloadRecord(petItem.payload);
+        const detail = this.payloadRecord(payload['detail']);
+        const ownerId = Number(detail['ownerClientItemId']);
+        if (Number.isFinite(ownerId) && selectedIds.has(ownerId)) {
+          allowedSet.add(petItem.id);
+          continue;
+        }
+        const ownerName = String(payload['ownerName'] ?? '').trim().toLowerCase();
+        if (ownerName && selectedClientNames.has(ownerName)) {
+          allowedSet.add(petItem.id);
+        }
+      }
+    }
+    return (this.petsDirectory()?.items ?? [])
+      .filter((entry) => allowedSet.has(entry.id))
+      .map((entry) => ({
+        label: this.itemLabel(entry),
+        value: entry.id,
+        avatarUrl: this.extractPetAvatar(entry),
+      }));
+  });
+  protected readonly employeeOptions = computed(() =>
+    this.state.members().map((member) => ({
+      label: member.short_name,
+      value: member.user_id,
+      isOwner: member.is_owner,
+      initials: this.initials(member.short_name),
+      role: member.position || member.role || (member.is_owner ? 'Владелец' : 'Сотрудник'),
+    })),
+  );
+  protected readonly statusOptions: Array<{ value: string; label: string; icon: string; tone: string }> = [
+    { value: 'queued', label: 'В очереди', icon: 'pi pi-clock', tone: 'status-queued' },
+    { value: 'in_progress', label: 'В работе', icon: 'pi pi-spin pi-spinner', tone: 'status-progress' },
+    { value: 'completed', label: 'Завершен', icon: 'pi pi-check-circle', tone: 'status-completed' },
+    { value: 'cancelled', label: 'Отменен', icon: 'pi pi-times-circle', tone: 'status-cancelled' },
+  ];
+  protected readonly selectedStatusOption = computed(
+    () => this.statusOptions.find((entry) => entry.value === this.orderStatus()) ?? this.statusOptions[0],
+  );
+  protected readonly selectedServiceCost = computed(() =>
+    this.selectedServiceOptions().reduce((sum, entry) => sum + entry.cost, 0),
+  );
+  protected readonly orderPriceTotal = computed(() => this.selectedServiceCost() + Number(this.orderPriceAdjustment() || 0));
+  protected readonly selectedClientLabel = computed(() => this.clientOptionByValue(this.orderClientId())?.label ?? '—');
+  protected readonly selectedPetLabels = computed(() => {
+    const selected = new Set(this.orderPetIds());
+    return this.petOptions()
+      .filter((entry) => selected.has(entry.value))
+      .map((entry) => entry.label);
+  });
+  protected readonly selectedServiceLabels = computed(() =>
+    this.selectedServiceOptions()
+      .map((entry) => entry.label)
+      .join(', '),
+  );
+  protected readonly selectedAssigneeLabel = computed(() => {
+    const option = this.employeeOptionByValue(this.orderAssigneeSelection()[0]);
+    return option?.label ?? 'Без назначения';
+  });
 
   protected readonly visibleRange = computed(() => {
     const anchor = this.anchorDate();
@@ -211,7 +322,7 @@ export class WorkspaceCalendarTabComponent {
           }
           return this.auth.listWorkspaceOrders(tableId, { limit: 200 }).pipe(
             catchError((err) => {
-              this.actionError = this.formatApiError(err, 'Не удалось загрузить заказы.');
+              this.notifyError(this.formatApiError(err, 'Не удалось загрузить заказы.'));
               return of<WorkspaceOrderDto[]>([]);
             }),
           );
@@ -262,12 +373,13 @@ export class WorkspaceCalendarTabComponent {
     this.orderTimeFrom = '09:00';
     this.orderDurationMinutes = 60;
     this.orderTitle = '';
-    this.orderClientId = null;
-    this.orderServiceIds = [];
-    this.orderCustomSelections = {};
-    this.orderAssigneeId = null;
-    this.orderPriceAdjustment = 0;
-    this.orderStatus = 'queued';
+    this.orderClientSelection.set([]);
+    this.orderPetIds.set([]);
+    this.orderServiceIds.set([]);
+    this.orderAssigneeSelection.set([]);
+    this.orderPriceAdjustment.set(0);
+    this.orderStatus.set('queued');
+    this.orderStatusSelection.set(['queued']);
     this.orderWarnings = [];
     this.actionError = null;
   }
@@ -282,7 +394,7 @@ export class WorkspaceCalendarTabComponent {
 
   protected nextCreateStep(): void {
     if (this.createStep === 1 && this.newTitle.trim().length < 2) {
-      this.actionError = 'Название слота должно содержать минимум 2 символа.';
+      this.notifyError('Название слота должно содержать минимум 2 символа.');
       return;
     }
     if (this.createStep < 3) {
@@ -317,19 +429,6 @@ export class WorkspaceCalendarTabComponent {
   }
 
   protected nextOrderStep(): void {
-    if (this.createOrderStep === 1 && !this.orderDate) {
-      this.actionError = 'Выберите дату заказа.';
-      return;
-    }
-    if (this.createOrderStep === 2 && !this.orderClientId) {
-      this.actionError = 'Выберите клиента.';
-      return;
-    }
-    if (this.createOrderStep === 3 && this.orderServiceIds.length === 0) {
-      this.actionError = 'Выберите хотя бы одну услугу.';
-      return;
-    }
-    this.actionError = null;
     this.createOrderStep = Math.min(this.createOrderStep + 1, 7);
     if (this.createOrderStep === 6) {
       this.checkOrderAvailability();
@@ -338,7 +437,13 @@ export class WorkspaceCalendarTabComponent {
 
   protected prevOrderStep(): void {
     this.createOrderStep = Math.max(this.createOrderStep - 1, 1);
-    this.actionError = null;
+  }
+
+  protected goOrderStep(step: number): void {
+    this.createOrderStep = Math.max(1, Math.min(7, Math.round(step)));
+    if (this.createOrderStep === 6) {
+      this.checkOrderAvailability();
+    }
   }
 
   protected saveOrderFromStepper(): void {
@@ -349,15 +454,15 @@ export class WorkspaceCalendarTabComponent {
       title: this.orderTitle.trim() || 'Заказ',
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
-      client_directory_item_id: this.orderClientId,
-      assignee_user_id: this.orderAssigneeId,
-      service_item_ids: [...this.orderServiceIds],
-      custom_directory_links: this.buildCustomLinksPayload(),
-      price_adjustment: Number(this.orderPriceAdjustment || 0),
+      client_directory_item_id: this.orderClientId(),
+      assignee_user_id: this.orderAssigneeSelection()[0] ?? null,
+      service_item_ids: [...this.orderServiceIds()],
+      custom_directory_links: [],
+      price_adjustment: Number(this.orderPriceAdjustment() || 0),
       metadata: {
-        customDirectories: this.orderCustomSelections,
+        selected_pet_item_ids: [...this.orderPetIds()],
       },
-      status: this.orderStatus,
+      status: this.orderStatus(),
     };
     if (this.editOrderId) {
       this.auth.updateWorkspaceOrder(tableId, this.editOrderId, payload).subscribe({
@@ -365,7 +470,7 @@ export class WorkspaceCalendarTabComponent {
           this.createOrderDialogVisible = false;
           this.refreshOrdersAndSlots();
         },
-        error: (err) => (this.actionError = this.formatApiError(err, 'Не удалось обновить заказ.')),
+        error: (err) => this.notifyError(this.formatApiError(err, 'Не удалось обновить заказ.')),
       });
       return;
     }
@@ -374,7 +479,7 @@ export class WorkspaceCalendarTabComponent {
         this.createOrderDialogVisible = false;
         this.refreshOrdersAndSlots();
       },
-      error: (err) => (this.actionError = this.formatApiError(err, 'Не удалось создать заказ.')),
+      error: (err) => this.notifyError(this.formatApiError(err, 'Не удалось создать заказ.')),
     });
   }
 
@@ -389,10 +494,10 @@ export class WorkspaceCalendarTabComponent {
     this.auth.addWorkspaceDirectoryItem(this.state.tableId(), dir.id, { label: this.quickClientName.trim(), payload: { firstName: this.quickClientName.trim() } }).subscribe({
       next: (item) => {
         this.quickCreateClientVisible = false;
-        this.orderClientId = item.id;
+        this.orderClientSelection.set([item.id]);
         this.reloadDirectories();
       },
-      error: (err) => (this.actionError = this.formatApiError(err, 'Не удалось создать клиента.')),
+      error: (err) => this.notifyError(this.formatApiError(err, 'Не удалось создать клиента.')),
     });
   }
 
@@ -411,10 +516,10 @@ export class WorkspaceCalendarTabComponent {
     }).subscribe({
       next: (item) => {
         this.quickCreateServiceVisible = false;
-        this.orderServiceIds = [...new Set([...this.orderServiceIds, item.id])];
+        this.orderServiceIds.set([...new Set([...this.orderServiceIds(), item.id])]);
         this.reloadDirectories();
       },
-      error: (err) => (this.actionError = this.formatApiError(err, 'Не удалось создать услугу.')),
+      error: (err) => this.notifyError(this.formatApiError(err, 'Не удалось создать услугу.')),
     });
   }
 
@@ -423,7 +528,7 @@ export class WorkspaceCalendarTabComponent {
     this.actionError = null;
     const title = this.newTitle.trim();
     if (!title || !this.newDateFrom || !this.newDateTo || !this.newTimeFrom || !this.newTimeTo) {
-      this.actionError = 'Заполните название и время.';
+      this.notifyError('Заполните название и время.');
       return;
     }
     const starts_at = new Date(`${this.newDateFrom}T${this.newTimeFrom}`).toISOString();
@@ -441,7 +546,7 @@ export class WorkspaceCalendarTabComponent {
         this.state.bumpContextReload();
       },
       error: (err) => {
-        this.actionError = this.formatApiError(err, 'Не удалось создать слот.');
+        this.notifyError(this.formatApiError(err, 'Не удалось создать слот.'));
       },
     });
   }
@@ -454,7 +559,7 @@ export class WorkspaceCalendarTabComponent {
         this.state.bumpContextReload();
       },
       error: (err) => {
-        this.actionError = this.formatApiError(err, 'Не удалось удалить.');
+        this.notifyError(this.formatApiError(err, 'Не удалось удалить.'));
       },
     });
   }
@@ -514,7 +619,7 @@ export class WorkspaceCalendarTabComponent {
     }
     const title = this.editTitle.trim();
     if (!title || !this.editStart || !this.editEnd) {
-      this.actionError = 'Заполните название и время слота.';
+      this.notifyError('Заполните название и время слота.');
       return;
     }
     this.auth
@@ -531,7 +636,7 @@ export class WorkspaceCalendarTabComponent {
           this.state.bumpContextReload();
         },
         error: (err) => {
-          this.actionError = this.formatApiError(err, 'Не удалось обновить слот.');
+          this.notifyError(this.formatApiError(err, 'Не удалось обновить слот.'));
         },
       });
   }
@@ -561,11 +666,7 @@ export class WorkspaceCalendarTabComponent {
       this.orderTimeFrom = `${String(startsAt.getHours()).padStart(2, '0')}:${String(startsAt.getMinutes()).padStart(2, '0')}`;
       this.orderDurationMinutes = Math.max(30, Math.round(((new Date(order.ends_at ?? order.created_at)).getTime() - startsAt.getTime()) / 60000));
       this.orderTitle = order.title;
-      this.orderClientId = order.client_directory_item_id ?? null;
-      this.orderServiceIds = [...(order.service_item_ids ?? [])];
-      this.orderAssigneeId = order.assignee_user_id ?? null;
-      this.orderPriceAdjustment = Number(order.price_adjustment ?? 0);
-      this.orderStatus = order.status;
+      this.applyOrderFormFromDto(order);
       this.orderWarnings = [];
       return;
     }
@@ -590,7 +691,7 @@ export class WorkspaceCalendarTabComponent {
           this.state.bumpContextReload();
         },
         error: (err) => {
-          this.actionError = this.formatApiError(err, 'Не удалось перенести слот.');
+          this.notifyError(this.formatApiError(err, 'Не удалось перенести слот.'));
         },
       });
   }
@@ -607,11 +708,7 @@ export class WorkspaceCalendarTabComponent {
     this.orderTimeFrom = `${String(starts.getHours()).padStart(2, '0')}:${String(starts.getMinutes()).padStart(2, '0')}`;
     this.orderDurationMinutes = Math.max(30, Math.round((ends.getTime() - starts.getTime()) / 60000));
     this.orderTitle = order.title;
-    this.orderClientId = order.client_directory_item_id ?? null;
-    this.orderServiceIds = [...(order.service_item_ids ?? [])];
-    this.orderAssigneeId = order.assignee_user_id ?? null;
-    this.orderPriceAdjustment = Number(order.price_adjustment ?? 0);
-    this.orderStatus = order.status;
+    this.applyOrderFormFromDto(order);
     this.orderWarnings = [];
     this.slotMenuVisible = false;
   }
@@ -659,7 +756,7 @@ export class WorkspaceCalendarTabComponent {
         this.completeOrderComment = '';
         this.refreshOrdersAndSlots();
       },
-      error: (err) => (this.actionError = this.formatApiError(err, 'Не удалось завершить заказ.')),
+      error: (err) => this.notifyError(this.formatApiError(err, 'Не удалось завершить заказ.')),
     });
   }
 
@@ -670,7 +767,7 @@ export class WorkspaceCalendarTabComponent {
         this.orderDeleteConfirmVisible = false;
         this.refreshOrdersAndSlots();
       },
-      error: (err) => (this.actionError = this.formatApiError(err, 'Не удалось удалить заказ.')),
+      error: (err) => this.notifyError(this.formatApiError(err, 'Не удалось удалить заказ.')),
     });
   }
 
@@ -689,25 +786,132 @@ export class WorkspaceCalendarTabComponent {
         this.childOrderDialogVisible = false;
         this.refreshOrdersAndSlots();
       },
-      error: (err) => (this.actionError = this.formatApiError(err, 'Не удалось создать дочерний заказ.')),
+      error: (err) => this.notifyError(this.formatApiError(err, 'Не удалось создать дочерний заказ.')),
     });
   }
 
-  protected setCustomSelection(directoryId: number, selected: number[]): void {
-    this.orderCustomSelections = { ...this.orderCustomSelections, [String(directoryId)]: selected };
+  protected onOrderClientSelectionChange(values: unknown): void {
+    const selected = this.normalizeMultiSelectNumberValues(values).slice(0, this.clientSelectionLimit());
+    this.orderClientSelection.set(selected);
+    const allowedPetIds = new Set(this.petOptions().map((entry) => entry.value));
+    this.orderPetIds.set(this.orderPetIds().filter((entry) => allowedPetIds.has(entry)));
   }
 
-  protected customDirectoryOptions(dir: WorkspaceDirectoryDto): Array<{ label: string; value: number }> {
-    return (dir.items ?? []).map((item) => ({ label: this.itemLabel(item), value: item.id }));
+  protected onOrderPetSelectionChange(values: unknown): void {
+    const selected = this.normalizeMultiSelectNumberValues(values);
+    const allowedPetIds = new Set(this.petOptions().map((entry) => entry.value));
+    this.orderPetIds.set(selected.filter((entry) => allowedPetIds.has(entry)));
   }
 
-  protected customSelectionFor(directoryId: number): number[] {
-    return this.orderCustomSelections[String(directoryId)] ?? [];
+  protected onOrderAssigneeSelectionChange(values: unknown): void {
+    this.orderAssigneeSelection.set(this.normalizeMultiSelectNumberValues(values).slice(0, 1));
   }
 
-  protected selectedClientLabel(): string {
-    const item = this.clientOptions().find((client) => client.value === this.orderClientId);
-    return item?.label ?? '—';
+  protected onOrderServicesChange(values: unknown): void {
+    const normalized = this.normalizeMultiSelectNumberValues(values);
+    this.orderServiceIds.set(normalized);
+    if (!this.groomingSelected() && this.orderClientSelection().length > 1) {
+      this.orderClientSelection.set(this.orderClientSelection().slice(0, 1));
+    }
+    if (!this.groomingSelected()) {
+      this.orderPetIds.set([]);
+    }
+  }
+
+  protected onOrderStatusSelectionChange(values: unknown): void {
+    const selected = this.normalizeMultiSelectStringValues(values).slice(0, 1);
+    this.orderStatusSelection.set(selected);
+    this.orderStatus.set(selected[0] ?? 'queued');
+  }
+
+  protected onOrderPriceAdjustmentChange(value: number | string | null | undefined): void {
+    const parsed = Number(value);
+    this.orderPriceAdjustment.set(Number.isFinite(parsed) ? parsed : 0);
+  }
+
+  protected statusChipClass(statusValue: string): string {
+    const option = this.statusOptionByValue(statusValue);
+    return option?.tone ?? 'status-queued';
+  }
+
+  protected clientOptionByValue(value: number | null | undefined): { label: string; value: number; avatarUrl: string; subtitle: string } | null {
+    if (!value) {
+      return null;
+    }
+    return this.clientOptions().find((entry) => entry.value === value) ?? null;
+  }
+
+  protected petOptionByValue(value: number | null | undefined): { label: string; value: number; avatarUrl: string } | null {
+    if (!value) {
+      return null;
+    }
+    return this.petOptions().find((entry) => entry.value === value) ?? null;
+  }
+
+  protected serviceOptionByValue(value: number | null | undefined): { label: string; value: number; icon: string; cost: number; subservices: string[] } | null {
+    if (!value) {
+      return null;
+    }
+    return this.serviceOptions().find((entry) => entry.value === value) ?? null;
+  }
+
+  protected employeeOptionByValue(value: number | null | undefined): { label: string; value: number; isOwner: boolean; initials: string; role: string } | null {
+    if (!value) {
+      return null;
+    }
+    return this.employeeOptions().find((entry) => entry.value === value) ?? null;
+  }
+
+  protected statusOptionByValue(value: string | null | undefined): { value: string; label: string; icon: string; tone: string } | null {
+    if (!value) {
+      return null;
+    }
+    return this.statusOptions.find((entry) => entry.value === value) ?? null;
+  }
+
+  protected selectedClientFromUnknown(value: unknown): { label: string; value: number; avatarUrl: string; subtitle: string } | null {
+    const option = this.payloadRecord(value);
+    const directValue = Number(option['value']);
+    if (Number.isFinite(directValue) && directValue > 0) {
+      return this.clientOptionByValue(directValue);
+    }
+    return this.clientOptionByValue(Number(value));
+  }
+
+  protected selectedPetFromUnknown(value: unknown): { label: string; value: number; avatarUrl: string } | null {
+    const option = this.payloadRecord(value);
+    const directValue = Number(option['value']);
+    if (Number.isFinite(directValue) && directValue > 0) {
+      return this.petOptionByValue(directValue);
+    }
+    return this.petOptionByValue(Number(value));
+  }
+
+  protected selectedServiceFromUnknown(value: unknown): { label: string; value: number; icon: string; cost: number; subservices: string[] } | null {
+    const option = this.payloadRecord(value);
+    const directValue = Number(option['value']);
+    if (Number.isFinite(directValue) && directValue > 0) {
+      return this.serviceOptionByValue(directValue);
+    }
+    return this.serviceOptionByValue(Number(value));
+  }
+
+  protected selectedEmployeeFromUnknown(value: unknown): { label: string; value: number; isOwner: boolean; initials: string; role: string } | null {
+    const option = this.payloadRecord(value);
+    const directValue = Number(option['value']);
+    if (Number.isFinite(directValue) && directValue > 0) {
+      return this.employeeOptionByValue(directValue);
+    }
+    return this.employeeOptionByValue(Number(value));
+  }
+
+  protected selectedStatusFromUnknown(value: unknown): { value: string; label: string; icon: string; tone: string } | null {
+    const option = this.payloadRecord(value);
+    const directValue = String(option['value'] ?? '').trim();
+    if (directValue) {
+      return this.statusOptionByValue(directValue);
+    }
+    return this.statusOptionByValue(typeof value === 'string' ? value : null);
   }
 
   protected toggleEmployeeSelection(userId: number, checked: boolean): void {
@@ -768,15 +972,6 @@ export class WorkspaceCalendarTabComponent {
     return new Date(`${this.orderDate}T${this.orderTimeFrom}:00`);
   }
 
-  private buildCustomLinksPayload(): Array<Record<string, unknown>> {
-    return this.orderCustomDirectories()
-      .map((dir) => ({
-        directory_id: dir.id,
-        item_ids: this.orderCustomSelections[String(dir.id)] ?? [],
-      }))
-      .filter((entry) => Array.isArray(entry.item_ids) && entry.item_ids.length > 0);
-  }
-
   private checkOrderAvailability(): void {
     const startsAt = this.makeOrderStartDate();
     const endsAt = new Date(startsAt.getTime() + this.orderDurationMinutes * 60_000);
@@ -785,14 +980,19 @@ export class WorkspaceCalendarTabComponent {
         title: this.orderTitle.trim() || 'Заказ',
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
-        client_directory_item_id: this.orderClientId,
-        assignee_user_id: this.orderAssigneeId,
-        service_item_ids: [...this.orderServiceIds],
-        custom_directory_links: this.buildCustomLinksPayload(),
-        price_adjustment: Number(this.orderPriceAdjustment || 0),
+        client_directory_item_id: this.orderClientId(),
+        assignee_user_id: this.orderAssigneeSelection()[0] ?? null,
+        service_item_ids: [...this.orderServiceIds()],
+        custom_directory_links: [],
+        price_adjustment: Number(this.orderPriceAdjustment() || 0),
       })
       .subscribe({
-        next: (resp) => (this.orderWarnings = (resp.warnings || []).map((w) => w.message)),
+        next: (resp) => {
+          this.orderWarnings = (resp.warnings || []).map((w) => w.message);
+          if (this.orderWarnings.length > 0) {
+            this.notifyWarn(this.orderWarnings.join('\n'));
+          }
+        },
         error: () => (this.orderWarnings = []),
       });
   }
@@ -813,11 +1013,36 @@ export class WorkspaceCalendarTabComponent {
     return item.label || String(item.id);
   }
 
+  private applyOrderFormFromDto(order: WorkspaceOrderDto): void {
+    const clientId = order.client_directory_item_id ?? null;
+    this.orderClientSelection.set(clientId ? [clientId] : []);
+    const metadata = this.payloadRecord(order.metadata);
+    const petIdsRaw = metadata['selected_pet_item_ids'];
+    this.orderPetIds.set(
+      Array.isArray(petIdsRaw)
+        ? petIdsRaw.map((entry) => Number(entry)).filter((entry) => Number.isFinite(entry))
+        : [],
+    );
+    this.orderServiceIds.set([...(order.service_item_ids ?? [])]);
+    this.orderAssigneeSelection.set(order.assignee_user_id ? [order.assignee_user_id] : []);
+    this.orderPriceAdjustment.set(Number(order.price_adjustment ?? 0));
+    this.orderStatus.set(order.status);
+    this.orderStatusSelection.set([order.status]);
+  }
+
   private extractCost(item: WorkspaceDirectoryItemDto): number {
-    const payload = (item.payload ?? {}) as Record<string, unknown>;
-    const raw = payload['cost'];
-    const value = Number(raw ?? 0);
-    return Number.isFinite(value) ? value : 0;
+    const payload = asServicePayload(item.payload);
+    const subTotal = subservicesTotal(payload);
+    if (subTotal > 0) {
+      return subTotal;
+    }
+    const directCost = payload.cost > 0 ? payload.cost : this.toPositiveNumber(item.value);
+    return directCost;
+  }
+
+  private toPositiveNumber(value: unknown): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
   }
 
   private findOrderByCalendarSlotId(slotId: number): WorkspaceOrderDto | null {
@@ -856,6 +1081,114 @@ export class WorkspaceCalendarTabComponent {
       x: Math.min(Math.max(clientX, margin), maxX),
       y: Math.min(Math.max(clientY, margin), maxY),
     };
+  }
+
+  private payloadRecord(value: unknown): Record<string, unknown> {
+    if (!value || typeof value !== 'object') {
+      return {};
+    }
+    return value as Record<string, unknown>;
+  }
+
+  private extractClientAvatar(item: WorkspaceDirectoryItemDto): string {
+    const payload = this.payloadRecord(item.payload);
+    return String(payload['avatarUrl'] ?? '').trim();
+  }
+
+  private extractClientPhone(item: WorkspaceDirectoryItemDto): string {
+    const payload = this.payloadRecord(item.payload);
+    return String(payload['phone'] ?? '').trim() || 'Телефон не указан';
+  }
+
+  private extractServiceIcon(item: WorkspaceDirectoryItemDto): string {
+    const payload = this.payloadRecord(item.payload);
+    const inner = this.payloadRecord(payload['inner']);
+    const subservices = Array.isArray(inner['subservices']) ? inner['subservices'] : [];
+    const first = subservices.length > 0 ? this.payloadRecord(subservices[0]) : {};
+    return String(first['icon'] ?? '').trim() || 'pi pi-briefcase';
+  }
+
+  private extractServiceSubservices(item: WorkspaceDirectoryItemDto): string[] {
+    const payload = this.payloadRecord(item.payload);
+    const inner = this.payloadRecord(payload['inner']);
+    const subservices = Array.isArray(inner['subservices']) ? inner['subservices'] : [];
+    return subservices
+      .map((entry) => String(this.payloadRecord(entry)['name'] ?? '').trim())
+      .filter((entry) => entry.length > 0);
+  }
+
+  private normalizeMultiSelectNumberValues(values: unknown): number[] {
+    if (!Array.isArray(values)) {
+      return [];
+    }
+    const numeric = values
+      .map((value) => {
+        if (typeof value === 'number') {
+          return value;
+        }
+        if (value && typeof value === 'object') {
+          const record = this.payloadRecord(value);
+          const candidate = Number(record['value'] ?? record['id'] ?? NaN);
+          return candidate;
+        }
+        return Number(value);
+      })
+      .filter((value) => Number.isFinite(value) && value > 0);
+    return [...new Set(numeric)];
+  }
+
+  private normalizeMultiSelectStringValues(values: unknown): string[] {
+    if (!Array.isArray(values)) {
+      return [];
+    }
+    const strings = values
+      .map((value) => {
+        if (typeof value === 'string') {
+          return value.trim();
+        }
+        if (value && typeof value === 'object') {
+          const record = this.payloadRecord(value);
+          const candidate = record['value'] ?? record['id'];
+          return typeof candidate === 'string' ? candidate.trim() : String(candidate ?? '').trim();
+        }
+        return String(value ?? '').trim();
+      })
+      .filter((value) => value.length > 0);
+    return [...new Set(strings)];
+  }
+
+  private extractPetAvatar(item: WorkspaceDirectoryItemDto): string {
+    const payload = this.payloadRecord(item.payload);
+    const detail = this.payloadRecord(payload['detail']);
+    return String(payload['iconUrl'] ?? detail['avatarUrl'] ?? '').trim();
+  }
+
+  private initials(value: string): string {
+    const parts = value.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) {
+      return 'U';
+    }
+    return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('');
+  }
+
+  private notifyError(message: string): void {
+    this.messageService.add({
+      key: 'calendarOrder',
+      severity: 'error',
+      summary: 'Ошибка',
+      detail: message,
+      life: 4500,
+    });
+  }
+
+  private notifyWarn(message: string): void {
+    this.messageService.add({
+      key: 'calendarOrder',
+      severity: 'warn',
+      summary: 'Проверка заказа',
+      detail: message,
+      life: 5000,
+    });
   }
 
   private formatApiError(err: unknown, fallback: string): string {
